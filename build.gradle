@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 group 'it.unitn.arpino'
@@ -9,11 +10,21 @@ repositories {
     mavenCentral()
 }
 
+def versions = [
+        ScalaBinary: "2.13"
+]
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+    implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.16")
+
+    implementation "com.typesafe.akka:akka-actor_${versions.ScalaBinary}"
+    testImplementation "com.typesafe.akka:akka-testkit_${versions.ScalaBinary}"
 }
 
-test {
-    useJUnitPlatform()
+
+application {
+    mainClass = 'it.unitn.arpino.ds1project.Main'
+}
+
+run {
+    standardInput = System.in
 }
