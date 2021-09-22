@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 group 'it.unitn.arpino'
@@ -16,4 +17,9 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+
+application {
+    mainClass = 'it.unitn.arpino.ds1project.Main'
 }
