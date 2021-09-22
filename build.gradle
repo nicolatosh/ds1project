@@ -24,3 +24,7 @@ dependencies {
 application {
     mainClass = 'it.unitn.arpino.ds1project.Main'
 }
+
+run {
+    standardInput = System.in
+}
