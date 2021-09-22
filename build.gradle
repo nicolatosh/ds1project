@@ -25,6 +25,20 @@ application {
     mainClass = 'it.unitn.arpino.ds1project.Main'
 }
 
+tasks.register('uberJar', Jar) {
+    manifest {
+        attributes 'Main-Class': 'it.unitn.arpino.ds1project.Main'
+    }
+    archiveClassifier = 'uber'
+
+    from sourceSets.main.output
+
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.findAll { it.name.endsWith('jar') }.collect { zipTree(it) }
+    }
+}
+
 run {
     standardInput = System.in
 }
