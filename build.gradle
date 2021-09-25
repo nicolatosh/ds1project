@@ -18,8 +18,14 @@ dependencies {
 
     implementation "com.typesafe.akka:akka-actor_${versions.ScalaBinary}"
     testImplementation "com.typesafe.akka:akka-testkit_${versions.ScalaBinary}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
 }
 
+test {
+    useJUnitPlatform()
+}
 
 application {
     mainClass = 'it.unitn.arpino.ds1project.Main'
