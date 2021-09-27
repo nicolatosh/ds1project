@@ -41,4 +41,21 @@ public class DataItem implements Comparable<DataItem>, Serializable {
         }
         return comparison;
     }
+
+    @Override
+    public int hashCode() {
+        return this.key;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DataItem dataItem = (DataItem) o;
+        return key == dataItem.key && version == dataItem.version && value == dataItem.value;
+    }
+
+    public DataItem copy() {
+        return new DataItem(this.key, this.version, this.value);
+    }
 }
