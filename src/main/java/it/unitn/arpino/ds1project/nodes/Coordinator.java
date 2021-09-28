@@ -1,34 +1,58 @@
 package it.unitn.arpino.ds1project.nodes;
 
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.transaction.Txn;
-import it.unitn.arpino.ds1project.transaction.messages.*;
+import it.unitn.arpino.ds1project.communication.Multicast;
+import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
+import it.unitn.arpino.ds1project.messages.control.StartMessage;
+import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
+import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.twopc.CoordinatorFSM;
-import it.unitn.arpino.ds1project.twopc.messages.VoteRequest;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 
-public class Coordinator extends AbstractNode {
-    protected Txn txn;
+public class Coordinator extends AbstractActor {
+    Set<ActorRef> servers;
+    Map<Integer, ActorRef> keys;
+
     protected CoordinatorFSM twoPcFSM;
     protected Set<ActorRef> yesVoters;
 
-    public Coordinator(int id) {
-        super(id);
+    public Coordinator() {
+        servers = new HashSet<>();
+        keys = new HashMap<>();
+    }
+
+    public static Props props() {
+        return Props.create(Coordinator.class, Coordinator::new);
     }
 
     @Override
     public Receive createReceive() {
-        Receive receive = new ReceiveBuilder()
+        return new ReceiveBuilder()
+                .match(StartMessage.class, this::onStartMsg)
                 .match(TxnBeginMsg.class, this::onTxnBeginMsg)
                 .match(ReadMsg.class, this::onReadMsg)
                 .build();
-        return super.createReceive()
-                .orElse(receive);
+    }
+
+    private void onStartMsg(StartMessage msg) {
+        servers.addAll(msg.servers);
+    }
+
+    private void onTxnBeginMsg(TxnBeginMsg msg) {
+        twoPcFSM = new CoordinatorFSM();
+        yesVoters = new HashSet<>();
+
+        TxnAcceptMsg response = new TxnAcceptMsg();
+        getSender().tell(response, getSelf());
     }
 
     /**
@@ -37,23 +61,10 @@ public class Coordinator extends AbstractNode {
      * @param msg
      */
     private void onReadMsg(ReadMsg msg) {
-        Optional<ActorRef> serverRef = getServerByKey(msg.key);
-        serverRef.ifPresent(actorRef -> {
-            ReadMsgCoordinator read_req = new ReadMsgCoordinator(txn, id, msg.key);
-            actorRef.tell(read_req, getSelf());
-        });
-    }
+        ReadRequest readRequest = new ReadRequest(getSender(), msg.key);
 
-    public static Props props(int id) {
-        return Props.create(Coordinator.class, () -> new Coordinator(id));
-    }
-
-    private void onTxnBeginMsg(TxnBeginMsg msg) {
-        txn = new Txn(msg.clientId);
-        twoPcFSM = new CoordinatorFSM();
-        yesVoters = new HashSet<>();
-
-        getSender().tell(new TxnAcceptMsg(), getSelf());
+        ActorRef server = keys.get(msg.key);
+        server.tell(readRequest, getSelf());
     }
 
     /**
@@ -62,23 +73,8 @@ public class Coordinator extends AbstractNode {
      * @param msg
      */
     private void onTxnEndMsg(TxnEndMsg msg) {
-        int clientId = msg.clientId;
-
-        multicast(new VoteRequest(txn));
+        new Multicast(getSelf(), servers, msg).multicast();
 
         twoPcFSM.setState(CoordinatorFSM.STATE.WAIT);
-    }
-
-    /**
-     * Allows to get the server ActorRef by key
-     *
-     * @param key
-     * @return
-     */
-    private Optional<ActorRef> getServerByKey(int key) {
-        return group.stream()
-                .filter(pair -> pair.b == key)
-                .map(pair -> pair.a)
-                .findFirst();
     }
 }

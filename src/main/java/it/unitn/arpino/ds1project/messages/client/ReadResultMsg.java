@@ -1,9 +1,13 @@
-package it.unitn.arpino.ds1project.transaction.messages;
+package it.unitn.arpino.ds1project.messages.client;
+
+import it.unitn.arpino.ds1project.messages.MessageType;
+
+import java.io.Serializable;
 
 /**
  * Reply from the coordinator when requested a READ on a given key
  */
-public class ReadResultMsg extends AbstractTxnMessage {
+public class ReadResultMsg implements MessageType, Serializable {
     public final int key;
     public final int value;
 
@@ -14,5 +18,10 @@ public class ReadResultMsg extends AbstractTxnMessage {
     public ReadResultMsg(int key, int value) {
         this.key = key;
         this.value = value;
+    }
+
+    @Override
+    public TYPE getType() {
+        return TYPE.Conversational;
     }
 }

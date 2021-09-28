@@ -12,7 +12,7 @@ public class Main {
     public static void main(String[] args) {
         final ActorSystem system = ActorSystem.create("ds1project");
 
-        final ActorRef coord1 = system.actorOf(Coordinator.props(1), "coord1");
+        final ActorRef coord1 = system.actorOf(Coordinator.props(), "coord1");
 
         final ActorRef client1 = system.actorOf(TxnClient.props(1), "client1");
 

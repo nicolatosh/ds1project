@@ -5,7 +5,14 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Props;
-import it.unitn.arpino.ds1project.transaction.messages.*;
+import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
+import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
+import it.unitn.arpino.ds1project.messages.client.TxnAcceptTimeoutMsg;
+import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import scala.concurrent.duration.Duration;
 
 import java.io.Serializable;
@@ -89,7 +96,7 @@ public class TxnClient extends AbstractActor {
 
         // contact a random coordinator and begin TXN
         currentCoordinator = coordinators.get(r.nextInt(coordinators.size()));
-        currentCoordinator.tell(new TxnBeginMsg(clientId), getSelf());
+        currentCoordinator.tell(new TxnBeginMsg(), getSelf());
 
         // how many operations (taking some amount and adding it somewhere else)?
         int numExtraOp = RAND_LENGTH_RANGE > 0 ? r.nextInt(RAND_LENGTH_RANGE) : 0;
@@ -109,7 +116,7 @@ public class TxnClient extends AbstractActor {
     // end the current TXN sending TxnEndMsg to the coordinator
     void endTxn() {
         boolean doCommit = r.nextDouble() < COMMIT_PROBABILITY;
-        currentCoordinator.tell(new TxnEndMsg(clientId, doCommit), getSelf());
+        currentCoordinator.tell(new TxnEndMsg(doCommit), getSelf());
         firstValue = null;
         secondValue = null;
         System.out.println("CLIENT " + clientId + " END");
@@ -124,8 +131,8 @@ public class TxnClient extends AbstractActor {
         secondKey = (firstKey + randKeyOffset) % (maxKey + 1);
 
         // READ requests
-        currentCoordinator.tell(new ReadMsg(clientId, firstKey), getSelf());
-        currentCoordinator.tell(new ReadMsg(clientId, secondKey), getSelf());
+        currentCoordinator.tell(new ReadMsg(firstKey), getSelf());
+        currentCoordinator.tell(new ReadMsg(secondKey), getSelf());
 
         // delete the current read values
         firstValue = null;
@@ -140,8 +147,8 @@ public class TxnClient extends AbstractActor {
         // take some amount from one value and pass it to the other, then request writes
         Integer amountTaken = 0;
         if (firstValue >= 1) amountTaken = 1 + r.nextInt(firstValue);
-        currentCoordinator.tell(new WriteMsg(clientId, firstKey, firstValue - amountTaken), getSelf());
-        currentCoordinator.tell(new WriteMsg(clientId, secondKey, secondValue + amountTaken), getSelf());
+        currentCoordinator.tell(new WriteMsg(firstKey, firstValue - amountTaken), getSelf());
+        currentCoordinator.tell(new WriteMsg(secondKey, secondValue + amountTaken), getSelf());
         System.out.println("CLIENT " + clientId + " WRITE #" + numOpDone
                 + " taken " + amountTaken
                 + " (" + firstKey + ", " + (firstValue - amountTaken) + "), ("
