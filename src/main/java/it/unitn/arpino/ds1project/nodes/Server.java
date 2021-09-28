@@ -1,9 +1,11 @@
 package it.unitn.arpino.ds1project.nodes;
 
 import akka.actor.Props;
+import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.Database;
 import it.unitn.arpino.ds1project.datastore.Workspace;
 import it.unitn.arpino.ds1project.transaction.Txn;
+import it.unitn.arpino.ds1project.transaction.messages.ReadMsgCoordinator;
 import it.unitn.arpino.ds1project.twopc.ServerFSM;
 
 public class Server extends AbstractNode {
@@ -24,11 +26,18 @@ public class Server extends AbstractNode {
 
     @Override
     public Receive createReceive() {
-        return super.createReceive();
+        Receive receive = new ReceiveBuilder()
+                .match(ReadMsgCoordinator.class, this::onReadMsgCoordinator)
+                .build();
+        return super.createReceive().orElse(receive);
     }
 
     private void initState() {
         workspace = new Workspace();
         twoPcFsm = new ServerFSM();
+    }
+
+    private void onReadMsgCoordinator(ReadMsgCoordinator msg) {
+
     }
 }
