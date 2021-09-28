@@ -2,17 +2,21 @@ package it.unitn.arpino.ds1project.nodes;
 
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.transaction.TransactionId;
+import it.unitn.arpino.ds1project.twopc.CoordinatorFSM;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Coordinator extends AbstractNode {
-    private final List<TransactionId> transactionIds;
+    private final List<Integer> clientIds;
+    private final Map<Integer, CoordinatorFSM> twoPcFSM;
 
     public Coordinator(int id) {
         super(id);
-        this.transactionIds = new ArrayList<>();
+        this.clientIds = new ArrayList<>();
+        this.twoPcFSM = new HashMap<>();
     }
 
     @Override
@@ -29,8 +33,12 @@ public class Coordinator extends AbstractNode {
     }
 
     private void onTxnBeginMsg(TxnClient.TxnBeginMsg msg) {
-        TransactionId transactionId = new TransactionId(msg.clientId, this.id);
-        this.transactionIds.add(transactionId);
+        int clientId = msg.clientId;
+
+        this.clientIds.add(clientId);
+
+        CoordinatorFSM fsm = new CoordinatorFSM();
+        this.twoPcFSM.put(clientId, fsm);
 
         getSender().tell(new TxnClient.TxnAcceptMsg(), getSelf());
     }
