@@ -13,10 +13,10 @@ import java.util.List;
 
 public abstract class AbstractNode extends AbstractActor {
     public static class StartMessage implements Serializable {
-        public final List<ActorRef> participants;
+        public final List<ActorRef> group;
 
-        public StartMessage(List<ActorRef> participants) {
-            this.participants = List.copyOf(participants);
+        public StartMessage(List<ActorRef> group) {
+            this.group = List.copyOf(group);
         }
     }
 
@@ -24,17 +24,17 @@ public abstract class AbstractNode extends AbstractActor {
     AbstractViewManager<?> viewManager;
 
     protected final int id;
-    protected final List<ActorRef> participants;
+    protected final List<ActorRef> group;
 
     public AbstractNode(int id) {
         this.id = id;
-        participants = new ArrayList<>();
+        group = new ArrayList<>();
     }
 
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(StartMessage.class, this::setParticipants)
+                .match(StartMessage.class, this::setGroup)
                 .build();
     }
 
@@ -52,17 +52,17 @@ public abstract class AbstractNode extends AbstractActor {
         }
     }
 
-    private void setParticipants(StartMessage msg) {
-        for (ActorRef actorRef : msg.participants) {
+    private void setGroup(StartMessage msg) {
+        for (ActorRef actorRef : msg.group) {
             if (!actorRef.equals(getSelf())) {
-                participants.add(actorRef);
+                group.add(actorRef);
             }
         }
     }
 
     protected void multicast(Serializable msg) {
-        for (ActorRef participant : participants) {
-            participant.tell(msg, getSelf());
+        for (ActorRef node : group) {
+            node.tell(msg, getSelf());
         }
     }
 }
