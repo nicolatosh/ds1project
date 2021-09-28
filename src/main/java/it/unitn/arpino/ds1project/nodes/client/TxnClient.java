@@ -1,4 +1,4 @@
-package it.unitn.arpino.ds1project.nodes;
+package it.unitn.arpino.ds1project.nodes.client;
 
 
 import akka.actor.AbstractActor;

@@ -1,7 +1,8 @@
-package it.unitn.arpino.ds1project.nodes;
+package it.unitn.arpino.ds1project.nodes.server;
 
 import akka.actor.ActorRef;
 import it.unitn.arpino.ds1project.datastore.Workspace;
+import it.unitn.arpino.ds1project.nodes.AbstractStateManager;
 import it.unitn.arpino.ds1project.twopc.ServerFSM;
 
 import java.util.HashMap;

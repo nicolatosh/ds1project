@@ -1,4 +1,4 @@
-package it.unitn.arpino.ds1project.nodes;
+package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;

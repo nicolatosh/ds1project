@@ -1,6 +1,7 @@
-package it.unitn.arpino.ds1project.nodes;
+package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
+import it.unitn.arpino.ds1project.nodes.AbstractStateManager;
 import it.unitn.arpino.ds1project.twopc.CoordinatorFSM;
 
 import java.util.HashMap;

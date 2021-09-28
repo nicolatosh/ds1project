@@ -2,8 +2,8 @@ package it.unitn.arpino.ds1project;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import it.unitn.arpino.ds1project.nodes.Coordinator;
-import it.unitn.arpino.ds1project.nodes.TxnClient;
+import it.unitn.arpino.ds1project.nodes.client.TxnClient;
+import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
 import java.util.ArrayList;
 import java.util.List;

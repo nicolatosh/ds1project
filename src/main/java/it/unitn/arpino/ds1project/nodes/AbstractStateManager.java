@@ -4,7 +4,7 @@ import akka.actor.AbstractActor;
 
 
 public abstract class AbstractStateManager<T extends AbstractActor> {
-    T node;
+    protected T node;
 
     public AbstractStateManager(T node) {
         this.node = node;
