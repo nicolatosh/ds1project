@@ -1,22 +1,21 @@
 package it.unitn.arpino.ds1project.nodes;
 
-import akka.actor.AbstractActor;
 import akka.actor.Props;
 import it.unitn.arpino.ds1project.datastore.Database;
 import it.unitn.arpino.ds1project.datastore.Workspace;
+import it.unitn.arpino.ds1project.transaction.Txn;
+import it.unitn.arpino.ds1project.twopc.ServerFSM;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class Server extends AbstractActor {
-    private final int serverId;
+public class Server extends AbstractNode {
     private final Database database;
-    private final Map<Integer, Workspace> workspaces;
 
-    public Server(int serverId) {
-        this.serverId = serverId;
-        this.database = new Database(serverId);
-        this.workspaces = new HashMap<>();
+    protected Txn txn;
+    protected Workspace workspace;
+    protected ServerFSM twoPcFsm;
+
+    public Server(int id) {
+        super(id);
+        database = new Database(id);
     }
 
     public static Props props(int serverId) {
@@ -25,11 +24,11 @@ public class Server extends AbstractActor {
 
     @Override
     public Receive createReceive() {
-        return null;
+        return super.createReceive();
     }
 
-    // Todo: transactionId type
-    private void createWorkspace(int transactionId) {
-        this.workspaces.put(transactionId, new Workspace(transactionId));
+    private void initState() {
+        workspace = new Workspace();
+        twoPcFsm = new ServerFSM();
     }
 }

@@ -1,36 +1,58 @@
 package it.unitn.arpino.ds1project.nodes;
 
-import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
 import akka.actor.Props;
-import it.unitn.arpino.ds1project.transaction.TransactionId;
+import akka.japi.pf.ReceiveBuilder;
+import it.unitn.arpino.ds1project.transaction.Txn;
+import it.unitn.arpino.ds1project.transaction.messages.TxnAcceptMsg;
+import it.unitn.arpino.ds1project.transaction.messages.TxnBeginMsg;
+import it.unitn.arpino.ds1project.transaction.messages.TxnEndMsg;
+import it.unitn.arpino.ds1project.twopc.CoordinatorFSM;
+import it.unitn.arpino.ds1project.twopc.messages.VoteRequest;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-public class Coordinator extends AbstractActor {
-    private final int coordinatorId;
-    private final List<TransactionId> transactionIds;
+public class Coordinator extends AbstractNode {
+    protected Txn txn;
+    protected CoordinatorFSM twoPcFSM;
+    protected Set<ActorRef> yesVoters;
 
-    public Coordinator(int coordinatorId) {
-        this.coordinatorId = coordinatorId;
-        this.transactionIds = new ArrayList<>();
+    public Coordinator(int id) {
+        super(id);
     }
 
     @Override
     public Receive createReceive() {
-        return receiveBuilder()
-                .match(TxnClient.TxnBeginMsg.class, this::onTxnBeginMsg)
+        Receive receive = new ReceiveBuilder()
+                .match(TxnBeginMsg.class, this::onTxnBeginMsg)
                 .build();
+        return super.createReceive()
+                .orElse(receive);
     }
 
-    public static Props props(int coordinatorId) {
-        return Props.create(Coordinator.class, () -> new Coordinator(coordinatorId));
+    public static Props props(int id) {
+        return Props.create(Coordinator.class, () -> new Coordinator(id));
     }
 
-    private void onTxnBeginMsg(TxnClient.TxnBeginMsg msg) {
-        TransactionId transactionId = new TransactionId(msg.clientId, this.coordinatorId);
-        this.transactionIds.add(transactionId);
+    private void onTxnBeginMsg(TxnBeginMsg msg) {
+        txn = new Txn(msg.clientId);
+        twoPcFSM = new CoordinatorFSM();
+        yesVoters = new HashSet<>();
 
-        getSender().tell(new TxnClient.TxnAcceptMsg(), getSelf());
+        getSender().tell(new TxnAcceptMsg(), getSelf());
+    }
+
+    /**
+     * Effectively starts the 2PC (Two-phase commit) protocol
+     *
+     * @param msg
+     */
+    private void onTxnEndMsg(TxnEndMsg msg) {
+        int clientId = msg.clientId;
+
+        multicast(new VoteRequest(txn));
+
+        twoPcFSM.setState(CoordinatorFSM.STATE.WAIT);
     }
 }

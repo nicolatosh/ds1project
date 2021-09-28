@@ -5,6 +5,7 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Props;
+import it.unitn.arpino.ds1project.transaction.messages.*;
 import scala.concurrent.duration.Duration;
 
 import java.io.Serializable;
@@ -69,79 +70,6 @@ public class TxnClient extends AbstractActor {
 
     // stop the client
     public static class StopMsg implements Serializable {
-    }
-
-    // message the client sends to a coordinator to begin the TXN
-    public static class TxnBeginMsg implements Serializable {
-        public final Integer clientId;
-
-        public TxnBeginMsg(int clientId) {
-            this.clientId = clientId;
-        }
-    }
-
-    // reply from the coordinator receiving TxnBeginMsg
-    public static class TxnAcceptMsg implements Serializable {
-    }
-
-    // the client may timeout waiting for TXN begin confirmation (TxnAcceptMsg)
-    public static class TxnAcceptTimeoutMsg implements Serializable {
-    }
-
-    // message the client sends to a coordinator to end the TXN;
-    // it may ask for commit (with probability COMMIT_PROBABILITY), or abort
-    public static class TxnEndMsg implements Serializable {
-        public final Integer clientId;
-        public final Boolean commit; // if false, the transaction should abort
-
-        public TxnEndMsg(int clientId, boolean commit) {
-            this.clientId = clientId;
-            this.commit = commit;
-        }
-    }
-
-    // READ request from the client to the coordinator
-    public static class ReadMsg implements Serializable {
-        public final Integer clientId;
-        public final Integer key; // the key of the value to read
-
-        public ReadMsg(int clientId, int key) {
-            this.clientId = clientId;
-            this.key = key;
-        }
-    }
-
-    // WRITE request from the client to the coordinator
-    public static class WriteMsg implements Serializable {
-        public final Integer clientId;
-        public final Integer key; // the key of the value to write
-        public final Integer value; // the new value to write
-
-        public WriteMsg(int clientId, int key, int value) {
-            this.clientId = clientId;
-            this.key = key;
-            this.value = value;
-        }
-    }
-
-    // reply from the coordinator when requested a READ on a given key
-    public static class ReadResultMsg implements Serializable {
-        public final Integer key; // the key associated to the requested item
-        public final Integer value; // the value found in the data store for that item
-
-        public ReadResultMsg(int key, int value) {
-            this.key = key;
-            this.value = value;
-        }
-    }
-
-    // message from the coordinator to the client with the outcome of the TXN
-    public static class TxnResultMsg implements Serializable {
-        public final Boolean commit; // if false, the transaction was aborted
-
-        public TxnResultMsg(boolean commit) {
-            this.commit = commit;
-        }
     }
 
     /*-- Actor methods -------------------------------------------------------- */
@@ -247,8 +175,8 @@ public class TxnClient extends AbstractActor {
         System.out.println("CLIENT " + clientId + " READ RESULT (" + msg.key + ", " + msg.value + ")");
 
         // save the read value(s)
-        if (msg.key.equals(firstKey)) firstValue = msg.value;
-        if (msg.key.equals(secondKey)) secondValue = msg.value;
+        if (msg.key == firstKey) firstValue = msg.value;
+        if (msg.key == secondKey) secondValue = msg.value;
 
         boolean opDone = (firstValue != null && secondValue != null);
 
