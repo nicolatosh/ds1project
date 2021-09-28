@@ -1,6 +1,9 @@
 package it.unitn.arpino.ds1project.twopc.messages;
 
-import java.io.Serializable;
+import it.unitn.arpino.ds1project.transaction.Txn;
 
-public class VoteRequest implements Serializable {
+public class VoteRequest extends AbstractTwoPcMessage {
+    public VoteRequest(Txn txn) {
+        super(txn);
+    }
 }
