@@ -1,11 +1,9 @@
 package it.unitn.arpino.ds1project.transaction.messages;
 
-import java.io.Serializable;
-
 /**
  * READ request from the client to the coordinator
  */
-public class ReadMsg implements Serializable {
+public class ReadMsg extends AbstractTxnMessage {
     public final int clientId;
     public final int key;
 

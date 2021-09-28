@@ -1,11 +1,9 @@
 package it.unitn.arpino.ds1project.transaction.messages;
 
-import java.io.Serializable;
-
 /**
  * WRITE request from the client to the coordinator
  */
-public class WriteMsg implements Serializable {
+public class WriteMsg extends AbstractTxnMessage {
     public final int clientId;
     public final int key;
     public final int value;

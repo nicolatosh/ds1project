@@ -1,11 +1,9 @@
 package it.unitn.arpino.ds1project.transaction.messages;
 
-import java.io.Serializable;
-
 /**
  * Message from the coordinator to the client with the outcome of the TXN
  */
-public class TxnResultMsg implements Serializable {
+public class TxnResultMsg extends AbstractTxnMessage {
     public final Boolean commit;
 
     /**
