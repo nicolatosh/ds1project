@@ -38,4 +38,10 @@ public abstract class AbstractNode extends AbstractActor {
             }
         }
     }
+
+    protected void multicast(Serializable msg) {
+        for (ActorRef participant : participants) {
+            participant.tell(msg, getSelf());
+        }
+    }
 }
