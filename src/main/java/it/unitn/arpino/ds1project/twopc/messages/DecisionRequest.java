@@ -1,6 +1,9 @@
 package it.unitn.arpino.ds1project.twopc.messages;
 
-import java.io.Serializable;
+import it.unitn.arpino.ds1project.transaction.Txn;
 
-public class DecisionRequest implements Serializable {
+public class DecisionRequest extends AbstractTwoPcMessage {
+    public DecisionRequest(Txn txn) {
+        super(txn);
+    }
 }

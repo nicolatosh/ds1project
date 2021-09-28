@@ -4,12 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Workspace {
-    // Todo: add transaction ID
-    int transactionId;
     private final Map<Integer, DataItem> data;
 
-    public Workspace(int transactionId) {
-        this.transactionId = transactionId;
+    public Workspace() {
         this.data = new HashMap<>();
     }
 

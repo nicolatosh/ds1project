@@ -3,24 +3,23 @@ package it.unitn.arpino.ds1project.nodes;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
+import it.unitn.arpino.ds1project.transaction.Txn;
 import it.unitn.arpino.ds1project.transaction.messages.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.transaction.messages.TxnBeginMsg;
 import it.unitn.arpino.ds1project.transaction.messages.TxnEndMsg;
 import it.unitn.arpino.ds1project.twopc.CoordinatorFSM;
 import it.unitn.arpino.ds1project.twopc.messages.VoteRequest;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Coordinator extends AbstractNode {
-    private final List<Integer> clientIds;
-    private final Map<Integer, CoordinatorFSM> twoPcFSM;
-    private final Map<Integer, Set<ActorRef>> yesVoters;
+    protected Txn txn;
+    protected CoordinatorFSM twoPcFSM;
+    protected Set<ActorRef> yesVoters;
 
     public Coordinator(int id) {
         super(id);
-        clientIds = new ArrayList<>();
-        twoPcFSM = new HashMap<>();
-        yesVoters = new HashMap<>();
     }
 
     @Override
@@ -37,12 +36,9 @@ public class Coordinator extends AbstractNode {
     }
 
     private void onTxnBeginMsg(TxnBeginMsg msg) {
-        int clientId = msg.clientId;
-
-        clientIds.add(clientId);
-
-        CoordinatorFSM fsm = new CoordinatorFSM();
-        twoPcFSM.put(clientId, fsm);
+        txn = new Txn(msg.clientId);
+        twoPcFSM = new CoordinatorFSM();
+        yesVoters = new HashSet<>();
 
         getSender().tell(new TxnAcceptMsg(), getSelf());
     }
@@ -55,9 +51,8 @@ public class Coordinator extends AbstractNode {
     private void onTxnEndMsg(TxnEndMsg msg) {
         int clientId = msg.clientId;
 
-        multicast(new VoteRequest());
+        multicast(new VoteRequest(txn));
 
-        CoordinatorFSM fsm = this.twoPcFSM.get(clientId);
-        fsm.setState(CoordinatorFSM.STATE.WAIT);
+        twoPcFSM.setState(CoordinatorFSM.STATE.WAIT);
     }
 }

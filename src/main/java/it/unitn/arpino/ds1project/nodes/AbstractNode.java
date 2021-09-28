@@ -2,6 +2,10 @@ package it.unitn.arpino.ds1project.nodes;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import it.unitn.arpino.ds1project.transaction.messages.TxnBeginMsg;
+import it.unitn.arpino.ds1project.twopc.messages.AbstractTwoPcMessage;
+import scala.PartialFunction;
+import scala.runtime.BoxedUnit;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -16,6 +20,9 @@ public abstract class AbstractNode extends AbstractActor {
         }
     }
 
+
+    AbstractViewManager<?> viewManager;
+
     protected final int id;
     protected final List<ActorRef> participants;
 
@@ -29,6 +36,20 @@ public abstract class AbstractNode extends AbstractActor {
         return receiveBuilder()
                 .match(StartMessage.class, this::setParticipants)
                 .build();
+    }
+
+    @Override
+    public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object msg) {
+        if (msg instanceof AbstractTwoPcMessage) {
+            AbstractTwoPcMessage message = (AbstractTwoPcMessage) msg;
+            viewManager.changeView(message.txn);
+        }
+
+        super.aroundReceive(receive, msg);
+
+        if (msg instanceof TxnBeginMsg) {
+            viewManager.sync();
+        }
     }
 
     private void setParticipants(StartMessage msg) {
