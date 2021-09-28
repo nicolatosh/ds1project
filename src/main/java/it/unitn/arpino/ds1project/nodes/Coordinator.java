@@ -15,8 +15,8 @@ public class Coordinator extends AbstractNode {
 
     public Coordinator(int id) {
         super(id);
-        this.clientIds = new ArrayList<>();
-        this.twoPcFSM = new HashMap<>();
+        clientIds = new ArrayList<>();
+        twoPcFSM = new HashMap<>();
     }
 
     @Override
@@ -35,10 +35,10 @@ public class Coordinator extends AbstractNode {
     private void onTxnBeginMsg(TxnClient.TxnBeginMsg msg) {
         int clientId = msg.clientId;
 
-        this.clientIds.add(clientId);
+        clientIds.add(clientId);
 
         CoordinatorFSM fsm = new CoordinatorFSM();
-        this.twoPcFSM.put(clientId, fsm);
+        twoPcFSM.put(clientId, fsm);
 
         getSender().tell(new TxnClient.TxnAcceptMsg(), getSelf());
     }

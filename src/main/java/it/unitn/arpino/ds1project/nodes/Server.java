@@ -3,6 +3,7 @@ package it.unitn.arpino.ds1project.nodes;
 import akka.actor.Props;
 import it.unitn.arpino.ds1project.datastore.Database;
 import it.unitn.arpino.ds1project.datastore.Workspace;
+import it.unitn.arpino.ds1project.twopc.ServerFSM;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,11 +11,13 @@ import java.util.Map;
 public class Server extends AbstractNode {
     private final Database database;
     private final Map<Integer, Workspace> workspaces;
+    private final Map<Integer, ServerFSM> twoPcFsm;
 
     public Server(int id) {
         super(id);
-        this.database = new Database(id);
-        this.workspaces = new HashMap<>();
+        database = new Database(id);
+        workspaces = new HashMap<>();
+        twoPcFsm = new HashMap<>();
     }
 
     public static Props props(int serverId) {
@@ -28,6 +31,6 @@ public class Server extends AbstractNode {
 
     // Todo: transactionId type
     private void createWorkspace(int transactionId) {
-        this.workspaces.put(transactionId, new Workspace(transactionId));
+        workspaces.put(transactionId, new Workspace(transactionId));
     }
 }

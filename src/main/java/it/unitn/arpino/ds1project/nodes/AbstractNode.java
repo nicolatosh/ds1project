@@ -21,7 +21,7 @@ public abstract class AbstractNode extends AbstractActor {
 
     public AbstractNode(int id) {
         this.id = id;
-        this.participants = new ArrayList<>();
+        participants = new ArrayList<>();
     }
 
     @Override
@@ -34,7 +34,7 @@ public abstract class AbstractNode extends AbstractActor {
     private void setParticipants(StartMessage msg) {
         for (ActorRef actorRef : msg.participants) {
             if (!actorRef.equals(getSelf())) {
-                this.participants.add(actorRef);
+                participants.add(actorRef);
             }
         }
     }
