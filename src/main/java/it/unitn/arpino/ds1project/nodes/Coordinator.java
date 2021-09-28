@@ -3,6 +3,7 @@ package it.unitn.arpino.ds1project.nodes;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.twopc.CoordinatorFSM;
+import it.unitn.arpino.ds1project.twopc.VoteRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,5 +42,19 @@ public class Coordinator extends AbstractNode {
         twoPcFSM.put(clientId, fsm);
 
         getSender().tell(new TxnClient.TxnAcceptMsg(), getSelf());
+    }
+
+    /**
+     * Effectively starts the 2PC (Two-phase commit) protocol
+     *
+     * @param msg
+     */
+    private void onTxnEndMsg(TxnClient.TxnEndMsg msg) {
+        int clientId = msg.clientId;
+
+        multicast(new VoteRequest());
+
+        CoordinatorFSM fsm = this.twoPcFSM.get(clientId);
+        fsm.setState(CoordinatorFSM.STATE.WAIT);
     }
 }
