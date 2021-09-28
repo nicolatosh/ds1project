@@ -4,6 +4,7 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import it.unitn.arpino.ds1project.transaction.messages.TxnBeginMsg;
 import it.unitn.arpino.ds1project.twopc.messages.AbstractTwoPcMessage;
+import it.unitn.arpino.ds1project.utils.Pair;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
@@ -13,9 +14,9 @@ import java.util.List;
 
 public abstract class AbstractNode extends AbstractActor {
     public static class StartMessage implements Serializable {
-        public final List<ActorRef> group;
+        public final List<Pair<ActorRef, Integer>> group;
 
-        public StartMessage(List<ActorRef> group) {
+        public StartMessage(List<Pair<ActorRef, Integer>> group) {
             this.group = List.copyOf(group);
         }
     }
@@ -24,7 +25,7 @@ public abstract class AbstractNode extends AbstractActor {
     AbstractViewManager<?> viewManager;
 
     protected final int id;
-    protected final List<ActorRef> group;
+    protected final List<Pair<ActorRef, Integer>> group;
 
     public AbstractNode(int id) {
         this.id = id;
@@ -53,16 +54,16 @@ public abstract class AbstractNode extends AbstractActor {
     }
 
     private void setGroup(StartMessage msg) {
-        for (ActorRef actorRef : msg.group) {
-            if (!actorRef.equals(getSelf())) {
-                group.add(actorRef);
+        for (Pair<ActorRef, Integer> pair : msg.group) {
+            if (!pair.a.equals(getSelf())) {
+                group.add(pair);
             }
         }
     }
 
     protected void multicast(Serializable msg) {
-        for (ActorRef node : group) {
-            node.tell(msg, getSelf());
-        }
+        group.stream()
+                .map(pair -> pair.a)
+                .forEach(actorRef -> actorRef.tell(msg, getSelf()));
     }
 }
