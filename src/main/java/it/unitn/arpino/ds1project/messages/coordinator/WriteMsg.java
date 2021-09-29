@@ -1,21 +1,40 @@
 package it.unitn.arpino.ds1project.messages.coordinator;
 
-import it.unitn.arpino.ds1project.messages.MessageType;
+import it.unitn.arpino.ds1project.messages.TYPE;
+import it.unitn.arpino.ds1project.messages.Transactional;
+import it.unitn.arpino.ds1project.messages.Typed;
+import it.unitn.arpino.ds1project.nodes.client.TxnClient;
+import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
- * WRITE request from the client to the coordinator
+ * A message that a client uses to request a WRITE to a coordinator
+ *
+ * @see TxnClient
+ * @see Coordinator
  */
-public class WriteMsg implements MessageType, Serializable {
-    public final int key;
-    public final int value;
+public class WriteMsg implements Typed, Transactional, Serializable {
+    private final UUID uuid;
 
     /**
-     * @param key   The key of the value to write
-     * @param value The new value to write
+     * The key that the client wishes to write
+     *
+     * @see TxnClient
      */
-    public WriteMsg(int key, int value) {
+    public final int key;
+
+    /**
+     * The value that the client wishes to write
+     *
+     * @see TxnClient
+     */
+    public final int value;
+
+
+    public WriteMsg(UUID uuid, int key, int value) {
+        this.uuid = uuid;
         this.key = key;
         this.value = value;
     }
@@ -23,5 +42,10 @@ public class WriteMsg implements MessageType, Serializable {
     @Override
     public TYPE getType() {
         return TYPE.Conversational;
+    }
+
+    @Override
+    public UUID uuid() {
+        return uuid;
     }
 }

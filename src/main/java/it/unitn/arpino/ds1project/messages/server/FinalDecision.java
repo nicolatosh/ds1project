@@ -3,47 +3,40 @@ package it.unitn.arpino.ds1project.messages.server;
 import it.unitn.arpino.ds1project.messages.TYPE;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.Typed;
-import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
+import it.unitn.arpino.ds1project.nodes.coordinator.Decision;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.io.Serializable;
 import java.util.UUID;
 
 /**
- * A message that a coordinator sends to a server requesting a WRITE operation
- * on behalf of a client.
+ * A message that a coordinator sends to a server containing its final decision on
+ * committing or aborting the transaction.
  *
  * @see Coordinator
  * @see Server
- * @see TxnClient
+ * @see Decision
  */
-public class WriteRequest implements Typed, Transactional, Serializable {
+public class FinalDecision implements Typed, Transactional, Serializable {
     private final UUID uuid;
 
     /**
-     * The key that the client requested to write.
+     * The decision of the coordinator about committing or aborting the transaction.
      *
-     * @see TxnClient
+     * @see Coordinator
+     * @see Decision
      */
-    public final int key;
+    public final Decision decision;
 
-    /**
-     * The value that the client requested to write.
-     *
-     * @see TxnClient
-     */
-    public final int value;
-
-    public WriteRequest(UUID uuid, int key, int value) {
+    public FinalDecision(UUID uuid, Decision decision) {
         this.uuid = uuid;
-        this.key = key;
-        this.value = value;
+        this.decision = decision;
     }
 
     @Override
     public TYPE getType() {
-        return TYPE.Internal;
+        return TYPE.TwoPC;
     }
 
     @Override

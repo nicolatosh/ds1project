@@ -5,10 +5,7 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Props;
-import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
-import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
-import it.unitn.arpino.ds1project.messages.client.TxnAcceptTimeoutMsg;
-import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
+import it.unitn.arpino.ds1project.messages.client.*;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
@@ -16,10 +13,9 @@ import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import scala.concurrent.duration.Duration;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class TxnClient extends AbstractActor {
@@ -32,8 +28,8 @@ public class TxnClient extends AbstractActor {
     private final Integer clientId;
     private List<ActorRef> coordinators;
 
-    // the maximum key associated to items of the store
-    private Integer maxKey;
+    // the keys of data items that the Client can read from and write to during a transaction
+    private List<Integer> keys;
 
     // keep track of the number of TXNs (attempted, successfully committed)
     private Integer numAttemptedTxn;
@@ -41,6 +37,7 @@ public class TxnClient extends AbstractActor {
 
     // TXN operation (move some amount from a value to another)
     private Boolean acceptedTxn;
+    private UUID uuid;
     private ActorRef currentCoordinator;
     private Integer firstKey, secondKey;
     private Integer firstValue, secondValue;
@@ -63,17 +60,6 @@ public class TxnClient extends AbstractActor {
     }
 
     /*-- Message classes ------------------------------------------------------ */
-
-    // send this message to the client at startup to inform it about the coordinators and the keys
-    public static class WelcomeMsg implements Serializable {
-        public final Integer maxKey;
-        public final List<ActorRef> coordinators;
-
-        public WelcomeMsg(int maxKey, List<ActorRef> coordinators) {
-            this.maxKey = maxKey;
-            this.coordinators = Collections.unmodifiableList(new ArrayList<>(coordinators));
-        }
-    }
 
     // stop the client
     public static class StopMsg implements Serializable {
@@ -116,7 +102,7 @@ public class TxnClient extends AbstractActor {
     // end the current TXN sending TxnEndMsg to the coordinator
     void endTxn() {
         boolean doCommit = r.nextDouble() < COMMIT_PROBABILITY;
-        currentCoordinator.tell(new TxnEndMsg(doCommit), getSelf());
+        currentCoordinator.tell(new TxnEndMsg(uuid, doCommit), getSelf());
         firstValue = null;
         secondValue = null;
         System.out.println("CLIENT " + clientId + " END");
@@ -124,15 +110,15 @@ public class TxnClient extends AbstractActor {
 
     // READ two items (will move some amount from the value of the first to the second)
     void readTwo() {
-
         // read two different keys
+        int maxKey = keys.size() - 1;
         firstKey = r.nextInt(maxKey + 1);
         int randKeyOffset = 1 + r.nextInt(maxKey - 1);
         secondKey = (firstKey + randKeyOffset) % (maxKey + 1);
 
         // READ requests
-        currentCoordinator.tell(new ReadMsg(firstKey), getSelf());
-        currentCoordinator.tell(new ReadMsg(secondKey), getSelf());
+        currentCoordinator.tell(new ReadMsg(uuid, firstKey), getSelf());
+        currentCoordinator.tell(new ReadMsg(uuid, secondKey), getSelf());
 
         // delete the current read values
         firstValue = null;
@@ -147,8 +133,8 @@ public class TxnClient extends AbstractActor {
         // take some amount from one value and pass it to the other, then request writes
         Integer amountTaken = 0;
         if (firstValue >= 1) amountTaken = 1 + r.nextInt(firstValue);
-        currentCoordinator.tell(new WriteMsg(firstKey, firstValue - amountTaken), getSelf());
-        currentCoordinator.tell(new WriteMsg(secondKey, secondValue + amountTaken), getSelf());
+        currentCoordinator.tell(new WriteMsg(uuid, firstKey, firstValue - amountTaken), getSelf());
+        currentCoordinator.tell(new WriteMsg(uuid, secondKey, secondValue + amountTaken), getSelf());
         System.out.println("CLIENT " + clientId + " WRITE #" + numOpDone
                 + " taken " + amountTaken
                 + " (" + firstKey + ", " + (firstValue - amountTaken) + "), ("
@@ -157,10 +143,10 @@ public class TxnClient extends AbstractActor {
 
     /*-- Message handlers ----------------------------------------------------- */
 
-    private void onWelcomeMsg(WelcomeMsg msg) {
+    private void onWelcomeMsg(ClientStartMsg msg) {
         this.coordinators = msg.coordinators;
+        this.keys = msg.keys;
         System.out.println(coordinators);
-        this.maxKey = msg.maxKey;
         beginTxn();
     }
 
@@ -171,6 +157,7 @@ public class TxnClient extends AbstractActor {
     private void onTxnAcceptMsg(TxnAcceptMsg msg) {
         acceptedTxn = true;
         acceptTimeout.cancel();
+        uuid = msg.uuid();
         readTwo();
     }
 
@@ -215,7 +202,7 @@ public class TxnClient extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(WelcomeMsg.class, this::onWelcomeMsg)
+                .match(ClientStartMsg.class, this::onWelcomeMsg)
                 .match(TxnAcceptMsg.class, this::onTxnAcceptMsg)
                 .match(TxnAcceptTimeoutMsg.class, this::onTxnAcceptTimeoutMsg)
                 .match(ReadResultMsg.class, this::onReadResultMsg)
