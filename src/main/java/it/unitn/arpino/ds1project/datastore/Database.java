@@ -29,19 +29,7 @@ public class Database {
     /* Public methods */
 
     public Transaction beginTransaction() {
-        return new Transaction(this);
-    }
-
-    protected boolean prepare(Transaction transaction) {
-        return concurrencyControl.prepare(transaction);
-    }
-
-    protected void commit(Transaction transaction) {
-        concurrencyControl.commit(transaction);
-    }
-
-    public void abort(Transaction transaction) {
-        concurrencyControl.abort(transaction);
+        return new Transaction(concurrencyControl);
     }
 
     /* Protected methods */
@@ -50,18 +38,15 @@ public class Database {
         return values.get(key);
     }
 
-    /**
-     * Updates the data item value and version at the same time.
-     *
-     * @param key   The key of the data item to update
-     * @param value The value to write
-     */
     protected void write(int key, int value) {
         values.put(key, value);
-        versions.merge(key, 1, Integer::sum);
     }
 
     protected int version(int key) {
         return versions.get(key);
+    }
+
+    protected void setVersion(int key, int version) {
+        versions.put(key, version);
     }
 }

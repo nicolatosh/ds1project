@@ -1,11 +1,11 @@
 package it.unitn.arpino.ds1project.datastore;
 
 public class Transaction {
-    private final Database database;
+    private final OptimisticConcurrencyControl controller;
     private final Workspace workspace;
 
-    public Transaction(Database database) {
-        this.database = database;
+    public Transaction(OptimisticConcurrencyControl controller) {
+        this.controller = controller;
         workspace = new Workspace();
     }
 
@@ -26,10 +26,10 @@ public class Transaction {
         // optimistic concurrency control when committing.
         if (!workspace.getKeys().contains(key)) {
             // Todo add key
-            workspace.setVersion(key, database.version(key));
+            workspace.setVersion(key, controller.version(key));
         }
 
-        workspace.write(key, database.read(key));
+        workspace.write(key, controller.read(key));
 
         return workspace.read(key);
     }
@@ -45,7 +45,7 @@ public class Transaction {
         // we need to save the data item's version, as it will be later used by the database in the
         // optimistic concurrency control when committing.
         if (!workspace.getKeys().contains(key)) {
-            workspace.setVersion(key, database.version(key));
+            workspace.setVersion(key, controller.version(key));
         }
 
         workspace.write(key, value);
@@ -56,20 +56,20 @@ public class Transaction {
      * protocol accordingly.
      */
     public boolean prepare() {
-        return database.prepare(this);
+        return controller.prepare(this);
     }
 
     /**
      * Commits the transaction and updates the current state of the Two-phase commit (2PC) protocol.
      */
     public void commit() {
-        database.commit(this);
+        controller.commit(this);
     }
 
     /**
      * Aborts the transaction and updates the current state of the Two-phase commit (2PC) protocol.
      */
     public void abort() {
-        database.abort(this);
+        controller.abort(this);
     }
 }
