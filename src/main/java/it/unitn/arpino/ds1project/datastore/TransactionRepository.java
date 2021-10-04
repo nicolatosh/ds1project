@@ -1,14 +1,17 @@
 package it.unitn.arpino.ds1project.datastore;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class TransactionRepository {
     private List<Transaction> committed;
     private List<Transaction> aborted;
     private Map<Transaction, Set<Lock>> pending;
+
+    public TransactionRepository() {
+        committed = new ArrayList<>();
+        aborted = new ArrayList<>();
+        pending = new HashMap<>();
+    }
 
     public List<Transaction> getCommitted() {
         return committed;
