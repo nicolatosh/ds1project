@@ -11,34 +11,17 @@ import java.io.Serializable;
 import java.util.UUID;
 
 /**
- * A message that a coordinator sends to a server requesting a WRITE operation
- * on behalf of a client.
+ * A message that a coordinator sends to a server on behalf of a client to abort an ongoing transaction.
  *
  * @see Coordinator
  * @see Server
  * @see TxnClient
  */
-public class WriteRequest implements Typed, Transactional, Serializable {
+public class AbortRequest implements Typed, Transactional, Serializable {
     private final UUID uuid;
 
-    /**
-     * The key that the client requested to write.
-     *
-     * @see TxnClient
-     */
-    public final int key;
-
-    /**
-     * The value that the client requested to write.
-     *
-     * @see TxnClient
-     */
-    public final int value;
-
-    public WriteRequest(UUID uuid, int key, int value) {
+    public AbortRequest(UUID uuid) {
         this.uuid = uuid;
-        this.key = key;
-        this.value = value;
     }
 
     @Override
@@ -48,6 +31,6 @@ public class WriteRequest implements Typed, Transactional, Serializable {
 
     @Override
     public UUID uuid() {
-        return uuid;
+        return null;
     }
 }
