@@ -123,10 +123,10 @@ public class Server extends AbstractActor {
         switch (ctx.get().getState()) {
             case VOTE_COMMIT:
                 vote = new VoteResponse(req.uuid(), Vote.YES);
-                ctx.get().transaction.abort();
                 break;
             case GLOBAL_ABORT:
                 vote = new VoteResponse(req.uuid(), Vote.NO);
+                ctx.get().transaction.abort();
                 break;
         }
 
