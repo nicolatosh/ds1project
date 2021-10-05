@@ -24,7 +24,7 @@ public class ServerRequestContext implements RequestContext {
      */
     private STATE state;
 
-    public final Transaction transaction;
+    private final Transaction transaction;
 
     public ServerRequestContext(UUID uuid, Transaction transaction) {
         this.uuid = uuid;

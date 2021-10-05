@@ -97,7 +97,7 @@ public class Server extends AbstractActor {
     private void onReadRequest(ReadRequest req) {
         ServerRequestContext ctx = getRequestContext(req).orElse(this.newContext(req));
 
-        int value = ctx.transaction.read(req.key);
+        int value = ctx.read(req.key);
 
         ReadResult res = new ReadResult(req.uuid(), req.key, value);
         getSender().tell(res, getSelf());
@@ -106,7 +106,7 @@ public class Server extends AbstractActor {
     private void onWriteRequest(WriteRequest req) {
         ServerRequestContext ctx = getRequestContext(req).orElse(this.newContext(req));
 
-        ctx.transaction.write(req.key, req.value);
+        ctx.write(req.key, req.value);
     }
 
     private void onVoteRequest(VoteRequest req) {
@@ -116,7 +116,7 @@ public class Server extends AbstractActor {
             return;
         }
 
-        ctx.get().transaction.prepare();
+        ctx.get().prepare();
 
         VoteResponse vote = null;
 
@@ -126,7 +126,7 @@ public class Server extends AbstractActor {
                 break;
             case GLOBAL_ABORT:
                 vote = new VoteResponse(req.uuid(), Vote.NO);
-                ctx.get().transaction.abort();
+                ctx.get().abort();
                 break;
         }
 
@@ -142,10 +142,10 @@ public class Server extends AbstractActor {
 
         switch (req.decision) {
             case GLOBAL_COMMIT:
-                ctx.get().transaction.commit();
+                ctx.get().commit();
                 break;
             case GLOBAL_ABORT:
-                ctx.get().transaction.abort();
+                ctx.get().abort();
                 break;
         }
     }
