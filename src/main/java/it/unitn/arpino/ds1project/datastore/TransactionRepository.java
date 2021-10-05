@@ -1,16 +1,17 @@
 package it.unitn.arpino.ds1project.datastore;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TransactionRepository {
     private List<Transaction> committed;
     private List<Transaction> aborted;
-    private Map<Transaction, Set<Lock>> pending;
+    private List<Transaction> pending;
 
     public TransactionRepository() {
         committed = new ArrayList<>();
         aborted = new ArrayList<>();
-        pending = new HashMap<>();
+        pending = new ArrayList<>();
     }
 
     public List<Transaction> getCommitted() {
@@ -22,16 +23,8 @@ public class TransactionRepository {
         committed.add(transaction);
     }
 
-    public Set<Lock> getLocks(Transaction transaction) {
-        return pending.get(transaction);
-    }
-
     public void setPending(Transaction transaction) {
-        pending.put(transaction, new HashSet<>());
-    }
-
-    public void addLocks(Transaction transaction, Set<Lock> locks) {
-        pending.get(transaction).addAll(locks);
+        pending.add(transaction);
     }
 
     public void setAborted(Transaction transaction) {

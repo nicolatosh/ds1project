@@ -1,12 +1,17 @@
 package it.unitn.arpino.ds1project.datastore;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class Transaction {
     private final OptimisticConcurrencyControl controller;
     private final Workspace workspace;
+    private final Set<Lock> locks;
 
     public Transaction(OptimisticConcurrencyControl controller) {
         this.controller = controller;
         workspace = new Workspace();
+        locks = new HashSet<>();
     }
 
     public Workspace getWorkspace() {
@@ -71,5 +76,13 @@ public class Transaction {
      */
     public void abort() {
         controller.abort(this);
+    }
+
+    protected Set<Lock> getLocks() {
+        return locks;
+    }
+
+    protected void addLock(Lock lock) {
+        locks.add(lock);
     }
 }

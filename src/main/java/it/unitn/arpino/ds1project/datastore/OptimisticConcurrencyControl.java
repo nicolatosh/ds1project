@@ -41,7 +41,7 @@ public class OptimisticConcurrencyControl {
         });
 
         // release all locks held by the transaction
-        transactionRepository.getLocks(transaction).forEach(lockRepository::release);
+        transaction.getLocks().forEach(lockRepository::release);
 
         // add the transaction to the list of committed ones
         transactionRepository.setCommitted(transaction);
@@ -49,7 +49,7 @@ public class OptimisticConcurrencyControl {
 
     public void abort(Transaction transaction) {
         // release all locks held by the transaction
-        transactionRepository.getLocks(transaction).forEach(lockRepository::release);
+        transaction.getLocks().forEach(lockRepository::release);
 
         // add the transaction to the list of aborted ones
         transactionRepository.setAborted(transaction);
@@ -83,7 +83,7 @@ public class OptimisticConcurrencyControl {
                 .collect(Collectors.toSet());
 
         if (locks.stream().allMatch(Lock::lock)) {
-            transactionRepository.addLocks(transaction, locks);
+            locks.forEach(transaction::addLock);
             return true;
         }
 
