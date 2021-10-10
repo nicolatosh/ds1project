@@ -182,6 +182,7 @@ public class Coordinator extends AbstractActor {
         server.tell(req, getSelf());
 
         ctx.get().participants.add(server);
+        log.info("Request forwarded to server " + server.path().name() + ". Context:\n" + ctx.get());
     }
 
     private void onWriteMsg(WriteMsg msg) {
@@ -197,5 +198,6 @@ public class Coordinator extends AbstractActor {
         server.tell(req, getSelf());
 
         ctx.get().participants.add(server);
+        log.info("Request forwarded to server " + server.path().name() + ". Context:\n" + ctx.get());
     }
 }
