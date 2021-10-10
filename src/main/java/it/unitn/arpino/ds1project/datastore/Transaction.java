@@ -26,17 +26,11 @@ public class Transaction {
      * @see Workspace
      */
     public int read(int key) {
-        // If this is the first time that the transaction reads a data item with this key,
-        // we need to save the data item's version, as it will be later used by the database in the
-        // optimistic concurrency control when committing.
-        if (!workspace.getKeys().contains(key)) {
-            // Todo add key
-            workspace.setVersion(key, controller.version(key));
-        }
+        int value = controller.read(this, key);
 
-        workspace.write(key, controller.read(key));
+        workspace.write(key, value);
 
-        return workspace.read(key);
+        return value;
     }
 
     /**
@@ -46,12 +40,7 @@ public class Transaction {
      * @see Workspace
      */
     public void write(int key, int value) {
-        // If this is the first time that the transaction reads a data item with this key,
-        // we need to save the data item's version, as it will be later used by the database in the
-        // optimistic concurrency control when committing.
-        if (!workspace.getKeys().contains(key)) {
-            workspace.setVersion(key, controller.version(key));
-        }
+        controller.write(this, key, value);
 
         workspace.write(key, value);
     }
