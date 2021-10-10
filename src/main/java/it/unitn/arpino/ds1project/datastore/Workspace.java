@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Workspace {
     /**
@@ -31,8 +32,9 @@ public class Workspace {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        values.forEach((key, value) -> sb.append(key).append(": ").append(value).append("\n"));
-        return sb.toString();
+        return values.entrySet().stream()
+                .sorted()
+                .map(entry -> entry.getKey() + ": " + entry.getValue())
+                .collect(Collectors.joining(", "));
     }
 }
