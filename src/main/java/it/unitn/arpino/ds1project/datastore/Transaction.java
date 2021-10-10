@@ -74,4 +74,13 @@ public class Transaction {
     protected void addLock(Lock lock) {
         locks.add(lock);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Workspace:\n").append(workspace).append("\n");
+        sb.append("Locks:\n");
+        locks.forEach(lock -> sb.append(lock).append(" "));
+        return sb.toString();
+    }
 }
