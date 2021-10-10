@@ -2,6 +2,7 @@ package it.unitn.arpino.ds1project.datastore;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Transaction {
     private final OptimisticConcurrencyControl controller;
@@ -77,10 +78,7 @@ public class Transaction {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Workspace:\n").append(workspace).append("\n");
-        sb.append("Locks:\n");
-        locks.forEach(lock -> sb.append(lock).append(" "));
-        return sb.toString();
+        return "\tworkspace:\n" + workspace +
+                "\n\tlocks: " + locks.stream().map(lock -> String.valueOf(lock.key)).sorted().collect(Collectors.joining(", "));
     }
 }
