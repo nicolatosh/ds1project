@@ -1,5 +1,7 @@
 package it.unitn.arpino.ds1project.datastore;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -10,10 +12,13 @@ public class OptimisticConcurrencyControl {
 
     private final LockRepository lockRepository;
 
+    private final Map<Transaction, Map<Integer, Integer>> versions;
+
     public OptimisticConcurrencyControl(Database database) {
         this.database = database;
         transactionRepository = new TransactionRepository();
         lockRepository = new LockRepository();
+        versions = new HashMap<>();
     }
 
     public boolean prepare(Transaction transaction) {
@@ -67,7 +72,7 @@ public class OptimisticConcurrencyControl {
         Workspace workspace = transaction.getWorkspace();
 
         return workspace.getKeys().stream()
-                .allMatch(key -> workspace.getVersion(key) == database.version(key));
+                .allMatch(key -> versions.get(transaction).get(key) == database.version(key));
     }
 
     /**
@@ -91,15 +96,19 @@ public class OptimisticConcurrencyControl {
         return false;
     }
 
-    protected int read(int key) {
+    protected int read(Transaction transaction, int key) {
+        // If this is the first time that the transaction reads a data item with this key,
+        // we need to save the data item's version, as it will be later used by the database in the
+        // optimistic concurrency control when committing.
+        versions.putIfAbsent(transaction, new HashMap<>()).putIfAbsent(key, database.version(key));
         return database.read(key);
     }
 
-    protected void write(int key, int value) {
+    protected void write(Transaction transaction, int key, int value) {
+        // If this is the first time that the transaction writes a data item with this key,
+        // we need to save the data item's version, as it will be later used by the database in the
+        // optimistic concurrency control when committing.
+        versions.putIfAbsent(transaction, new HashMap<>()).putIfAbsent(key, database.version(key));
         database.write(key, value);
-    }
-
-    protected int version(int key) {
-        return database.version(key);
     }
 }

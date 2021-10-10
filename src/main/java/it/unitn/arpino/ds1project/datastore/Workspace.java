@@ -7,13 +7,6 @@ import java.util.Map;
 
 public class Workspace {
     /**
-     * The versions that the data items had when the transaction had first read or wrote them.
-     *
-     * @see Transaction
-     */
-    private final Map<Integer, Integer> versions;
-
-    /**
      * The values of the data items that the transaction has read or wrote so far.
      *
      * @see Transaction
@@ -21,7 +14,6 @@ public class Workspace {
     private final Map<Integer, Integer> values;
 
     public Workspace() {
-        versions = new HashMap<>();
         values = new HashMap<>();
     }
 
@@ -35,13 +27,5 @@ public class Workspace {
 
     public List<Integer> getKeys() {
         return new ArrayList<>(values.keySet());
-    }
-
-    public int getVersion(int key) {
-        return versions.get(key);
-    }
-
-    public void setVersion(int key, int version) {
-        versions.put(key, version);
     }
 }
