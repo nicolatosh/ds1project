@@ -52,10 +52,9 @@ public class Server extends AbstractActor {
         if (msg instanceof Typed) {
             Typed typed = (Typed) msg;
 
-            log.info(getSelf().path().name() +
-                    ": received " + typed.getClass().getSimpleName() +
-                    " from " + getSender().path().name() +
-                    " (" + typed.getType() + ")");
+            log.info("received " + typed.getType() +
+                    "/" + typed.getClass().getSimpleName() +
+                    " from " + getSender().path().name());
         }
 
         super.aroundReceive(receive, msg);
