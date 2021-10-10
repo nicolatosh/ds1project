@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TransactionRepository {
-    private List<Transaction> committed;
-    private List<Transaction> aborted;
-    private List<Transaction> pending;
+    private final List<Transaction> committed;
+    private final List<Transaction> aborted;
+    private final List<Transaction> pending;
 
     public TransactionRepository() {
         committed = new ArrayList<>();
