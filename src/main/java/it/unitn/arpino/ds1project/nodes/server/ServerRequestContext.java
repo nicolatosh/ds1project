@@ -69,4 +69,13 @@ public class ServerRequestContext implements RequestContext {
     public UUID uuid() {
         return uuid;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("uuid: ").append(uuid).append("\n");
+        sb.append("state: ").append(state).append("\n");
+        sb.append("transaction:\n").append(transaction).append("\n");
+        return sb.toString();
+    }
 }

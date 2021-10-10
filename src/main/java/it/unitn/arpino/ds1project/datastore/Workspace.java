@@ -28,4 +28,11 @@ public class Workspace {
     public List<Integer> getKeys() {
         return new ArrayList<>(values.keySet());
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        values.forEach((key, value) -> sb.append(key).append(": ").append(value).append("\n"));
+        return sb.toString();
+    }
 }

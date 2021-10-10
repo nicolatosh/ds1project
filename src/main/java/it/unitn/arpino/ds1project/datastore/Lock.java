@@ -29,4 +29,9 @@ class Lock {
     public void unlock() {
         lockRepository.release(this);
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(key);
+    }
 }
