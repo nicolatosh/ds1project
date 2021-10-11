@@ -1,6 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
-import it.unitn.arpino.ds1project.datastore.Transaction;
+import it.unitn.arpino.ds1project.datastore.IConnection;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.util.UUID;
@@ -24,12 +24,12 @@ public class ServerRequestContext implements RequestContext {
      */
     private STATE state;
 
-    private final Transaction transaction;
+    private final IConnection connection;
 
-    public ServerRequestContext(UUID uuid, Transaction transaction) {
+    public ServerRequestContext(UUID uuid, IConnection connection) {
         this.uuid = uuid;
         this.state = STATE.INIT;
-        this.transaction = transaction;
+        this.connection = connection;
     }
 
     /**
@@ -40,15 +40,15 @@ public class ServerRequestContext implements RequestContext {
     }
 
     public int read(int key) {
-        return transaction.read(key);
+        return connection.read(key);
     }
 
     public void write(int key, int value) {
-        transaction.write(key, value);
+        connection.write(key, value);
     }
 
     public void prepare() {
-        if (transaction.prepare()) {
+        if (connection.prepare()) {
             state = STATE.READY;
         } else {
             state = STATE.GLOBAL_ABORT;
@@ -56,12 +56,12 @@ public class ServerRequestContext implements RequestContext {
     }
 
     public void commit() {
-        transaction.commit();
+        connection.commit();
         state = STATE.COMMIT;
     }
 
     public void abort() {
-        transaction.abort();
+        connection.abort();
         state = STATE.GLOBAL_ABORT;
     }
 
@@ -74,6 +74,6 @@ public class ServerRequestContext implements RequestContext {
     public String toString() {
         return "\tuuid: " + uuid +
                 "\n\tstate: " + state +
-                "\n\ttransaction:\n" + transaction;
+                "\n\ttransaction:\n" + connection;
     }
 }

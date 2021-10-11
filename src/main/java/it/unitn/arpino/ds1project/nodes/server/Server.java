@@ -6,8 +6,9 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.datastore.Database;
-import it.unitn.arpino.ds1project.datastore.Transaction;
+import it.unitn.arpino.ds1project.datastore.DatabaseFactory;
+import it.unitn.arpino.ds1project.datastore.IConnection;
+import it.unitn.arpino.ds1project.datastore.IDatabaseController;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.Typed;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
@@ -26,7 +27,7 @@ public class Server extends AbstractActor {
 
     private final STATUS status;
 
-    private final Database database;
+    private final IDatabaseController controller;
 
     /**
      * The other servers in the Data Store that this server can contact in a Two-Phase Commit (2PC) recovery
@@ -38,7 +39,8 @@ public class Server extends AbstractActor {
     public Server() {
         status = STATUS.ALIVE;
 
-        database = new Database();
+        DatabaseFactory factory = new DatabaseFactory();
+        controller = factory.getController();
 
         contextManager = new ContextManager<>();
     }
@@ -75,7 +77,7 @@ public class Server extends AbstractActor {
     }
 
     private ServerRequestContext newContext(Transactional msg) {
-        ServerRequestContext ctx = new ServerRequestContext(msg.uuid(), database.beginTransaction());
+        ServerRequestContext ctx = new ServerRequestContext(msg.uuid(), controller.beginTransaction());
 
         contextManager.save(ctx);
         return ctx;
@@ -87,9 +89,9 @@ public class Server extends AbstractActor {
         if (msg instanceof ServerStartWithKeysMsg) {
             ServerStartWithKeysMsg msgWithKeys = (ServerStartWithKeysMsg) msg;
 
-            Transaction transaction = database.beginTransaction();
-            msgWithKeys.keys.forEach(key -> transaction.write(key, msgWithKeys.values.get(key)));
-            transaction.commit();
+            IConnection connection = controller.beginTransaction();
+            msgWithKeys.keys.forEach(key -> connection.write(key, msgWithKeys.values.get(key)));
+            connection.commit();
         }
     }
 
