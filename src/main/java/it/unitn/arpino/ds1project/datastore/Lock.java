@@ -1,12 +1,20 @@
 package it.unitn.arpino.ds1project.datastore;
 
-class Lock {
-    private final LockRepository lockRepository;
+public class Lock {
+    private final ILockRepository repository;
     public final int key;
 
-    public Lock(LockRepository repository, int key) {
-        this.lockRepository = repository;
+    public Lock(ILockRepository repository, int key) {
+        this.repository = repository;
         this.key = key;
+    }
+
+    public boolean lock() {
+        return repository.lock(this);
+    }
+
+    public void unlock() {
+        repository.release(this);
     }
 
     @Override
@@ -20,18 +28,5 @@ class Lock {
     @Override
     public int hashCode() {
         return key;
-    }
-
-    public boolean lock() {
-        return lockRepository.lock(this);
-    }
-
-    public void unlock() {
-        lockRepository.release(this);
-    }
-
-    @Override
-    public String toString() {
-        return String.valueOf(key);
     }
 }
