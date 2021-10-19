@@ -69,6 +69,7 @@ public class Server extends AbstractActor {
                 .match(WriteRequest.class, this::onWriteRequest)
                 .match(VoteRequest.class, this::onVoteRequest)
                 .match(FinalDecision.class, this::onDecisionRequest)
+                .match(AbortRequest.class, this::onAbortRequest)
                 .build();
     }
 
@@ -123,6 +124,7 @@ public class Server extends AbstractActor {
 
         switch (ctx.get().getState()) {
             case VOTE_COMMIT:
+            case READY:
                 vote = new VoteResponse(req.uuid(), Vote.YES);
                 break;
             case GLOBAL_ABORT:
@@ -132,6 +134,23 @@ public class Server extends AbstractActor {
         }
 
         getSender().tell(vote, getSelf());
+    }
+
+    private void onAbortRequest(AbortRequest msg) {
+        Optional<ServerRequestContext> ctx = getRequestContext(msg);
+        if (ctx.isEmpty()) {
+            // Todo: Bad request
+            return;
+        }
+
+        // TODO if we do that "locally" then we need to manage the situation
+        // in which coordinator tells us to abort again so the line below
+        // will get executed twice (see OnDecisionRequest)
+        //ctx.get().abort();
+
+        VoteResponse vote = new VoteResponse(msg.uuid(), Vote.NO);
+        getSender().tell(vote, getSelf());
+
     }
 
     private void onDecisionRequest(FinalDecision req) {
@@ -145,6 +164,7 @@ public class Server extends AbstractActor {
             case GLOBAL_COMMIT:
                 ctx.get().commit();
                 break;
+
             case GLOBAL_ABORT:
                 ctx.get().abort();
                 break;

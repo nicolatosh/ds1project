@@ -47,6 +47,10 @@ public class ServerRequestContext implements RequestContext {
         connection.write(key, value);
     }
 
+    /**
+     * Decides whether server wants to commit or abort
+     * based on locking and serializability
+     */
     public void prepare() {
         if (connection.prepare()) {
             state = STATE.READY;
@@ -63,6 +67,7 @@ public class ServerRequestContext implements RequestContext {
     public void abort() {
         connection.abort();
         state = STATE.GLOBAL_ABORT;
+
     }
 
     @Override

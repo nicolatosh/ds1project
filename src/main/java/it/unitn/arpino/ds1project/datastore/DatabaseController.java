@@ -99,6 +99,8 @@ public class DatabaseController implements IDatabaseController {
 
         // add the transaction to the list of aborted ones
         transactionRepository.setAborted(transaction);
+
+        // TODO check for workspace. DO we need to delete it?
     }
 
     /**

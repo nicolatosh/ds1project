@@ -20,6 +20,8 @@ import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class Coordinator extends AbstractActor {
@@ -100,10 +102,11 @@ public class Coordinator extends AbstractActor {
             return;
         }
 
+        List<ActorRef> receivers = new ArrayList<>(ctx.get().participants);
+
         Multicast multicast = new Multicast()
                 .setSender(getSelf())
-                // Fixme
-                // .addReceivers(ctx.get().contacted)
+                .addReceivers(receivers)
                 .shuffle();
 
         if (msg.commit) {
@@ -115,12 +118,6 @@ public class Coordinator extends AbstractActor {
         }
 
         multicast.multicast();
-
-        if (multicast.completed()) {
-            ctx.get().state = CoordinatorRequestContext.STATE.WAIT;
-        } else {
-            status = STATUS.CRASHED;
-        }
     }
 
     private void onVoteResponse(VoteResponse resp) {

@@ -61,6 +61,11 @@ public class Main {
         server0.tell(new ServerStartMsg(List.of(server1)), ActorRef.noSender());
         server1.tell(new ServerStartMsg(List.of(server0)), ActorRef.noSender());
 
-        //system.terminate();
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        system.terminate();
     }
 }

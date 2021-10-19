@@ -68,7 +68,9 @@ public class Multicast {
         }
 
         receivers.subList(0, round)
-                .forEach(receiver -> receiver.tell(msg, sender));
+                .forEach(receiver -> {
+                    receiver.tell(msg, sender);
+                });
     }
 
     /**

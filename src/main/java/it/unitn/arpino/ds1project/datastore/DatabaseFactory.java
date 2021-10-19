@@ -20,7 +20,6 @@ public class DatabaseFactory {
         // Generating keys according to formula "10i : 10i + 9"
         List<Integer> keys = IntStream.rangeClosed(KEY_RANGE * serverId, KEY_RANGE * serverId + KEY_RANGE_UPPER_BOUND).boxed().collect(Collectors.toList());
 
-        System.out.println("BBB " + keys);
         keys.forEach(k -> {
             keyvalues.put(k, DEFAULT_DATA_VALUE);
         });
