@@ -9,6 +9,7 @@ import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.communication.Multicast;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.Typed;
+import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
@@ -40,6 +41,7 @@ public class Coordinator extends AbstractActor {
         return Props.create(Coordinator.class, Coordinator::new);
     }
 
+
     @Override
     public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object msg) {
         if (msg instanceof Typed) {
@@ -60,6 +62,7 @@ public class Coordinator extends AbstractActor {
                 .match(TxnBeginMsg.class, this::onTxnBeginMsg)
                 .match(TxnEndMsg.class, this::onTxnEndMsg)
                 .match(ReadMsg.class, this::onReadMsg)
+                .match(ReadResult.class, this::onReadResult)
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
                 .build();
@@ -183,6 +186,19 @@ public class Coordinator extends AbstractActor {
 
         ctx.get().participants.add(server);
         log.info("Request forwarded to server " + server.path().name() + ". Context:\n" + ctx.get());
+    }
+
+    private void onReadResult(ReadResult msg) {
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg);
+        if (ctx.isEmpty()) {
+            // Todo: Bad request
+            return;
+        }
+
+        ReadResultMsg result = new ReadResultMsg(msg.uuid(), msg.key, msg.value);
+
+        ctx.get().client.tell(result, getSelf());
+
     }
 
     private void onWriteMsg(WriteMsg msg) {

@@ -33,20 +33,20 @@ public class Server extends AbstractActor {
      * The other servers in the Data Store that this server can contact in a Two-Phase Commit (2PC) recovery
      */
     private List<ActorRef> servers;
+    private final int serverId;
 
     ContextManager<ServerRequestContext> contextManager;
 
-    public Server() {
+    public Server(int serverId) {
         status = STATUS.ALIVE;
-
-        DatabaseFactory factory = new DatabaseFactory();
+        this.serverId = serverId;
+        DatabaseFactory factory = new DatabaseFactory(serverId);
         controller = factory.getController();
-
         contextManager = new ContextManager<>();
     }
 
-    public static Props props() {
-        return Props.create(Server.class, Server::new);
+    public static Props props(int serverId) {
+        return Props.create(Server.class, () -> new Server(serverId));
     }
 
     @Override

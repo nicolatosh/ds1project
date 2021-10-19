@@ -4,6 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import it.unitn.arpino.ds1project.messages.client.ClientStartMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.CoordinatorStartMsg;
+import it.unitn.arpino.ds1project.messages.server.ServerStartMsg;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
@@ -33,8 +34,21 @@ public class Main {
         final ActorRef coord1 = system.actorOf(Coordinator.props(), "coord1");
         final ActorRef coord2 = system.actorOf(Coordinator.props(), "coord2");
 
-        final ActorRef server1 = system.actorOf(Server.props(), "server1");
-        final ActorRef server2 = system.actorOf(Server.props(), "server2");
+        final ActorRef server1 = system.actorOf(Server.props(0), "server1");
+        final ActorRef server2 = system.actorOf(Server.props(1), "server2");
+
+
+        // Provide the servers information about the context
+
+        Map<ActorRef, List<Integer>> serverKeys = new HashMap<>();
+        serverKeys.put(server1, keyList1);
+        serverKeys.put(server2, keyList2);
+
+        // Provide the coordinators information about the context
+
+        CoordinatorStartMsg coordMsg = new CoordinatorStartMsg(serverKeys);
+        coord1.tell(coordMsg, ActorRef.noSender());
+        coord2.tell(coordMsg, ActorRef.noSender());
 
 
         // Provide the clients information about the context
@@ -43,21 +57,10 @@ public class Main {
         client1.tell(clientMsg, ActorRef.noSender());
         client2.tell(clientMsg, ActorRef.noSender());
 
-        // Provide the coordinators information about the context
 
-        Map<ActorRef, List<Integer>> serverKeys = new HashMap<>();
-        serverKeys.put(client1, keyList1);
-        serverKeys.put(client2, keyList2);
+        server1.tell(new ServerStartMsg(List.of(server2)), ActorRef.noSender());
+        server2.tell(new ServerStartMsg(List.of(server1)), ActorRef.noSender());
 
-        CoordinatorStartMsg coordMsg = new CoordinatorStartMsg(serverKeys);
-        coord1.tell(coordMsg, ActorRef.noSender());
-        coord2.tell(coordMsg, ActorRef.noSender());
-
-        // Provide the servers information about the context
-
-//        server1.tell(new ServerStartMsg(List.of(server2)), ActorRef.noSender());
-//        server2.tell(new ServerStartMsg(List.of(server1)), ActorRef.noSender());
-
-        system.terminate();
+        //system.terminate();
     }
 }

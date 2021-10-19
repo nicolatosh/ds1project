@@ -70,13 +70,6 @@ public class TxnClient extends AbstractActor {
     // start a new TXN: choose a random coordinator, send TxnBeginMsg and set timeout
     void beginTxn() {
 
-        // some delay between transactions from the same client
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         acceptedTxn = false;
         numAttemptedTxn++;
 
@@ -91,7 +84,7 @@ public class TxnClient extends AbstractActor {
 
         // timeout for confirmation of TXN by the coordinator (sent to self)
         acceptTimeout = getContext().system().scheduler().scheduleOnce(
-                Duration.create(500, TimeUnit.MILLISECONDS),
+                Duration.create(5000, TimeUnit.MILLISECONDS),
                 getSelf(),
                 new TxnAcceptTimeoutMsg(), // message sent to myself
                 getContext().system().dispatcher(), getSelf()

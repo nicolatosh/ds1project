@@ -1,5 +1,7 @@
 package it.unitn.arpino.ds1project.datastore;
 
+import java.util.Map;
+
 public class Database implements IDatabase {
     Column versions;
     Column values;
@@ -7,6 +9,16 @@ public class Database implements IDatabase {
     public Database() {
         this.versions = new Column();
         this.values = new Column();
+    }
+
+    @Override
+    public void initializeDb(Map<Integer, Integer> initialValues) {
+
+        // Setting up keys, values and versions. Versions by default are 0
+        initialValues.forEach((k, v) -> {
+            values.put(k, v);
+            versions.put(k, 0);
+        });
     }
 
     @Override
