@@ -6,7 +6,7 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.datastore.DatabaseFactory;
+import it.unitn.arpino.ds1project.datastore.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.IConnection;
 import it.unitn.arpino.ds1project.datastore.IDatabaseController;
 import it.unitn.arpino.ds1project.messages.Transactional;
@@ -40,8 +40,9 @@ public class Server extends AbstractActor {
     public Server(int serverId) {
         status = STATUS.ALIVE;
         this.serverId = serverId;
-        DatabaseFactory factory = new DatabaseFactory(serverId);
-        controller = factory.getController();
+        controller = DatabaseBuilder.newBuilder()
+                .keyRange(10 * serverId, 10 * serverId + 9)
+                .create();
         contextManager = new ContextManager<>();
     }
 
