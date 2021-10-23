@@ -67,6 +67,7 @@ public class Coordinator extends AbstractActor {
                 .match(ReadResult.class, this::onReadResult)
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
+                .match(ReadResult.class, this::onReadResult)
                 .build();
     }
 
