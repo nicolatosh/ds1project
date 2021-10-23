@@ -30,7 +30,7 @@ public class DatabaseController implements IDatabaseController {
         // If this is the first time that the transaction reads a data item with this key,
         // we need to save the data item's version, as it will be later used by the database in the
         // optimistic concurrency control when committing.
-        if (workspace.getVersion(key) == null) {
+        if (!workspace.getModifiedKeys().contains(key)) {
             workspace.setVersion(key, database.getVersion(key));
             workspace.write(key, database.read(key));
         }
@@ -46,7 +46,7 @@ public class DatabaseController implements IDatabaseController {
         // If this is the first time that the transaction writes a data item with this key,
         // we need to save the data item's version, as it will be later used by the database in the
         // optimistic concurrency control when committing.
-        if (workspace.getVersion(key) == null) {
+        if (!workspace.getModifiedKeys().contains(key)) {
             workspace.setVersion(key, database.getVersion(key));
         }
 
