@@ -44,7 +44,7 @@ public class Server extends AbstractNode {
                 .match(ReadRequest.class, this::onReadRequest)
                 .match(WriteRequest.class, this::onWriteRequest)
                 .match(VoteRequest.class, this::onVoteRequest)
-                .match(FinalDecision.class, this::onDecisionRequest)
+                .match(FinalDecision.class, this::onFinalDecision)
                 .match(AbortRequest.class, this::onAbortRequest)
                 .build();
     }
@@ -121,7 +121,7 @@ public class Server extends AbstractNode {
 
     }
 
-    private void onDecisionRequest(FinalDecision req) {
+    private void onFinalDecision(FinalDecision req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req);
         if (ctx.isEmpty()) {
             // Todo: Bad request
