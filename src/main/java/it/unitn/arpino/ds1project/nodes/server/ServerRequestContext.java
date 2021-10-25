@@ -77,8 +77,8 @@ public class ServerRequestContext implements RequestContext {
 
     @Override
     public String toString() {
-        return "\tuuid: " + uuid +
-                "\n\tstate: " + state +
-                "\n\ttransaction:\n" + connection;
+        return "uuid: " + uuid +
+                "\nstate: " + state +
+                "\ntransaction:\n" + connection;
     }
 }

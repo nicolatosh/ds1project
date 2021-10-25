@@ -48,10 +48,10 @@ public class CoordinatorRequestContext implements RequestContext {
 
     @Override
     public String toString() {
-        return "\tuuid: " + uuid +
-                "\n\tclient: " + client.path().name() +
-                "\n\tstate: " + state +
-                "\n\tparticipants: " + participants.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", ")) +
-                "\n\tyesVoters: " + yesVoters.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", "));
+        return "uuid: " + uuid +
+                "\nclient: " + client.path().name() +
+                "\nstate: " + state +
+                "\nparticipants: " + participants.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", ")) +
+                "\nyesVoters: " + yesVoters.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", "));
     }
 }
