@@ -39,6 +39,10 @@ public class CoordinatorRequestContext extends RequestContext {
         yesVoters = new HashSet<>();
     }
 
+    boolean allVotedYes() {
+        return yesVoters.size() == participants.size();
+    }
+
     @Override
     public String toString() {
         return "uuid: " + uuid +

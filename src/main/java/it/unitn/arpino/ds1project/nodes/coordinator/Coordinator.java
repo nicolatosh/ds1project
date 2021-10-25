@@ -117,7 +117,7 @@ public class Coordinator extends AbstractNode {
             case YES:
                 ctx.get().yesVoters.add(getSender());
 
-                if (ctx.get().yesVoters.size() == ctx.get().participants.size()) {
+                if (ctx.get().allVotedYes()) {
                     ctx.get().protocolState = CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_COMMIT;
 
                     // multicast GLOBAL_COMMIT to all participants
