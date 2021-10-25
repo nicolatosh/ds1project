@@ -56,7 +56,7 @@ public class Server extends AbstractNode {
     private ServerRequestContext newContext(Transactional msg) {
         ServerRequestContext ctx = new ServerRequestContext(msg.uuid(), controller.beginTransaction());
 
-        contextManager.save(ctx);
+        contextManager.setActive(ctx);
         return ctx;
     }
 
@@ -119,6 +119,7 @@ public class Server extends AbstractNode {
         VoteResponse vote = new VoteResponse(msg.uuid(), Vote.NO);
         getSender().tell(vote, getSelf());
 
+        contextManager.setCompleted(ctx.get());
     }
 
     private void onFinalDecision(FinalDecision req) {
@@ -137,5 +138,7 @@ public class Server extends AbstractNode {
                 ctx.get().abort();
                 break;
         }
+
+        contextManager.setCompleted(ctx.get());
     }
 }

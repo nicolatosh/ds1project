@@ -8,9 +8,7 @@ import java.util.UUID;
 /**
  * Holds the context of a request.
  */
-public class ServerRequestContext implements RequestContext {
-    private final UUID uuid;
-
+public class ServerRequestContext extends RequestContext {
     public enum STATE {
         INIT,
         READY,
@@ -27,7 +25,7 @@ public class ServerRequestContext implements RequestContext {
     private final IConnection connection;
 
     public ServerRequestContext(UUID uuid, IConnection connection) {
-        this.uuid = uuid;
+        super(uuid);
         this.state = STATE.INIT;
         this.connection = connection;
     }
@@ -68,11 +66,6 @@ public class ServerRequestContext implements RequestContext {
         connection.abort();
         state = STATE.GLOBAL_ABORT;
 
-    }
-
-    @Override
-    public UUID uuid() {
-        return uuid;
     }
 
     @Override

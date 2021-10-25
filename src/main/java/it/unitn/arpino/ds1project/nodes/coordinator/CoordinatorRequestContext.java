@@ -8,9 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class CoordinatorRequestContext implements RequestContext {
-    private final UUID uuid;
-
+public class CoordinatorRequestContext extends RequestContext {
     public final ActorRef client;
 
     public enum STATE {
@@ -32,18 +30,13 @@ public class CoordinatorRequestContext implements RequestContext {
      */
     public STATE state;
 
-    public CoordinatorRequestContext(ActorRef client) {
-        uuid = UUID.randomUUID();
+    public CoordinatorRequestContext(UUID uuid, ActorRef client) {
+        super(uuid);
         this.client = client;
 
         state = STATE.INIT;
         participants = new HashSet<>();
         yesVoters = new HashSet<>();
-    }
-
-    @Override
-    public UUID uuid() {
-        return uuid;
     }
 
     @Override

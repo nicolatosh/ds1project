@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public class Coordinator extends AbstractNode {
     private final Dispatcher dispatcher;
@@ -60,9 +61,9 @@ public class Coordinator extends AbstractNode {
     }
 
     private CoordinatorRequestContext newContext() {
-        CoordinatorRequestContext ctx = new CoordinatorRequestContext(getSender());
+        CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), getSender());
 
-        contextManager.save(ctx);
+        contextManager.setActive(ctx);
         return ctx;
     }
 
@@ -73,7 +74,7 @@ public class Coordinator extends AbstractNode {
     private void onTxnBeginMsg(TxnBeginMsg msg) {
         CoordinatorRequestContext ctx = this.newContext();
 
-        TxnAcceptMsg response = new TxnAcceptMsg(ctx.uuid());
+        TxnAcceptMsg response = new TxnAcceptMsg(ctx.uuid);
         getSender().tell(response, getSelf());
     }
 
@@ -129,7 +130,7 @@ public class Coordinator extends AbstractNode {
                     ctx.get().client.tell(result, getSelf());
 
                     // the transaction is completed: subsequent requests will begin a new transaction
-                    contextManager.remove(ctx.get());
+                    contextManager.setCompleted(ctx.get());
                 }
                 break;
 
@@ -148,7 +149,7 @@ public class Coordinator extends AbstractNode {
                 ctx.get().client.tell(result, getSelf());
 
                 // the transaction is completed: subsequent requests will begin a new transaction
-                contextManager.remove(ctx.get());
+                contextManager.setCompleted(ctx.get());
 
                 break;
         }
