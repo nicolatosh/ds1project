@@ -1,12 +1,10 @@
 package it.unitn.arpino.ds1project.messages.coordinator;
 
-import it.unitn.arpino.ds1project.messages.TYPE;
+import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.Transactional;
-import it.unitn.arpino.ds1project.messages.Typed;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -15,7 +13,7 @@ import java.util.UUID;
  * @see TxnClient
  * @see Coordinator
  */
-public class ReadMsg implements Typed, Transactional, Serializable {
+public class ReadMsg extends Message implements Transactional {
     private final UUID uuid;
     /**
      * The key of the data item that the client wishes to read
@@ -31,8 +29,8 @@ public class ReadMsg implements Typed, Transactional, Serializable {
     }
 
     @Override
-    public TYPE getType() {
-        return TYPE.Conversational;
+    public Message.TYPE getType() {
+        return Message.TYPE.Conversational;
     }
 
     @Override

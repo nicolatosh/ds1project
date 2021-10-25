@@ -1,12 +1,10 @@
 package it.unitn.arpino.ds1project.messages.client;
 
 import akka.actor.ActorRef;
-import it.unitn.arpino.ds1project.messages.TYPE;
-import it.unitn.arpino.ds1project.messages.Typed;
+import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -16,7 +14,7 @@ import java.util.List;
  * @see TxnClient
  * @see Coordinator
  */
-public class ClientStartMsg implements Typed, Serializable {
+public class ClientStartMsg extends Message {
     /**
      * The coordinators that the client can contact to start a transaction.
      *
@@ -39,7 +37,7 @@ public class ClientStartMsg implements Typed, Serializable {
     }
 
     @Override
-    public TYPE getType() {
-        return TYPE.NodeControl;
+    public Message.TYPE getType() {
+        return Message.TYPE.NodeControl;
     }
 }

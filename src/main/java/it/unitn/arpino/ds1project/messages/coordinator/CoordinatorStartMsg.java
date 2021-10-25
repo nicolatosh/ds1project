@@ -1,12 +1,10 @@
 package it.unitn.arpino.ds1project.messages.coordinator;
 
 import akka.actor.ActorRef;
-import it.unitn.arpino.ds1project.messages.TYPE;
-import it.unitn.arpino.ds1project.messages.Typed;
+import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +15,7 @@ import java.util.Map;
  * @see Coordinator
  * @see Server
  */
-public class CoordinatorStartMsg implements Typed, Serializable {
+public class CoordinatorStartMsg extends Message {
     /**
      * Associates a server with the keys it is responsible for.
      *
@@ -30,7 +28,7 @@ public class CoordinatorStartMsg implements Typed, Serializable {
     }
 
     @Override
-    public TYPE getType() {
-        return TYPE.NodeControl;
+    public Message.TYPE getType() {
+        return Message.TYPE.NodeControl;
     }
 }

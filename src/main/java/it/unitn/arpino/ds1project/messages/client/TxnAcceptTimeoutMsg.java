@@ -1,16 +1,13 @@
 package it.unitn.arpino.ds1project.messages.client;
 
-import it.unitn.arpino.ds1project.messages.TYPE;
-import it.unitn.arpino.ds1project.messages.Typed;
-
-import java.io.Serializable;
+import it.unitn.arpino.ds1project.messages.Message;
 
 /**
  * The client may timeout waiting for TXN begin confirmation (TxnAcceptMsg)
  */
-public class TxnAcceptTimeoutMsg implements Typed, Serializable {
+public class TxnAcceptTimeoutMsg extends Message {
     @Override
-    public TYPE getType() {
-        return TYPE.NodeControl;
+    public Message.TYPE getType() {
+        return Message.TYPE.NodeControl;
     }
 }

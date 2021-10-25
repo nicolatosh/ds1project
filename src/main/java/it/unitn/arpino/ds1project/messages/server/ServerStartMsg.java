@@ -1,11 +1,9 @@
 package it.unitn.arpino.ds1project.messages.server;
 
 import akka.actor.ActorRef;
-import it.unitn.arpino.ds1project.messages.TYPE;
-import it.unitn.arpino.ds1project.messages.Typed;
+import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -13,7 +11,7 @@ import java.util.List;
  *
  * @see Server
  */
-public class ServerStartMsg implements Typed, Serializable {
+public class ServerStartMsg extends Message {
     /**
      * The other servers in the Data Store.
      *
@@ -26,7 +24,7 @@ public class ServerStartMsg implements Typed, Serializable {
     }
 
     @Override
-    public TYPE getType() {
-        return TYPE.NodeControl;
+    public Message.TYPE getType() {
+        return Message.TYPE.NodeControl;
     }
 }

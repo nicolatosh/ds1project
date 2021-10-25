@@ -1,16 +1,14 @@
 package it.unitn.arpino.ds1project.messages.client;
 
-import it.unitn.arpino.ds1project.messages.TYPE;
+import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.Transactional;
-import it.unitn.arpino.ds1project.messages.Typed;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * Reply from the coordinator receiving TxnBeginMsg
  */
-public class TxnAcceptMsg implements Typed, Transactional, Serializable {
+public class TxnAcceptMsg extends Message implements Transactional {
     private final UUID uuid;
 
     public TxnAcceptMsg(UUID uuid) {
@@ -18,8 +16,8 @@ public class TxnAcceptMsg implements Typed, Transactional, Serializable {
     }
 
     @Override
-    public TYPE getType() {
-        return TYPE.TxnControl;
+    public Message.TYPE getType() {
+        return Message.TYPE.TxnControl;
     }
 
     @Override

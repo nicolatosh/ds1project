@@ -1,12 +1,10 @@
 package it.unitn.arpino.ds1project.messages.server;
 
-import it.unitn.arpino.ds1project.messages.TYPE;
+import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.Transactional;
-import it.unitn.arpino.ds1project.messages.Typed;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -16,7 +14,7 @@ import java.util.UUID;
  * @see Coordinator
  * @see Server
  */
-public class VoteRequest implements Typed, Transactional, Serializable {
+public class VoteRequest extends Message implements Transactional {
     private final UUID uuid;
 
     public VoteRequest(UUID uuid) {
@@ -24,8 +22,8 @@ public class VoteRequest implements Typed, Transactional, Serializable {
     }
 
     @Override
-    public TYPE getType() {
-        return TYPE.TwoPC;
+    public Message.TYPE getType() {
+        return Message.TYPE.TwoPC;
     }
 
     @Override

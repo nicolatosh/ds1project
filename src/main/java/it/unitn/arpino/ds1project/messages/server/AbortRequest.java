@@ -1,13 +1,11 @@
 package it.unitn.arpino.ds1project.messages.server;
 
-import it.unitn.arpino.ds1project.messages.TYPE;
+import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.Transactional;
-import it.unitn.arpino.ds1project.messages.Typed;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 /**
@@ -17,7 +15,7 @@ import java.util.UUID;
  * @see Server
  * @see TxnClient
  */
-public class AbortRequest implements Typed, Transactional, Serializable {
+public class AbortRequest extends Message implements Transactional {
     private final UUID uuid;
 
     public AbortRequest(UUID uuid) {
