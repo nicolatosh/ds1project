@@ -5,9 +5,9 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 public class DatabaseBuilder {
-    private static final int DEFAULT_LOWER_KEY = 0;
-    private static final int DEFAULT_UPPER_KEY = 9;
-    private static final int DEFAULT_DATA_VALUE = 100;
+    public static final int DEFAULT_LOWER_KEY = 0;
+    public static final int DEFAULT_UPPER_KEY = 9;
+    public static final int DEFAULT_DATA_VALUE = 100;
 
     private int lowerKey;
     private int upperKey;
