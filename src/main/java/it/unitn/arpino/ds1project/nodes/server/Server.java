@@ -7,7 +7,6 @@ import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.DatabaseBuilder;
-import it.unitn.arpino.ds1project.datastore.IConnection;
 import it.unitn.arpino.ds1project.datastore.IDatabaseController;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.Typed;
@@ -27,27 +26,25 @@ public class Server extends AbstractActor {
 
     private final STATUS status;
 
-    private final IDatabaseController controller;
+    private IDatabaseController controller;
 
     /**
      * The other servers in the Data Store that this server can contact in a Two-Phase Commit (2PC) recovery
      */
     private List<ActorRef> servers;
-    private final int serverId;
 
     ContextManager<ServerRequestContext> contextManager;
 
-    public Server(int serverId) {
+    public Server(int lowerKey, int upperKey) {
         status = STATUS.ALIVE;
-        this.serverId = serverId;
         controller = DatabaseBuilder.newBuilder()
-                .keyRange(10 * serverId, 10 * serverId + 9)
+                .keyRange(lowerKey, upperKey)
                 .create();
         contextManager = new ContextManager<>();
     }
 
-    public static Props props(int serverId) {
-        return Props.create(Server.class, () -> new Server(serverId));
+    public static Props props(int lowerKey, int upperKey) {
+        return Props.create(Server.class, () -> new Server(lowerKey, upperKey));
     }
 
     @Override
@@ -87,14 +84,6 @@ public class Server extends AbstractActor {
 
     private void onServerStartMsg(ServerStartMsg msg) {
         servers = msg.servers;
-
-        if (msg instanceof ServerStartWithKeysMsg) {
-            ServerStartWithKeysMsg msgWithKeys = (ServerStartWithKeysMsg) msg;
-
-            IConnection connection = controller.beginTransaction();
-            msgWithKeys.keys.forEach(key -> connection.write(key, msgWithKeys.values.get(key)));
-            connection.commit();
-        }
     }
 
     private void onReadRequest(ReadRequest req) {

@@ -34,8 +34,8 @@ public class Main {
         final ActorRef coord1 = system.actorOf(Coordinator.props(), "coord1");
         final ActorRef coord2 = system.actorOf(Coordinator.props(), "coord2");
 
-        final ActorRef server0 = system.actorOf(Server.props(0), "server0");
-        final ActorRef server1 = system.actorOf(Server.props(1), "server1");
+        final ActorRef server0 = system.actorOf(Server.props(0, 9), "server0");
+        final ActorRef server1 = system.actorOf(Server.props(10, 19), "server1");
 
 
         // Provide the servers information about the context
