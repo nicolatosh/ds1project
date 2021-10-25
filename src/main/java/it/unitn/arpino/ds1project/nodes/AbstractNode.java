@@ -7,6 +7,7 @@ import it.unitn.arpino.ds1project.messages.Message;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractNode extends AbstractActor {
@@ -15,9 +16,19 @@ public abstract class AbstractNode extends AbstractActor {
     protected STATUS status;
 
     @Override
+    public void aroundPreStart() {
+        super.aroundPreStart();
+        getContext().setReceiveTimeout(Duration.ofSeconds(10));
+    }
+
+    @Override
     public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object msg) {
         if (msg instanceof Message) {
             Message message = (Message) msg;
+
+            if (message.getType() != Message.TYPE.NodeControl) {
+                delay();
+            }
 
             log.info("received " + message.getType() +
                     "/" + message.getClass().getSimpleName() +
@@ -25,5 +36,12 @@ public abstract class AbstractNode extends AbstractActor {
         }
 
         super.aroundReceive(receive, msg);
+    }
+
+    private void delay() {
+        try {
+            TimeUnit.SECONDS.sleep(2);
+        } catch (InterruptedException ignored) {
+        }
     }
 }
