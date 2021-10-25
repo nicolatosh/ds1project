@@ -1,7 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.client;
 
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Props;
@@ -10,6 +9,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
+import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import scala.concurrent.duration.Duration;
 
 import java.io.Serializable;
@@ -18,7 +18,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class TxnClient extends AbstractActor {
+public class TxnClient extends AbstractNode {
     private static final double COMMIT_PROBABILITY = 0.8;
     private static final double WRITE_PROBABILITY = 0.5;
     private static final int MIN_TXN_LENGTH = 20;
