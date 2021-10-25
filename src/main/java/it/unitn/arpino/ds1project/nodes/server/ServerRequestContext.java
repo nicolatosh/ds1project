@@ -9,7 +9,7 @@ import java.util.UUID;
  * Holds the context of a request.
  */
 public class ServerRequestContext extends RequestContext {
-    public enum STATE {
+    public enum TwoPhaseCommitFSM {
         INIT,
         READY,
         GLOBAL_ABORT,
@@ -20,21 +20,21 @@ public class ServerRequestContext extends RequestContext {
     /**
      * The current state of the Two-phase commit protocol.
      */
-    private STATE state;
+    private TwoPhaseCommitFSM protocolState;
 
     private final IConnection connection;
 
     public ServerRequestContext(UUID uuid, IConnection connection) {
         super(uuid);
-        this.state = STATE.INIT;
+        this.protocolState = TwoPhaseCommitFSM.INIT;
         this.connection = connection;
     }
 
     /**
      * @return The current state of the Two-phase commit (2PC) protocol.
      */
-    public STATE getState() {
-        return state;
+    public TwoPhaseCommitFSM getProtocolState() {
+        return protocolState;
     }
 
     public int read(int key) {
@@ -51,27 +51,27 @@ public class ServerRequestContext extends RequestContext {
      */
     public void prepare() {
         if (connection.prepare()) {
-            state = STATE.READY;
+            protocolState = TwoPhaseCommitFSM.READY;
         } else {
-            state = STATE.GLOBAL_ABORT;
+            protocolState = TwoPhaseCommitFSM.GLOBAL_ABORT;
         }
     }
 
     public void commit() {
         connection.commit();
-        state = STATE.COMMIT;
+        protocolState = TwoPhaseCommitFSM.COMMIT;
     }
 
     public void abort() {
         connection.abort();
-        state = STATE.GLOBAL_ABORT;
+        protocolState = TwoPhaseCommitFSM.GLOBAL_ABORT;
 
     }
 
     @Override
     public String toString() {
         return "uuid: " + uuid +
-                "\nstate: " + state +
+                "\ntwo-phase commit protocol state: " + protocolState +
                 "\ntransaction:\n" + connection;
     }
 }

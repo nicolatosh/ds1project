@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 public class CoordinatorRequestContext extends RequestContext {
     public final ActorRef client;
 
-    public enum STATE {
+    public enum TwoPhaseCommitFSM {
         INIT,
         WAIT,
         GLOBAL_ABORT,
@@ -28,13 +28,13 @@ public class CoordinatorRequestContext extends RequestContext {
     /**
      * The current state of the Two-phase commit protocol.
      */
-    public STATE state;
+    public TwoPhaseCommitFSM protocolState;
 
     public CoordinatorRequestContext(UUID uuid, ActorRef client) {
         super(uuid);
         this.client = client;
 
-        state = STATE.INIT;
+        protocolState = TwoPhaseCommitFSM.INIT;
         participants = new HashSet<>();
         yesVoters = new HashSet<>();
     }
@@ -43,7 +43,7 @@ public class CoordinatorRequestContext extends RequestContext {
     public String toString() {
         return "uuid: " + uuid +
                 "\nclient: " + client.path().name() +
-                "\nstate: " + state +
+                "\ntwo-phase commit protocol state: " + protocolState +
                 "\nparticipants: " + participants.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", ")) +
                 "\nyesVoters: " + yesVoters.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", "));
     }
