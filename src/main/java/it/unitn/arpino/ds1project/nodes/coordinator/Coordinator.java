@@ -1,34 +1,25 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.communication.Multicast;
-import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.*;
+import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import it.unitn.arpino.ds1project.nodes.STATUS;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class Coordinator extends AbstractActor {
-    LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
-
-    private STATUS status;
-
+public class Coordinator extends AbstractNode {
     private final Dispatcher dispatcher;
 
     ContextManager<CoordinatorRequestContext> contextManager;
@@ -48,19 +39,6 @@ public class Coordinator extends AbstractActor {
     public void aroundPreStart() {
         super.aroundPreStart();
         getContext().setReceiveTimeout(Duration.ofSeconds(10000));
-    }
-
-    @Override
-    public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object msg) {
-        if (msg instanceof Message) {
-            Message message = (Message) msg;
-
-            log.info("received " + message.getType() +
-                    "/" + message.getClass().getSimpleName() +
-                    " from " + getSender().path().name());
-        }
-
-        super.aroundReceive(receive, msg);
     }
 
     @Override

@@ -1,31 +1,22 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.IDatabaseController;
-import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
+import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import it.unitn.arpino.ds1project.nodes.STATUS;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 import java.util.List;
 import java.util.Optional;
 
-public class Server extends AbstractActor {
-    LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
-
-    private final STATUS status;
-
+public class Server extends AbstractNode {
     private IDatabaseController controller;
 
     /**
@@ -45,19 +36,6 @@ public class Server extends AbstractActor {
 
     public static Props props(int lowerKey, int upperKey) {
         return Props.create(Server.class, () -> new Server(lowerKey, upperKey));
-    }
-
-    @Override
-    public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object msg) {
-        if (msg instanceof Message) {
-            Message message = (Message) msg;
-
-            log.info("received " + message.getType() +
-                    "/" + message.getClass().getSimpleName() +
-                    " from " + getSender().path().name());
-        }
-
-        super.aroundReceive(receive, msg);
     }
 
     public Receive createReceive() {
