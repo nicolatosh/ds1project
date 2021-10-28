@@ -27,7 +27,6 @@ public class Coordinator extends AbstractNode {
     ContextManager<CoordinatorRequestContext> contextManager;
 
     public Coordinator() {
-        status = STATUS.ALIVE;
         dispatcher = new Dispatcher();
         contextManager = new ContextManager<>();
     }

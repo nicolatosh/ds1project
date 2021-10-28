@@ -10,7 +10,6 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.AbstractNode;
-import it.unitn.arpino.ds1project.nodes.STATUS;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
 
 import java.util.List;
@@ -27,7 +26,6 @@ public class Server extends AbstractNode {
     ContextManager<ServerRequestContext> contextManager;
 
     public Server(int lowerKey, int upperKey) {
-        status = STATUS.ALIVE;
         controller = DatabaseBuilder.newBuilder()
                 .keyRange(lowerKey, upperKey)
                 .create();

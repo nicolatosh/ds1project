@@ -3,6 +3,7 @@ package it.unitn.arpino.ds1project.nodes;
 import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
+import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.Message;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
@@ -13,7 +14,11 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractNode extends AbstractActor {
     protected LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-    protected STATUS status;
+    private STATUS status;
+
+    public AbstractNode() {
+        status = STATUS.ALIVE;
+    }
 
     @Override
     public void aroundPreStart() {
