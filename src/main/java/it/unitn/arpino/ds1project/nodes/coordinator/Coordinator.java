@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 public class Coordinator extends AbstractNode {
     private final Dispatcher dispatcher;
@@ -68,7 +69,8 @@ public class Coordinator extends AbstractNode {
     }
 
     private void onCoordinatorStartMsg(CoordinatorStartMsg msg) {
-        msg.serverKeys.forEach((server, keys) -> keys.forEach(key -> dispatcher.map(server, key)));
+        msg.serverInfos.forEach(info -> IntStream.rangeClosed(info.lowerKey, info.upperKey)
+                .forEach(key -> dispatcher.map(info.server, key)));
     }
 
     private void onTxnBeginMsg(TxnBeginMsg msg) {

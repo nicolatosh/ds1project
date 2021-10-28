@@ -9,23 +9,12 @@ import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class Main {
     public static void main(String[] args) {
-        // The list of keys of the various data items
-
-        List<Integer> keyList0 = List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
-        List<Integer> keyList1 = List.of(10, 11, 12, 13, 14, 15, 16, 17, 18, 19);
-        List<Integer> keys = new ArrayList<>(keyList0.size() + keyList1.size());
-        keys.addAll(keyList0);
-        keys.addAll(keyList1);
-
-        // Create the nodes
-
         final ActorSystem system = ActorSystem.create("ds1project");
 
         final ActorRef client1 = system.actorOf(TxnClient.props(1), "client1");
@@ -37,23 +26,14 @@ public class Main {
         final ActorRef server0 = system.actorOf(Server.props(0, 9), "server0");
         final ActorRef server1 = system.actorOf(Server.props(10, 19), "server1");
 
-
-        // Provide the servers information about the context
-
-        Map<ActorRef, List<Integer>> serverKeys = new HashMap<>();
-        serverKeys.put(server0, keyList0);
-        serverKeys.put(server1, keyList1);
-
-        // Provide the coordinators information about the context
-
-        CoordinatorStartMsg coordMsg = new CoordinatorStartMsg(serverKeys);
+        CoordinatorStartMsg coordMsg = new CoordinatorStartMsg(List.of(
+                new CoordinatorStartMsg.ServerInfo(server0, 0, 9),
+                new CoordinatorStartMsg.ServerInfo(server1, 1, 19)
+        ));
         coord1.tell(coordMsg, ActorRef.noSender());
         coord2.tell(coordMsg, ActorRef.noSender());
 
-
-        // Provide the clients information about the context
-
-        ClientStartMsg clientMsg = new ClientStartMsg(List.of(coord1, coord2), keys);
+        ClientStartMsg clientMsg = new ClientStartMsg(List.of(coord1, coord2), IntStream.rangeClosed(0, 19).boxed().collect(Collectors.toList()));
         client1.tell(clientMsg, ActorRef.noSender());
         client2.tell(clientMsg, ActorRef.noSender());
 

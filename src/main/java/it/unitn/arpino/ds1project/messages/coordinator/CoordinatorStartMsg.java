@@ -6,7 +6,6 @@ import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * A message that is used to provide to a coordinator the list of servers in the DataStore,
@@ -21,10 +20,22 @@ public class CoordinatorStartMsg extends Message {
      *
      * @see Server
      */
-    public final Map<ActorRef, List<Integer>> serverKeys;
+    public static class ServerInfo {
+        public final ActorRef server;
+        public final int lowerKey, upperKey;
 
-    public CoordinatorStartMsg(Map<ActorRef, List<Integer>> serverKeys) {
-        this.serverKeys = Map.copyOf(serverKeys);
+        public ServerInfo(ActorRef server, int lowerKey, int upperKey) {
+            this.server = server;
+            this.lowerKey = lowerKey;
+            this.upperKey = upperKey;
+        }
+    }
+
+
+    public final List<ServerInfo> serverInfos;
+
+    public CoordinatorStartMsg(List<ServerInfo> serverInfos) {
+        this.serverInfos = List.copyOf(serverInfos);
     }
 
     @Override
