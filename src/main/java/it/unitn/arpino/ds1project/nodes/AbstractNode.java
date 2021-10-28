@@ -44,4 +44,12 @@ public abstract class AbstractNode extends AbstractActor {
         } catch (InterruptedException ignored) {
         }
     }
+
+    void crash() {
+        status = STATUS.CRASHED;
+    }
+
+    void resume() {
+        status = STATUS.ALIVE;
+    }
 }
