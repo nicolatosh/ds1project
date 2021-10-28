@@ -50,11 +50,20 @@ public abstract class AbstractNode extends AbstractActor {
         }
     }
 
+    STATUS getStatus() {
+        return status;
+    }
+
     void crash() {
+        getContext().become(new ReceiveBuilder()
+                .matchAny(msg -> {
+                    // this suppresses Dead Letter warnings.
+                }).build());
         status = STATUS.CRASHED;
     }
 
     void resume() {
+        getContext().become(createReceive());
         status = STATUS.ALIVE;
     }
 }
