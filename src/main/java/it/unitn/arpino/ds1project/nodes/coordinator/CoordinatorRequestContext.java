@@ -9,8 +9,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CoordinatorRequestContext extends RequestContext {
-    private final ActorRef client;
-
     public enum TwoPhaseCommitFSM {
         INIT,
         WAIT,
@@ -19,10 +17,18 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
+     * The initiator of the transaction.
+     */
+    private final ActorRef client;
+
+    /**
      * The servers that the coordinator has contacted in the context of the request.
      */
     private final Set<ActorRef> participants;
 
+    /**
+     * The servers that voted positively on the coordinator's request and are ready to commit.
+     */
     private final Set<ActorRef> yesVoters;
 
     /**
