@@ -86,11 +86,17 @@ public class Coordinator extends AbstractNode {
         }
 
         if (msg.commit) {
+            ctx.get().protocolState = CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT;
+
             VoteRequest req = new VoteRequest(msg.uuid());
             ctx.get().participants.forEach(participant -> participant.tell(req, getSelf()));
         } else {
+            ctx.get().protocolState = CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_ABORT;
+
             AbortRequest req = new AbortRequest(msg.uuid());
             ctx.get().participants.forEach(participant -> participant.tell(req, getSelf()));
+
+            contextManager.setCompleted(ctx.get());
         }
     }
 
