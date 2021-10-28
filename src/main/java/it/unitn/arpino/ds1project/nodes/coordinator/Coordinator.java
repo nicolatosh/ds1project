@@ -191,7 +191,7 @@ public class Coordinator extends AbstractNode {
             return;
         }
 
-        WriteRequest req = new WriteRequest(msg.uuid(), msg.key, msg.key);
+        WriteRequest req = new WriteRequest(msg.uuid(), msg.key, msg.value);
 
         ActorRef server = dispatcher.byKey(msg.key);
         server.tell(req, getSelf());
