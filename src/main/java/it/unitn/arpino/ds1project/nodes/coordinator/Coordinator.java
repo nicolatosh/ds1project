@@ -3,7 +3,6 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.communication.Multicast;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
@@ -11,12 +10,9 @@ import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.AbstractNode;
-import it.unitn.arpino.ds1project.nodes.STATUS;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -89,22 +85,13 @@ public class Coordinator extends AbstractNode {
             return;
         }
 
-        List<ActorRef> receivers = new ArrayList<>(ctx.get().participants);
-
-        Multicast multicast = new Multicast()
-                .setSender(getSelf())
-                .addReceivers(receivers)
-                .shuffle();
-
         if (msg.commit) {
             VoteRequest req = new VoteRequest(msg.uuid());
-            multicast.setMessage(req);
+            ctx.get().participants.forEach(participant -> participant.tell(req, getSelf()));
         } else {
             AbortRequest req = new AbortRequest(msg.uuid());
-            multicast.setMessage(req);
+            ctx.get().participants.forEach(participant -> participant.tell(req, getSelf()));
         }
-
-        multicast.multicast();
     }
 
     private void onVoteResponse(VoteResponse resp) {
