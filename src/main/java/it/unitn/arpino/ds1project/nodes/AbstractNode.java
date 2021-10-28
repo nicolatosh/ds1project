@@ -12,12 +12,21 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractNode extends AbstractActor {
+    public enum Status {
+        ALIVE,
+        CRASHED
+    }
+
     protected LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
 
-    private STATUS status;
+    private Status status;
 
     public AbstractNode() {
-        status = STATUS.ALIVE;
+        status = Status.ALIVE;
+    }
+
+    Status getStatus() {
+        return status;
     }
 
     @Override
@@ -50,20 +59,16 @@ public abstract class AbstractNode extends AbstractActor {
         }
     }
 
-    STATUS getStatus() {
-        return status;
-    }
-
     void crash() {
         getContext().become(new ReceiveBuilder()
                 .matchAny(msg -> {
                     // this suppresses Dead Letter warnings.
                 }).build());
-        status = STATUS.CRASHED;
+        status = Status.CRASHED;
     }
 
     void resume() {
         getContext().become(createReceive());
-        status = STATUS.ALIVE;
+        status = Status.ALIVE;
     }
 }
