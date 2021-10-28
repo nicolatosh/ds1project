@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CoordinatorRequestContext extends RequestContext {
-    public final ActorRef client;
+    private final ActorRef client;
 
     public enum TwoPhaseCommitFSM {
         INIT,
@@ -21,14 +21,14 @@ public class CoordinatorRequestContext extends RequestContext {
     /**
      * The servers that the coordinator has contacted in the context of the request.
      */
-    public final Set<ActorRef> participants;
+    private final Set<ActorRef> participants;
 
-    public final Set<ActorRef> yesVoters;
+    private final Set<ActorRef> yesVoters;
 
     /**
      * The current state of the Two-phase commit protocol.
      */
-    public TwoPhaseCommitFSM protocolState;
+    private TwoPhaseCommitFSM protocolState;
 
     public CoordinatorRequestContext(UUID uuid, ActorRef client) {
         super(uuid);
@@ -37,6 +37,37 @@ public class CoordinatorRequestContext extends RequestContext {
         protocolState = TwoPhaseCommitFSM.INIT;
         participants = new HashSet<>();
         yesVoters = new HashSet<>();
+    }
+
+    public ActorRef getClient() {
+        return client;
+    }
+
+    /**
+     * @return The current state of the Two-phase commit (2PC) protocol.
+     */
+    public TwoPhaseCommitFSM getProtocolState() {
+        return protocolState;
+    }
+
+    public void setProtocolState(TwoPhaseCommitFSM protocolState) {
+        this.protocolState = protocolState;
+    }
+
+    public Set<ActorRef> getParticipants() {
+        return participants;
+    }
+
+    public void addParticipant(ActorRef participant) {
+        participants.add(participant);
+    }
+
+    public Set<ActorRef> getYesVoters() {
+        return yesVoters;
+    }
+
+    public void addYesVoter(ActorRef yesVoter) {
+        yesVoters.add(yesVoter);
     }
 
     boolean allVotedYes() {

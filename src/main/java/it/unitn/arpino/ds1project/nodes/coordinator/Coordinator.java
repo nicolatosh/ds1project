@@ -86,15 +86,15 @@ public class Coordinator extends AbstractNode {
         }
 
         if (msg.commit) {
-            ctx.get().protocolState = CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT;
+            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
 
             VoteRequest req = new VoteRequest(msg.uuid());
-            ctx.get().participants.forEach(participant -> participant.tell(req, getSelf()));
+            ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
         } else {
-            ctx.get().protocolState = CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_ABORT;
+            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_ABORT);
 
             AbortRequest req = new AbortRequest(msg.uuid());
-            ctx.get().participants.forEach(participant -> participant.tell(req, getSelf()));
+            ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
 
             contextManager.setCompleted(ctx.get());
         }
@@ -109,19 +109,19 @@ public class Coordinator extends AbstractNode {
 
         switch (resp.vote) {
             case YES:
-                ctx.get().yesVoters.add(getSender());
+                ctx.get().addYesVoter(getSender());
 
                 if (ctx.get().allVotedYes()) {
-                    ctx.get().protocolState = CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_COMMIT;
+                    ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_COMMIT);
 
                     // multicast GLOBAL_COMMIT to all participants
                     FinalDecision decision = new FinalDecision(resp.uuid(), FinalDecision.Decision.GLOBAL_COMMIT);
-                    ctx.get().participants.forEach(server -> getContext().system().scheduler().scheduleOnce(
+                    ctx.get().getParticipants().forEach(server -> getContext().system().scheduler().scheduleOnce(
                             Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
 
                     // tell the client the result of the transaction
                     TxnResultMsg result = new TxnResultMsg(resp.uuid(), true);
-                    ctx.get().client.tell(result, getSelf());
+                    ctx.get().getClient().tell(result, getSelf());
 
                     // the transaction is completed: subsequent requests will begin a new transaction
                     contextManager.setCompleted(ctx.get());
@@ -130,17 +130,17 @@ public class Coordinator extends AbstractNode {
 
             case NO:
                 // write GLOBAL_ABORT to local log
-                ctx.get().protocolState = CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_ABORT;
+                ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_ABORT);
 
 
                 // multicast GLOBAL_ABORT to all participants
                 FinalDecision decision = new FinalDecision(resp.uuid(), FinalDecision.Decision.GLOBAL_ABORT);
-                ctx.get().participants.forEach(server -> getContext().system().scheduler().scheduleOnce(
+                ctx.get().getParticipants().forEach(server -> getContext().system().scheduler().scheduleOnce(
                         Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
 
                 // tell the client the result of the transaction
                 TxnResultMsg result = new TxnResultMsg(resp.uuid(), false);
-                ctx.get().client.tell(result, getSelf());
+                ctx.get().getClient().tell(result, getSelf());
 
                 // the transaction is completed: subsequent requests will begin a new transaction
                 contextManager.setCompleted(ctx.get());
@@ -161,7 +161,7 @@ public class Coordinator extends AbstractNode {
         ActorRef server = dispatcher.byKey(msg.key);
         server.tell(req, getSelf());
 
-        ctx.get().participants.add(server);
+        ctx.get().addParticipant(server);
         log.info("Request forwarded to server " + server.path().name() + ". Context:\n" + ctx.get());
     }
 
@@ -174,8 +174,7 @@ public class Coordinator extends AbstractNode {
 
         ReadResultMsg result = new ReadResultMsg(msg.uuid(), msg.key, msg.value);
 
-        ctx.get().client.tell(result, getSelf());
-
+        ctx.get().getClient().tell(result, getSelf());
     }
 
     private void onWriteMsg(WriteMsg msg) {
@@ -190,7 +189,7 @@ public class Coordinator extends AbstractNode {
         ActorRef server = dispatcher.byKey(msg.key);
         server.tell(req, getSelf());
 
-        ctx.get().participants.add(server);
+        ctx.get().addParticipant(server);
         log.info("Request forwarded to server " + server.path().name() + ". Context:\n" + ctx.get());
     }
 }
