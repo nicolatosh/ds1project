@@ -11,7 +11,6 @@ import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
-import it.unitn.arpino.ds1project.nodes.coordinator.Decision;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import it.unitn.arpino.ds1project.nodes.server.Vote;
 import org.junit.jupiter.api.AfterEach;
@@ -84,7 +83,7 @@ public class ServerTest {
                 VoteResponse voteResponse1 = expectMsgClass(VoteResponse.class);
                 assertEquals(Vote.YES, voteResponse1.vote);
 
-                FinalDecision decision1 = new FinalDecision(uuid1, Decision.GLOBAL_COMMIT);
+                FinalDecision decision1 = new FinalDecision(uuid1, FinalDecision.Decision.GLOBAL_COMMIT);
                 server.tell(decision1, coord);
                 expectNoMessage();
 
@@ -113,7 +112,7 @@ public class ServerTest {
                 VoteResponse voteResponse2 = expectMsgClass(VoteResponse.class);
                 assertEquals(Vote.NO, voteResponse2.vote);
 
-                FinalDecision decision2 = new FinalDecision(uuid2, Decision.GLOBAL_ABORT);
+                FinalDecision decision2 = new FinalDecision(uuid2, FinalDecision.Decision.GLOBAL_ABORT);
                 server.tell(decision2, coord);
                 expectNoMessage();
             }

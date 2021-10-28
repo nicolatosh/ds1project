@@ -123,7 +123,7 @@ public class Coordinator extends AbstractNode {
                     ctx.get().protocolState = CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_COMMIT;
 
                     // multicast GLOBAL_COMMIT to all participants
-                    FinalDecision decision = new FinalDecision(resp.uuid(), Decision.GLOBAL_COMMIT);
+                    FinalDecision decision = new FinalDecision(resp.uuid(), FinalDecision.Decision.GLOBAL_COMMIT);
                     ctx.get().participants.forEach(server -> getContext().system().scheduler().scheduleOnce(
                             Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
 
@@ -142,7 +142,7 @@ public class Coordinator extends AbstractNode {
 
 
                 // multicast GLOBAL_ABORT to all participants
-                FinalDecision decision = new FinalDecision(resp.uuid(), Decision.GLOBAL_ABORT);
+                FinalDecision decision = new FinalDecision(resp.uuid(), FinalDecision.Decision.GLOBAL_ABORT);
                 ctx.get().participants.forEach(server -> getContext().system().scheduler().scheduleOnce(
                         Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
 

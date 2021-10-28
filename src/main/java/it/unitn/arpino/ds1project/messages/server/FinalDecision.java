@@ -3,7 +3,6 @@ package it.unitn.arpino.ds1project.messages.server;
 import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
-import it.unitn.arpino.ds1project.nodes.coordinator.Decision;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.util.UUID;
@@ -17,6 +16,11 @@ import java.util.UUID;
  * @see Decision
  */
 public class FinalDecision extends Message implements Transactional {
+    public enum Decision {
+        GLOBAL_COMMIT,
+        GLOBAL_ABORT
+    }
+
     private final UUID uuid;
 
     /**
