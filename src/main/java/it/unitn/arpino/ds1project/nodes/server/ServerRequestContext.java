@@ -37,6 +37,10 @@ public class ServerRequestContext extends RequestContext {
         return protocolState;
     }
 
+    public void setProtocolState(TwoPhaseCommitFSM protocolState) {
+        this.protocolState = protocolState;
+    }
+
     public int read(int key) {
         return connection.read(key);
     }
