@@ -111,13 +111,7 @@ public class Server extends AbstractNode {
             return;
         }
 
-        // TODO if we do that "locally" then we need to manage the situation
-        // in which coordinator tells us to abort again so the line below
-        // will get executed twice (see OnDecisionRequest)
-        //ctx.get().abort();
-
-        VoteResponse vote = new VoteResponse(msg.uuid(), Vote.NO);
-        getSender().tell(vote, getSelf());
+        ctx.get().abort();
 
         contextManager.setCompleted(ctx.get());
     }
