@@ -54,7 +54,7 @@ public abstract class AbstractNode extends AbstractActor {
 
     private void delay() {
         try {
-            TimeUnit.SECONDS.sleep(2);
+            TimeUnit.SECONDS.sleep(0);
         } catch (InterruptedException ignored) {
         }
     }
