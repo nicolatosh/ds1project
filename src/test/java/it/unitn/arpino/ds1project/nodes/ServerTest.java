@@ -1,7 +1,7 @@
 package it.unitn.arpino.ds1project.nodes;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import akka.pattern.Patterns;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.datastore.DatabaseBuilder;
@@ -19,18 +19,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class ServerTest {
     ActorSystem system;
     TestActorRef<Server> server;
-    CompletableFuture<Object> future;
 
     @BeforeEach
     void setUp() {
@@ -46,90 +43,80 @@ public class ServerTest {
     }
 
     @Test
-    void testReadSync() throws ExecutionException, InterruptedException {
-        UUID uuid = UUID.randomUUID();
-        ReadRequest read = new ReadRequest(uuid, 1);
+    void testConcurrentTxn() {
+        new TestKit(system) {
+            {
+                // Mock the coordinator
 
-        future = Patterns.ask(server, read, Duration.ofSeconds(1)).toCompletableFuture();
-        assertTrue(future.get() instanceof ReadResult);
-        ReadResult result = (ReadResult) future.get();
-        Assertions.assertEquals(1, result.key);
-        Assertions.assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, result.value);
-    }
+                ActorRef coord = testActor();
 
-    @Test
-    void testTransactions() throws ExecutionException, InterruptedException {
-        // Mock the first transaction, mocking the messages from a coordinator.
-        // The transaction writes a value, which affects the transaction's own private workspace.
+                // Mock the first transaction, mocking the messages from a coordinator.
+                // The transaction writes a value, which affects the transaction's own private workspace.
 
-        UUID uuid1 = UUID.randomUUID();
-        WriteRequest write1 = new WriteRequest(uuid1, 6, 742);
-        future = Patterns.ask(server, write1, Duration.ofSeconds(1)).toCompletableFuture();
-        future.getNow(null);
+                UUID uuid1 = UUID.randomUUID();
+                WriteRequest write1 = new WriteRequest(uuid1, 6, 742);
+                server.tell(write1, coord);
+                expectNoMessage();
 
-        ReadRequest read1 = new ReadRequest(uuid1, 6);
-        future = Patterns.ask(server, read1, Duration.ofSeconds(1)).toCompletableFuture();
-        assertTrue(future.get() instanceof ReadResult);
-        ReadResult result1 = (ReadResult) future.get();
-        Assertions.assertEquals(742, result1.value);
+                ReadRequest read1 = new ReadRequest(uuid1, 6);
+                server.tell(read1, coord);
+                ReadResult result1 = expectMsgClass(ReadResult.class);
+                Assertions.assertEquals(742, result1.value);
 
-        // Mock the first transaction, mocking the messages from a coordinator.
-        // The transaction does a read of the same element written by the first transaction.
-        // The read will be done on the second transaction's own private workspace.
-        // As the first transaction has not yet committed, the read value must not be the value
-        // written by the first transaction.
+                // Mock the first transaction, mocking the messages from a coordinator.
+                // The transaction does a read of the same element written by the first transaction.
+                // The read will be done on the second transaction's own private workspace.
+                // As the first transaction has not yet committed, the read value must not be the value
+                // written by the first transaction.
 
-        UUID uuid2 = UUID.randomUUID();
-        ReadRequest read2 = new ReadRequest(uuid2, 6);
-        future = Patterns.ask(server, read2, Duration.ofSeconds(1)).toCompletableFuture();
-        assertTrue(future.get() instanceof ReadResult);
-        ReadResult result2 = (ReadResult) future.get();
-        assertNotEquals(742, result2.value);
-        assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, result2.value);
+                UUID uuid2 = UUID.randomUUID();
+                ReadRequest read2 = new ReadRequest(uuid2, 6);
+                server.tell(read2, coord);
+                ReadResult result2 = expectMsgClass(ReadResult.class);
+                assertNotEquals(742, result2.value);
+                assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, result2.value);
 
-        // The first transaction commits. The value in the transaction's private workspace
-        // is copied into the database.
+                // The first transaction commits. The value in the transaction's private workspace
+                // is copied into the database.
 
-        VoteRequest voteRequest1 = new VoteRequest(uuid1);
-        future = Patterns.ask(server, voteRequest1, Duration.ofSeconds(1)).toCompletableFuture();
-        assertTrue(future.get() instanceof VoteResponse);
-        VoteResponse voteResponse1 = (VoteResponse) future.get();
-        assertEquals(Vote.YES, voteResponse1.vote);
+                VoteRequest voteRequest1 = new VoteRequest(uuid1);
+                server.tell(voteRequest1, coord);
+                VoteResponse voteResponse1 = expectMsgClass(VoteResponse.class);
+                assertEquals(Vote.YES, voteResponse1.vote);
 
-        FinalDecision decision1 = new FinalDecision(uuid1, Decision.GLOBAL_COMMIT);
-        future = Patterns.ask(server, decision1, Duration.ofSeconds(1)).toCompletableFuture();
-        future.getNow(null);
+                FinalDecision decision1 = new FinalDecision(uuid1, Decision.GLOBAL_COMMIT);
+                server.tell(decision1, coord);
+                expectNoMessage();
 
-        // The second transaction must not perceive the change introduced by the commit:
-        // it is still working on its own private workspace.
+                // The second transaction must not perceive the change introduced by the commit:
+                // it is still working on its own private workspace.
 
-        future = Patterns.ask(server, read2, Duration.ofSeconds(1)).toCompletableFuture();
-        assertTrue(future.get() instanceof ReadResult);
-        result2 = (ReadResult) future.get();
-        assertNotEquals(742, result2.value);
-        assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, result2.value);
+                server.tell(read2, coord);
+                result2 = expectMsgClass(ReadResult.class);
+                assertNotEquals(742, result2.value);
+                assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, result2.value);
 
-        // Mock the third transaction, mocking the messages from a coordinator.
-        // The transaction does a read of the same element written by the first transaction.
-        // In this case, the read value must be the committed value.
+                // Mock the third transaction, mocking the messages from a coordinator.
+                // The transaction does a read of the same element written by the first transaction.
+                // In this case, the read value must be the committed value.
 
-        UUID uuid3 = UUID.randomUUID();
-        ReadRequest read3 = new ReadRequest(uuid3, 6);
-        future = Patterns.ask(server, read3, Duration.ofSeconds(1)).toCompletableFuture();
-        assertTrue(future.get() instanceof ReadResult);
-        ReadResult result3 = (ReadResult) future.get();
-        assertEquals(742, result3.value);
+                UUID uuid3 = UUID.randomUUID();
+                ReadRequest read3 = new ReadRequest(uuid3, 6);
+                server.tell(read3, coord);
+                ReadResult result3 = expectMsgClass(ReadResult.class);
+                assertEquals(742, result3.value);
 
-        // The second transaction attempts commits. The response must be negative.
+                // The second transaction attempts commits. The response must be negative.
 
-        VoteRequest voteRequest2 = new VoteRequest(uuid2);
-        future = Patterns.ask(server, voteRequest2, Duration.ofSeconds(1)).toCompletableFuture();
-        assertTrue(future.get() instanceof VoteResponse);
-        VoteResponse voteResponse2 = (VoteResponse) future.get();
-        assertEquals(Vote.NO, voteResponse2.vote);
+                VoteRequest voteRequest2 = new VoteRequest(uuid2);
+                server.tell(voteRequest2, coord);
+                VoteResponse voteResponse2 = expectMsgClass(VoteResponse.class);
+                assertEquals(Vote.NO, voteResponse2.vote);
 
-        FinalDecision decision2 = new FinalDecision(uuid2, Decision.GLOBAL_ABORT);
-        future = Patterns.ask(server, decision2, Duration.ofSeconds(1)).toCompletableFuture();
-        future.getNow(null);
+                FinalDecision decision2 = new FinalDecision(uuid2, Decision.GLOBAL_ABORT);
+                server.tell(decision2, coord);
+                expectNoMessage();
+            }
+        };
     }
 }
