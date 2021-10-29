@@ -12,8 +12,7 @@ public class ServerRequestContext extends RequestContext {
     public enum TwoPhaseCommitFSM {
         INIT,
         READY,
-        GLOBAL_ABORT,
-        VOTE_COMMIT,
+        ABORT,
         COMMIT
     }
 
@@ -59,7 +58,7 @@ public class ServerRequestContext extends RequestContext {
                 protocolState = TwoPhaseCommitFSM.READY;
                 break;
             case ABORT:
-                protocolState = TwoPhaseCommitFSM.GLOBAL_ABORT;
+                protocolState = TwoPhaseCommitFSM.ABORT;
                 break;
         }
     }
@@ -71,7 +70,7 @@ public class ServerRequestContext extends RequestContext {
 
     public void abort() {
         connection.abort();
-        protocolState = TwoPhaseCommitFSM.GLOBAL_ABORT;
+        protocolState = TwoPhaseCommitFSM.ABORT;
 
     }
 

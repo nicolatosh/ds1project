@@ -12,8 +12,8 @@ public class CoordinatorRequestContext extends RequestContext {
     public enum TwoPhaseCommitFSM {
         INIT,
         WAIT,
-        GLOBAL_ABORT,
-        GLOBAL_COMMIT
+        ABORT,
+        COMMIT
     }
 
     /**

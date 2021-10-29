@@ -90,7 +90,7 @@ public class Coordinator extends AbstractNode {
             VoteRequest req = new VoteRequest(msg.uuid());
             ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
         } else {
-            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_ABORT);
+            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
             AbortRequest req = new AbortRequest(msg.uuid());
             ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
@@ -111,7 +111,7 @@ public class Coordinator extends AbstractNode {
                 ctx.get().addYesVoter(getSender());
 
                 if (ctx.get().allVotedYes()) {
-                    ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_COMMIT);
+                    ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     // multicast GLOBAL_COMMIT to all participants
                     FinalDecision decision = new FinalDecision(resp.uuid(), FinalDecision.Decision.GLOBAL_COMMIT);
@@ -129,7 +129,7 @@ public class Coordinator extends AbstractNode {
 
             case NO:
                 // write GLOBAL_ABORT to local log
-                ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.GLOBAL_ABORT);
+                ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
 
                 // multicast GLOBAL_ABORT to all participants

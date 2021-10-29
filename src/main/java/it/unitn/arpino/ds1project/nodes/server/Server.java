@@ -89,11 +89,10 @@ public class Server extends AbstractNode {
         VoteResponse vote = null;
 
         switch (ctx.get().getProtocolState()) {
-            case VOTE_COMMIT:
             case READY:
                 vote = new VoteResponse(req.uuid(), Vote.YES);
                 break;
-            case GLOBAL_ABORT:
+            case ABORT:
                 vote = new VoteResponse(req.uuid(), Vote.NO);
                 break;
         }
