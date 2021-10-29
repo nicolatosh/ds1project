@@ -11,6 +11,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
+import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.util.List;
 import java.util.Optional;
@@ -134,5 +135,28 @@ public class Server extends AbstractNode {
         }
 
         contextManager.setCompleted(ctx.get());
+    }
+
+    @Override
+    protected void resume() {
+        super.resume();
+        contextManager.getActive().forEach(RequestContext::setCrashed);
+        recoveryAbort();
+        recoveryStartTerminationProtocol();
+    }
+
+    /**
+     * This method implements a recovery action of the Two-phase commit (2PC) protocol.
+     * It aborts all the active transactions for which the server has not yet cast the vote.
+     */
+    private void recoveryAbort() {
+    }
+
+    /**
+     * This method implements a recovery action of the Two-phase commit (2PC) protocol.
+     * It starts the termination protocol for all the active transactions for which the server has already
+     * cast the vote.
+     */
+    private void recoveryStartTerminationProtocol() {
     }
 }

@@ -11,6 +11,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
+import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -190,5 +191,28 @@ public class Coordinator extends AbstractNode {
         server.tell(req, getSelf());
 
         ctx.get().addParticipant(server);
+    }
+
+    @Override
+    protected void resume() {
+        super.resume();
+        contextManager.getActive().forEach(RequestContext::setCrashed);
+        recoveryAbort();
+        recoverySendDecision();
+    }
+
+    /**
+     * This method implements a recovery action of the Two-phase commit (2PC) protocol.
+     * It aborts all the active transactions for which the coordinator has not yet taken the final decision.
+     */
+    private void recoveryAbort() {
+    }
+
+    /**
+     * This method implements a recovery action of the Two-phase commit (2PC) protocol.
+     * It sends the decision to all the servers involved in a transaction for which the coordinator has already
+     * taken the final decision.
+     */
+    private void recoverySendDecision() {
     }
 }

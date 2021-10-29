@@ -59,7 +59,7 @@ public abstract class AbstractNode extends AbstractActor {
         }
     }
 
-    void crash() {
+    protected void crash() {
         getContext().become(new ReceiveBuilder()
                 .matchAny(msg -> {
                     // this suppresses Dead Letter warnings.
@@ -67,7 +67,7 @@ public abstract class AbstractNode extends AbstractActor {
         status = Status.CRASHED;
     }
 
-    void resume() {
+    protected void resume() {
         getContext().become(createReceive());
         status = Status.ALIVE;
     }

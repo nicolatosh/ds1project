@@ -13,6 +13,8 @@ public abstract class RequestContext {
 
     protected Status status;
 
+    boolean crashed;
+
     public RequestContext(UUID uuid) {
         this.uuid = uuid;
         status = Status.ACTIVE;
@@ -24,5 +26,13 @@ public abstract class RequestContext {
 
     void setStatus(Status status) {
         this.status = status;
+    }
+
+    public void setCrashed() {
+        crashed = true;
+    }
+
+    public boolean wasCrashed() {
+        return crashed;
     }
 }

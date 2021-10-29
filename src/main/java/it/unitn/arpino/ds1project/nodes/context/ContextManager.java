@@ -20,15 +20,37 @@ public class ContextManager<T extends RequestContext> {
         this.expired = new ArrayList<>();
     }
 
+    /**
+     * @return The contexts of the transactions for which the coordinator has not yet taken the final decision.
+     */
+    public List<T> getActive() {
+        return active;
+    }
+
     public void setActive(T context) {
         context.setStatus(RequestContext.Status.ACTIVE);
         active.add(context);
+    }
+
+    /**
+     * @return The contexts of the transactions for which the coordinator has taken the final decision.
+     */
+    public List<T> getCompleted() {
+        return completed;
     }
 
     public void setCompleted(T context) {
         active.remove(context);
         context.setStatus(RequestContext.Status.COMPLETED);
         completed.add(context);
+    }
+
+    /**
+     * @return The contexts of the transactions which have exceeded the maximum time for which they were
+     * allowed to stay in an incomplete state.
+     */
+    public List<T> getExpired() {
+        return expired;
     }
 
     public void setExpired(T context) {
