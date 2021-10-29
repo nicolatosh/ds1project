@@ -13,4 +13,15 @@ public interface IDatabase {
     Integer getVersion(int key);
 
     void setVersion(int key, int version);
+
+    /**
+     * Verifies that the items in the workspace can be written into the database without violating serializability.
+     * This holds when the versions of the items in the workspace are the same of those in the database,
+     * and does not if another transaction has already committed in the meanwhile, updating the versions of the items
+     * in the database.
+     *
+     * @return true if the items in the workspace can be written into the database without violating serializability,
+     * false otherwise.
+     */
+    boolean validate(IWorkspace workspace);
 }

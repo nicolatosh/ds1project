@@ -42,6 +42,12 @@ public class Database implements IDatabase {
     }
 
     @Override
+    public boolean validate(IWorkspace workspace) {
+        return workspace.getModifiedKeys().stream()
+                .allMatch(key -> workspace.getVersion(key).equals(getVersion(key)));
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
