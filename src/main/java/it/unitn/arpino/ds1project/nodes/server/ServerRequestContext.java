@@ -69,9 +69,10 @@ public class ServerRequestContext extends RequestContext {
     }
 
     public void abort() {
-        connection.abort();
-        protocolState = TwoPhaseCommitFSM.ABORT;
-
+        if (protocolState == TwoPhaseCommitFSM.READY) {
+            connection.abort();
+            protocolState = TwoPhaseCommitFSM.ABORT;
+        }
     }
 
     @Override
