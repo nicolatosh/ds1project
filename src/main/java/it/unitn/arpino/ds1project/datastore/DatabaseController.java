@@ -57,10 +57,8 @@ public class DatabaseController implements IDatabaseController {
     public Response prepare(IConnection connection) {
         ITransaction transaction = transactionRepository.getPending(connection);
 
-        if (!onParWithDatabase(transaction)) {
-            return Response.ABORT;
-        }
-        if (!acquireLocks(transaction)) {
+        if (!onParWithDatabase(transaction) || !acquireLocks(transaction)) {
+            abort(connection);
             return Response.ABORT;
         }
 

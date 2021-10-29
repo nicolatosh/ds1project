@@ -95,7 +95,6 @@ public class Server extends AbstractNode {
                 break;
             case GLOBAL_ABORT:
                 vote = new VoteResponse(req.uuid(), Vote.NO);
-                ctx.get().abort();
                 break;
         }
 
