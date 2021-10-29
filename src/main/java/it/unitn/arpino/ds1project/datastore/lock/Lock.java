@@ -1,4 +1,4 @@
-package it.unitn.arpino.ds1project.datastore;
+package it.unitn.arpino.ds1project.datastore.lock;
 
 public class Lock {
     private final ILockRepository repository;

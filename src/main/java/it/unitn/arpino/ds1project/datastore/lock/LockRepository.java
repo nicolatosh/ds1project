@@ -1,4 +1,4 @@
-package it.unitn.arpino.ds1project.datastore;
+package it.unitn.arpino.ds1project.datastore.lock;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,7 @@
-package it.unitn.arpino.ds1project.datastore;
+package it.unitn.arpino.ds1project.datastore.database;
+
+import it.unitn.arpino.ds1project.datastore.controller.DatabaseController;
+import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 
 import java.util.HashMap;
 import java.util.Map;

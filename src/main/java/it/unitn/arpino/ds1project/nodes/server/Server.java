@@ -3,8 +3,8 @@ package it.unitn.arpino.ds1project.nodes.server;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.datastore.DatabaseBuilder;
-import it.unitn.arpino.ds1project.datastore.IDatabaseController;
+import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
+import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class Server extends AbstractNode {
-    private IDatabaseController controller;
+    private final IDatabaseController controller;
 
     /**
      * The other servers in the Data Store that this server can contact in a Two-Phase Commit (2PC) recovery

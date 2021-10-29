@@ -1,10 +1,12 @@
-package it.unitn.arpino.ds1project.datastore;
+package it.unitn.arpino.ds1project.datastore.database;
+
+import it.unitn.arpino.ds1project.datastore.workspace.IWorkspace;
 
 import java.util.Map;
 
 public class Database implements IDatabase {
-    Column versions;
-    Column values;
+    protected Column versions;
+    protected Column values;
 
     public Database() {
         this.versions = new Column();

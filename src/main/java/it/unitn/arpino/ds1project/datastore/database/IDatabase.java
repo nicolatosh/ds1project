@@ -1,4 +1,6 @@
-package it.unitn.arpino.ds1project.datastore;
+package it.unitn.arpino.ds1project.datastore.database;
+
+import it.unitn.arpino.ds1project.datastore.workspace.IWorkspace;
 
 import java.util.Map;
 

@@ -4,7 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
-import it.unitn.arpino.ds1project.datastore.DatabaseBuilder;
+import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;

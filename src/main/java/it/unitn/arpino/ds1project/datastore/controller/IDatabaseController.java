@@ -1,4 +1,6 @@
-package it.unitn.arpino.ds1project.datastore;
+package it.unitn.arpino.ds1project.datastore.controller;
+
+import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 
 public interface IDatabaseController {
     enum Response {

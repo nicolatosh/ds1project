@@ -1,4 +1,6 @@
-package it.unitn.arpino.ds1project.datastore;
+package it.unitn.arpino.ds1project.datastore.transaction;
+
+import it.unitn.arpino.ds1project.datastore.workspace.IWorkspace;
 
 public interface ITransaction {
     IWorkspace getWorkspace();

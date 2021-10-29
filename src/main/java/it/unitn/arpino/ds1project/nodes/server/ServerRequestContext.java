@@ -1,6 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
-import it.unitn.arpino.ds1project.datastore.IConnection;
+import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.util.UUID;

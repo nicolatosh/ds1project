@@ -1,4 +1,6 @@
-package it.unitn.arpino.ds1project.datastore;
+package it.unitn.arpino.ds1project.datastore.connection;
+
+import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 
 public interface IConnection {
     int read(int key);
