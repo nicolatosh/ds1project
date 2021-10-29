@@ -1,10 +1,10 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
-import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
+import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
@@ -13,6 +13,7 @@ import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,7 +23,7 @@ public class Server extends AbstractNode {
     /**
      * The other servers in the Data Store that this server can contact in a Two-Phase Commit (2PC) recovery
      */
-    private List<ActorRef> servers;
+    private final List<ServerInfo> servers;
 
     ContextManager<ServerRequestContext> contextManager;
 
@@ -31,6 +32,7 @@ public class Server extends AbstractNode {
                 .keyRange(lowerKey, upperKey)
                 .create();
         contextManager = new ContextManager<>();
+        servers = new ArrayList<>();
     }
 
     public static Props props(int lowerKey, int upperKey) {
@@ -39,7 +41,7 @@ public class Server extends AbstractNode {
 
     public Receive createReceive() {
         return new ReceiveBuilder()
-                .match(ServerStartMsg.class, this::onServerStartMsg)
+                .match(ServerInfo.class, this::onServerInfo)
                 .match(ReadRequest.class, this::onReadRequest)
                 .match(WriteRequest.class, this::onWriteRequest)
                 .match(VoteRequest.class, this::onVoteRequest)
@@ -59,8 +61,8 @@ public class Server extends AbstractNode {
         return ctx;
     }
 
-    private void onServerStartMsg(ServerStartMsg msg) {
-        servers = msg.servers;
+    private void onServerInfo(ServerInfo server) {
+        servers.add(server);
     }
 
     private void onReadRequest(ReadRequest req) {

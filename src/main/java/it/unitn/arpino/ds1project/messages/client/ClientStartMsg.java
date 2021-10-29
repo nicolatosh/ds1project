@@ -23,17 +23,11 @@ public class ClientStartMsg extends Message {
      */
     public final List<ActorRef> coordinators;
 
-    /**
-     * The keys of the data item that the client can request to read or write during a transaction.
-     *
-     * @see TxnClient
-     */
-    public final List<Integer> keys;
+    public final int maxKey;
 
-
-    public ClientStartMsg(List<ActorRef> coordinators, List<Integer> keys) {
+    public ClientStartMsg(List<ActorRef> coordinators, int maxKey) {
         this.coordinators = List.copyOf(coordinators);
-        this.keys = List.copyOf(keys);
+        this.maxKey = maxKey;
     }
 
     @Override

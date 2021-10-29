@@ -3,6 +3,7 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
+import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
@@ -42,7 +43,7 @@ public class Coordinator extends AbstractNode {
     @Override
     public Receive createReceive() {
         return new ReceiveBuilder()
-                .match(CoordinatorStartMsg.class, this::onCoordinatorStartMsg)
+                .match(ServerInfo.class, this::onServerInfo)
                 .match(TxnBeginMsg.class, this::onTxnBeginMsg)
                 .match(TxnEndMsg.class, this::onTxnEndMsg)
                 .match(ReadMsg.class, this::onReadMsg)
@@ -63,9 +64,9 @@ public class Coordinator extends AbstractNode {
         return ctx;
     }
 
-    private void onCoordinatorStartMsg(CoordinatorStartMsg msg) {
-        msg.serverInfos.forEach(info -> IntStream.rangeClosed(info.lowerKey, info.upperKey)
-                .forEach(key -> dispatcher.map(info.server, key)));
+    private void onServerInfo(ServerInfo server) {
+        IntStream.rangeClosed(server.lowerKey, server.upperKey)
+                .forEach(key -> dispatcher.map(server.server, key));
     }
 
     private void onTxnBeginMsg(TxnBeginMsg msg) {
