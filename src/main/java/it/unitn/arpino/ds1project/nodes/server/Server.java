@@ -86,18 +86,18 @@ public class Server extends AbstractNode {
 
         ctx.get().prepare();
 
-        VoteResponse vote = null;
-
         switch (ctx.get().getProtocolState()) {
-            case READY:
-                vote = new VoteResponse(req.uuid(), Vote.YES);
+            case READY: {
+                VoteResponse vote = new VoteResponse(req.uuid(), Vote.YES);
+                getSender().tell(vote, getSelf());
                 break;
-            case ABORT:
-                vote = new VoteResponse(req.uuid(), Vote.NO);
+            }
+            case ABORT: {
+                VoteResponse vote = new VoteResponse(req.uuid(), Vote.NO);
+                getSender().tell(vote, getSelf());
                 break;
+            }
         }
-
-        getSender().tell(vote, getSelf());
     }
 
     private void onAbortRequest(AbortRequest msg) {
