@@ -88,11 +88,15 @@ public class Server extends AbstractNode {
 
         switch (ctx.get().getProtocolState()) {
             case READY: {
+                log.info("VOTE_COMMIT");
+
                 VoteResponse vote = new VoteResponse(req.uuid(), Vote.YES);
                 getSender().tell(vote, getSelf());
                 break;
             }
             case ABORT: {
+                log.info("GLOBAL_ABORT");
+
                 VoteResponse vote = new VoteResponse(req.uuid(), Vote.NO);
                 getSender().tell(vote, getSelf());
                 break;

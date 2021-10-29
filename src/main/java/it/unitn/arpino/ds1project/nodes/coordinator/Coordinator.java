@@ -107,10 +107,11 @@ public class Coordinator extends AbstractNode {
         }
 
         switch (resp.vote) {
-            case YES:
+            case YES: {
                 ctx.get().addYesVoter(getSender());
 
                 if (ctx.get().allVotedYes()) {
+                    log.info("GLOBAL_COMMIT");
                     ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     // multicast GLOBAL_COMMIT to all participants
@@ -126,9 +127,9 @@ public class Coordinator extends AbstractNode {
                     contextManager.setCompleted(ctx.get());
                 }
                 break;
-
-            case NO:
-                // write GLOBAL_ABORT to local log
+            }
+            case NO: {
+                log.info("GLOBAL_ABORT");
                 ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
 
@@ -145,6 +146,7 @@ public class Coordinator extends AbstractNode {
                 contextManager.setCompleted(ctx.get());
 
                 break;
+            }
         }
     }
 
@@ -161,7 +163,6 @@ public class Coordinator extends AbstractNode {
         server.tell(req, getSelf());
 
         ctx.get().addParticipant(server);
-        log.info("Request forwarded to server " + server.path().name() + ". Context:\n" + ctx.get());
     }
 
     private void onReadResult(ReadResult msg) {
@@ -189,6 +190,5 @@ public class Coordinator extends AbstractNode {
         server.tell(req, getSelf());
 
         ctx.get().addParticipant(server);
-        log.info("Request forwarded to server " + server.path().name() + ". Context:\n" + ctx.get());
     }
 }
