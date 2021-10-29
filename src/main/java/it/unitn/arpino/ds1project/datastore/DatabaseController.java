@@ -54,18 +54,18 @@ public class DatabaseController implements IDatabaseController {
     }
 
     @Override
-    public boolean prepare(IConnection connection) {
+    public Response prepare(IConnection connection) {
         ITransaction transaction = transactionRepository.getPending(connection);
 
         if (!onParWithDatabase(transaction)) {
-            return false;
+            return Response.ABORT;
         }
         if (!acquireLocks(transaction)) {
-            return false;
+            return Response.ABORT;
         }
 
         transactionRepository.setPending(transaction, connection);
-        return true;
+        return Response.PREPARED;
     }
 
     @Override

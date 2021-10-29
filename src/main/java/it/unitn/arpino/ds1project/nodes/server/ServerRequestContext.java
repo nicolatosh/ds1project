@@ -54,10 +54,13 @@ public class ServerRequestContext extends RequestContext {
      * based on locking and serializability
      */
     public void prepare() {
-        if (connection.prepare()) {
-            protocolState = TwoPhaseCommitFSM.READY;
-        } else {
-            protocolState = TwoPhaseCommitFSM.GLOBAL_ABORT;
+        switch (connection.prepare()) {
+            case PREPARED:
+                protocolState = TwoPhaseCommitFSM.READY;
+                break;
+            case ABORT:
+                protocolState = TwoPhaseCommitFSM.GLOBAL_ABORT;
+                break;
         }
     }
 

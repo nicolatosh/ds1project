@@ -18,7 +18,7 @@ public class Connection implements IConnection {
     }
 
     @Override
-    public boolean prepare() {
+    public IDatabaseController.Response prepare() {
         return controller.prepare(this);
     }
 

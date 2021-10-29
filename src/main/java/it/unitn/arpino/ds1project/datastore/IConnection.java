@@ -5,7 +5,7 @@ public interface IConnection {
 
     void write(int key, int value);
 
-    boolean prepare();
+    IDatabaseController.Response prepare();
 
     void commit();
 

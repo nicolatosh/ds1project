@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 class ConnectionTest {
     IDatabase database;
     IDatabaseController controller;
@@ -61,8 +63,8 @@ class ConnectionTest {
         second.write(3, 30);
 
         // both transactions should be preparable
-        Assertions.assertTrue(first.prepare());
-        Assertions.assertTrue(second.prepare());
+        assertSame(first.prepare(), IDatabaseController.Response.PREPARED);
+        assertSame(second.prepare(), IDatabaseController.Response.PREPARED);
     }
 
     @Test
@@ -83,8 +85,8 @@ class ConnectionTest {
         second.write(8, 80);
 
         // only one should be preparable
-        Assertions.assertTrue(first.prepare());
-        Assertions.assertFalse(second.prepare());
+        assertSame(first.prepare(), IDatabaseController.Response.PREPARED);
+        assertSame(second.prepare(), IDatabaseController.Response.ABORT);
     }
 
     @Test
