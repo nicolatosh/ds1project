@@ -22,11 +22,19 @@ import java.util.stream.IntStream;
 public class Coordinator extends AbstractNode {
     private final Dispatcher dispatcher;
 
-    ContextManager<CoordinatorRequestContext> contextManager;
+    private final ContextManager<CoordinatorRequestContext> contextManager;
 
     public Coordinator() {
         dispatcher = new Dispatcher();
         contextManager = new ContextManager<>();
+    }
+
+    public Dispatcher getDispatcher() {
+        return dispatcher;
+    }
+
+    public ContextManager<CoordinatorRequestContext> getContextManager() {
+        return contextManager;
     }
 
     public static Props props() {
