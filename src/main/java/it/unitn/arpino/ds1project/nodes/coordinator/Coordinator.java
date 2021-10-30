@@ -58,6 +58,7 @@ public class Coordinator extends AbstractNode {
                 .match(ReadResult.class, this::onReadResult)
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
+                .match(TimeoutExpired.class, this::onTimeoutExpired)
                 .build();
     }
 
@@ -107,6 +108,8 @@ public class Coordinator extends AbstractNode {
 
             contextManager.setCompleted(ctx.get());
         }
+
+        ctx.get().startTimer(this);
     }
 
     private void onVoteResponse(VoteResponse resp) {
@@ -116,11 +119,17 @@ public class Coordinator extends AbstractNode {
             return;
         }
 
+        if (CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT == ctx.get().getProtocolState()) {
+            // the vote response arrived too late
+            return;
+        }
+
         switch (resp.vote) {
             case YES: {
                 ctx.get().addYesVoter(getSender());
 
                 if (ctx.get().allVotedYes()) {
+                    ctx.get().cancelTimer();
                     log.info("GLOBAL_COMMIT");
                     ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
@@ -139,6 +148,7 @@ public class Coordinator extends AbstractNode {
                 break;
             }
             case NO: {
+                ctx.get().cancelTimer();
                 log.info("GLOBAL_ABORT");
                 ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
@@ -158,6 +168,22 @@ public class Coordinator extends AbstractNode {
                 break;
             }
         }
+    }
+
+    private void onTimeoutExpired(TimeoutExpired timeout) {
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout);
+        if (ctx.isEmpty()) {
+            // Todo: Bad request
+            return;
+        }
+
+        log.info("GLOBAL_ABORT");
+        ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+        FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
+        ctx.get().getParticipants().forEach(server -> server.tell(decision, getSelf()));
+
+        contextManager.setCompleted(ctx.get());
     }
 
     private void onReadMsg(ReadMsg msg) {

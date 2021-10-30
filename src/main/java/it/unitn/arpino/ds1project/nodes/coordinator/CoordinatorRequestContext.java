@@ -1,8 +1,11 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
+import akka.actor.Cancellable;
+import it.unitn.arpino.ds1project.messages.coordinator.TimeoutExpired;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -15,6 +18,11 @@ public class CoordinatorRequestContext extends RequestContext {
         ABORT,
         COMMIT
     }
+
+    /**
+     * Duration (in seconds) within which all VoteResponses should be collected.
+     */
+    public static final int TIMEOUT_DURATION_S = 1;
 
     /**
      * The initiator of the transaction.
@@ -30,6 +38,11 @@ public class CoordinatorRequestContext extends RequestContext {
      * The servers that voted positively on the coordinator's request and are ready to commit.
      */
     private final Set<ActorRef> yesVoters;
+
+    /**
+     * Implements the timeout within which the Coordinator should receive all VoteResponses.
+     */
+    private Cancellable timeout;
 
     /**
      * The current state of the Two-phase commit protocol.
@@ -78,6 +91,19 @@ public class CoordinatorRequestContext extends RequestContext {
 
     boolean allVotedYes() {
         return yesVoters.size() == participants.size();
+    }
+
+    public void startTimer(Coordinator coordinator) {
+        timeout = coordinator.getContext().system().scheduler().scheduleOnce(
+                Duration.ofSeconds(TIMEOUT_DURATION_S), // delay
+                coordinator.getSelf(), // receiver
+                new TimeoutExpired(uuid), // message
+                coordinator.getContext().dispatcher(), // executor
+                coordinator.getSelf()); // sender
+    }
+
+    public void cancelTimer() {
+        timeout.cancel();
     }
 
     @Override
