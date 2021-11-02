@@ -5,6 +5,7 @@ import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.ServerInfo;
+import it.unitn.arpino.ds1project.messages.TimeoutExpired;
 import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
@@ -47,6 +48,9 @@ public class Server extends AbstractNode {
                 .match(VoteRequest.class, this::onVoteRequest)
                 .match(FinalDecision.class, this::onFinalDecision)
                 .match(AbortRequest.class, this::onAbortRequest)
+                .match(TimeoutExpired.class, this::onTimeoutExpired)
+                .match(DecisionRequest.class, this::onDecisionRequest)
+                .match(DecisionResponse.class, this::onDecisionResponse)
                 .build();
     }
 
@@ -121,6 +125,67 @@ public class Server extends AbstractNode {
         contextManager.setCompleted(ctx.get());
     }
 
+    // Termination-protocol
+    // Multicast decision request to other servers and remain blocked until response
+    private void onTimeoutExpired(TimeoutExpired timeout) {
+        Optional<ServerRequestContext> ctx = getRequestContext(timeout);
+        if (ctx.isEmpty()) {
+            // Todo: Bad request
+            return;
+        }
+
+        log.info("TERMINATION_PROTOCOL");
+        DecisionRequest req = new DecisionRequest(ctx.get().uuid);
+        contextManager.setActive(ctx.get());
+        servers.forEach(s -> s.server.tell(req, getSelf()));
+    }
+
+    // Termination-protocol
+    // Server sends his knowledge about the outcome of a transaction
+    private void onDecisionRequest(DecisionRequest req) {
+        Optional<ServerRequestContext> ctx = getRequestContext(req);
+        if (ctx.isEmpty()) {
+            // Todo: Bad request
+            return;
+        }
+
+        ServerRequestContext.TwoPhaseCommitFSM status = ctx.get().getProtocolState();
+        DecisionResponse resp = new DecisionResponse(req.uuid(), status);
+        getSender().tell(resp, getSelf());
+
+    }
+
+    // Termination-protocol
+    // Server receives transaction outcome from another server
+    private void onDecisionResponse(DecisionResponse resp) {
+        Optional<ServerRequestContext> ctx = getRequestContext(resp);
+        if (ctx.isEmpty()) {
+            // Todo: Bad request
+            return;
+        }
+
+        ServerRequestContext.TwoPhaseCommitFSM status = resp.getStatus();
+        switch (status) {
+            case READY:
+                // Other server is in READY, does not know transaction outcome
+                ctx.get().setProtocolState(status);
+                contextManager.setActive(ctx.get());
+                break;
+
+            case ABORT:
+                ctx.get().abort();
+                contextManager.setCompleted(ctx.get());
+                break;
+
+            case COMMIT:
+                ctx.get().commit();
+                contextManager.setCompleted(ctx.get());
+                break;
+
+        }
+    }
+
+
     private void onFinalDecision(FinalDecision req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req);
         if (ctx.isEmpty()) {
@@ -136,6 +201,7 @@ public class Server extends AbstractNode {
             case GLOBAL_ABORT:
                 ctx.get().abort();
                 break;
+
         }
 
         ctx.get().cancelTimer();
