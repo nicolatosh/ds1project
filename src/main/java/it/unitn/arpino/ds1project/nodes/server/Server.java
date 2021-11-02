@@ -139,7 +139,6 @@ public class Server extends AbstractNode {
         log.info("TERMINATION_PROTOCOL_TIMEOUT_FOR_FINALDECISION");
         DecisionRequest req = new DecisionRequest(ctx.get().uuid);
         contextManager.setActive(ctx.get());
-        ctx.get().cancelTimer();
 
         servers.forEach(s -> s.server.tell(req, getSelf()));
     }
