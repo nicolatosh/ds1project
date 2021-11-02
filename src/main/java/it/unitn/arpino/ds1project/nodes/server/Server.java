@@ -105,6 +105,8 @@ public class Server extends AbstractNode {
                 break;
             }
         }
+
+        ctx.get().startTimer(this);
     }
 
     private void onAbortRequest(AbortRequest msg) {
@@ -136,6 +138,7 @@ public class Server extends AbstractNode {
                 break;
         }
 
+        ctx.get().cancelTimer();
         contextManager.setCompleted(ctx.get());
     }
 

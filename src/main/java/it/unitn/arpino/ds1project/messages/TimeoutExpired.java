@@ -1,7 +1,4 @@
-package it.unitn.arpino.ds1project.messages.coordinator;
-
-import it.unitn.arpino.ds1project.messages.Message;
-import it.unitn.arpino.ds1project.messages.Transactional;
+package it.unitn.arpino.ds1project.messages;
 
 import java.util.UUID;
 

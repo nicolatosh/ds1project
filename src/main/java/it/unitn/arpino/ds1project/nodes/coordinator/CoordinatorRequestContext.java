@@ -2,10 +2,8 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
-import it.unitn.arpino.ds1project.messages.coordinator.TimeoutExpired;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -93,17 +91,8 @@ public class CoordinatorRequestContext extends RequestContext {
         return yesVoters.size() == participants.size();
     }
 
-    public void startTimer(Coordinator coordinator) {
-        timeout = coordinator.getContext().system().scheduler().scheduleOnce(
-                Duration.ofSeconds(TIMEOUT_DURATION_S), // delay
-                coordinator.getSelf(), // receiver
-                new TimeoutExpired(uuid), // message
-                coordinator.getContext().dispatcher(), // executor
-                coordinator.getSelf()); // sender
-    }
-
-    public void cancelTimer() {
-        timeout.cancel();
+    public void startTimer(Coordinator actor) {
+        super.startTimer(actor, TIMEOUT_DURATION_S);
     }
 
     @Override

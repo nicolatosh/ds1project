@@ -1,5 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
+import akka.actor.AbstractActor;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
@@ -15,6 +16,12 @@ public class ServerRequestContext extends RequestContext {
         ABORT,
         COMMIT
     }
+
+    /**
+     * Duration (in seconds) within the Coordinator Decision should be received.
+     */
+    public static final int TIMEOUT_DURATION_DECISION_S = 1;
+
 
     /**
      * The current state of the Two-phase commit protocol.
@@ -73,6 +80,10 @@ public class ServerRequestContext extends RequestContext {
             connection.abort();
             protocolState = TwoPhaseCommitFSM.ABORT;
         }
+    }
+
+    public void startTimer(AbstractActor actor) {
+        super.startTimer(actor, TIMEOUT_DURATION_DECISION_S);
     }
 
     @Override
