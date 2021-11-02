@@ -1,7 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
-import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.util.HashSet;
@@ -36,11 +35,6 @@ public class CoordinatorRequestContext extends RequestContext {
      * The servers that voted positively on the coordinator's request and are ready to commit.
      */
     private final Set<ActorRef> yesVoters;
-
-    /**
-     * Implements the timeout within which the Coordinator should receive all VoteResponses.
-     */
-    private Cancellable timeout;
 
     /**
      * The current state of the Two-phase commit protocol.
