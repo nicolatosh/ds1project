@@ -125,8 +125,10 @@ public class Server extends AbstractNode {
         contextManager.setCompleted(ctx.get());
     }
 
-    // Termination-protocol
-    // Multicast decision request to other servers and remain blocked until response
+    /**
+     * Starts the termination protocol: the server asks every other server for the decision
+     * and remains blocked until it receives a response.
+     */
     private void onTimeoutExpired(TimeoutExpired timeout) {
         Optional<ServerRequestContext> ctx = getRequestContext(timeout);
         if (ctx.isEmpty()) {
@@ -139,12 +141,13 @@ public class Server extends AbstractNode {
         contextManager.setActive(ctx.get());
         ctx.get().cancelTimer();
 
-        // Asking other servers for decision
         servers.forEach(s -> s.server.tell(req, getSelf()));
     }
 
-    // Termination-protocol
-    // Server sends his knowledge (decision) about the outcome of a transaction
+    /**
+     * The server replies with transaction's outcome (i.e., the coordinator's final decision) to
+     * the server requesting it, which is executing the termination protocol.
+     */
     private void onDecisionRequest(DecisionRequest req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req);
         if (ctx.isEmpty()) {
@@ -158,8 +161,10 @@ public class Server extends AbstractNode {
 
     }
 
-    // Termination-protocol
-    // Server receives transaction outcome (decision) from another server
+    /**
+     * This method is executed if the server is executing the termination protocol.
+     * The server receives the transaction's outcome (i.e., the coordinator's final decision) from another server.
+     */
     private void onDecisionResponse(DecisionResponse resp) {
         Optional<ServerRequestContext> ctx = getRequestContext(resp);
         if (ctx.isEmpty()) {
