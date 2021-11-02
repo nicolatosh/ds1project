@@ -16,6 +16,13 @@ public abstract class RequestContext {
         this.uuid = uuid;
     }
 
+    /**
+     * Starts a countdown timer. If the timer is not canceled before expiring, sends a {@link TimeoutExpired} message
+     * to the node which started the timer.
+     *
+     * @param node            The node which starts the timer.
+     * @param timeoutDuration Duration in seconds of the timer.
+     */
     public void startTimer(DataStoreNode<?> node, int timeoutDuration) {
         timeout = node.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(timeoutDuration), // delay
@@ -25,6 +32,9 @@ public abstract class RequestContext {
                 node.getSelf()); // sender
     }
 
+    /**
+     * Cancels the timer.
+     */
     public void cancelTimer() {
         timeout.cancel();
     }
