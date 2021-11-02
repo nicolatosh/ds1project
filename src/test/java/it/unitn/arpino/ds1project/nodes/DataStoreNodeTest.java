@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-class AbstractNodeTest {
+class DataStoreNodeTest {
     ActorSystem system;
     TestActorRef<SimpleNode> node;
 
@@ -48,7 +48,7 @@ class AbstractNodeTest {
         };
     }
 
-    private static class SimpleNode extends AbstractNode {
+    private static class SimpleNode extends DataStoreNode {
         private static class SimpleMessage extends Message {
 
             @Override

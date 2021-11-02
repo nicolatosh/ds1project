@@ -3,7 +3,6 @@ package it.unitn.arpino.ds1project.nodes;
 import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.Message;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
@@ -12,22 +11,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractNode extends AbstractActor {
-    public enum Status {
-        ALIVE,
-        CRASHED
-    }
-
     protected LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
-
-    private Status status;
-
-    public AbstractNode() {
-        status = Status.ALIVE;
-    }
-
-    Status getStatus() {
-        return status;
-    }
 
     @Override
     public void aroundPreStart() {
@@ -57,18 +41,5 @@ public abstract class AbstractNode extends AbstractActor {
             TimeUnit.SECONDS.sleep(0);
         } catch (InterruptedException ignored) {
         }
-    }
-
-    protected void crash() {
-        getContext().become(new ReceiveBuilder()
-                .matchAny(msg -> {
-                    // this suppresses Dead Letter warnings.
-                }).build());
-        status = Status.CRASHED;
-    }
-
-    protected void resume() {
-        getContext().become(createReceive());
-        status = Status.ALIVE;
     }
 }
