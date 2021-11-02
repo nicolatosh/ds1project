@@ -156,9 +156,11 @@ public class Server extends AbstractNode {
         }
 
         ServerRequestContext.TwoPhaseCommitFSM status = ctx.get().getProtocolState();
-        DecisionResponse resp = new DecisionResponse(req.uuid(), status);
-        getSender().tell(resp, getSelf());
-
+        if (status == ServerRequestContext.TwoPhaseCommitFSM.COMMIT ||
+                status == ServerRequestContext.TwoPhaseCommitFSM.ABORT) {
+            DecisionResponse resp = new DecisionResponse(req.uuid(), status);
+            getSender().tell(resp, getSelf());
+        }
     }
 
     /**
@@ -174,23 +176,17 @@ public class Server extends AbstractNode {
 
         ServerRequestContext.TwoPhaseCommitFSM status = resp.getStatus();
         switch (status) {
-            case READY:
-                // Other server is in READY, does not know transaction outcome
-                ctx.get().setProtocolState(status);
-                contextManager.setActive(ctx.get());
-                break;
-
-            case ABORT:
+            case ABORT: {
                 ctx.get().abort();
-                contextManager.setCompleted(ctx.get());
                 break;
-
-            case COMMIT:
+            }
+            case COMMIT: {
                 ctx.get().commit();
-                contextManager.setCompleted(ctx.get());
                 break;
-
+            }
         }
+
+        contextManager.setCompleted(ctx.get());
     }
 
 
