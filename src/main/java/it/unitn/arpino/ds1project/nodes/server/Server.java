@@ -10,7 +10,7 @@ import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
-import it.unitn.arpino.ds1project.nodes.AbstractNode;
+import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class Server extends AbstractNode {
+public class Server extends DataStoreNode {
     private final IDatabaseController controller;
 
     /**

@@ -11,7 +11,7 @@ import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.*;
-import it.unitn.arpino.ds1project.nodes.AbstractNode;
+import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.nodes.context.ContextManager;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-public class Coordinator extends AbstractNode {
+public class Coordinator extends DataStoreNode {
     private final Dispatcher dispatcher;
 
     private final ContextManager<CoordinatorRequestContext> contextManager;
