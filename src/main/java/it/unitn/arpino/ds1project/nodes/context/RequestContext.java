@@ -14,8 +14,6 @@ public abstract class RequestContext {
 
     private Cancellable timeout;
 
-    boolean crashed;
-
     public RequestContext(UUID uuid) {
         this.uuid = uuid;
     }
@@ -39,13 +37,5 @@ public abstract class RequestContext {
 
     public void setCompleted() {
         completed = true;
-    }
-
-    public void setCrashed() {
-        crashed = true;
-    }
-
-    public boolean wasCrashed() {
-        return crashed;
     }
 }

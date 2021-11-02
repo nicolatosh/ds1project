@@ -205,7 +205,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     @Override
     protected void resume() {
         super.resume();
-        getActive().forEach(RequestContext::setCrashed);
         recoveryAbort();
         recoveryStartTerminationProtocol();
     }

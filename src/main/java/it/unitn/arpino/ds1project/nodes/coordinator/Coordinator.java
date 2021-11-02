@@ -11,7 +11,6 @@ import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
-import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -219,7 +218,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     @Override
     protected void resume() {
         super.resume();
-        getActive().forEach(RequestContext::setCrashed);
         recoveryAbort();
         recoverySendDecision();
     }
