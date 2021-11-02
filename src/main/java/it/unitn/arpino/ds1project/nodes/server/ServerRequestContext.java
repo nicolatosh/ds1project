@@ -1,6 +1,5 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
-import akka.actor.AbstractActor;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
@@ -18,7 +17,7 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
-     * Duration (in seconds) within the Coordinator Decision should be received.
+     * Duration (in seconds) within which the Coordinator's FinalDecision should be received.
      */
     public static final int TIMEOUT_DURATION_DECISION_S = 1;
 
@@ -82,8 +81,8 @@ public class ServerRequestContext extends RequestContext {
         }
     }
 
-    public void startTimer(AbstractActor actor) {
-        super.startTimer(actor, TIMEOUT_DURATION_DECISION_S);
+    public void startTimer(Server server) {
+        super.startTimer(server, TIMEOUT_DURATION_DECISION_S);
     }
 
     @Override

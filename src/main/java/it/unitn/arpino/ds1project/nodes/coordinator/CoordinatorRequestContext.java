@@ -18,7 +18,7 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * Duration (in seconds) within which all VoteResponses should be collected.
+     * Duration (in seconds) within which all the participants' VoteResponses should be collected.
      */
     public static final int TIMEOUT_DURATION_S = 1;
 
@@ -91,8 +91,8 @@ public class CoordinatorRequestContext extends RequestContext {
         return yesVoters.size() == participants.size();
     }
 
-    public void startTimer(Coordinator actor) {
-        super.startTimer(actor, TIMEOUT_DURATION_S);
+    public void startTimer(Coordinator coordinator) {
+        super.startTimer(coordinator, TIMEOUT_DURATION_S);
     }
 
     @Override
