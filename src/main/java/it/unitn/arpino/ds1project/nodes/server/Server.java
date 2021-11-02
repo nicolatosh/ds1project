@@ -134,14 +134,17 @@ public class Server extends AbstractNode {
             return;
         }
 
-        log.info("TERMINATION_PROTOCOL");
+        log.info("TERMINATION_PROTOCOL_TIMEOUT_FOR_FINALDECISION");
         DecisionRequest req = new DecisionRequest(ctx.get().uuid);
         contextManager.setActive(ctx.get());
+        ctx.get().cancelTimer();
+
+        // Asking other servers for decision
         servers.forEach(s -> s.server.tell(req, getSelf()));
     }
 
     // Termination-protocol
-    // Server sends his knowledge about the outcome of a transaction
+    // Server sends his knowledge (decision) about the outcome of a transaction
     private void onDecisionRequest(DecisionRequest req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req);
         if (ctx.isEmpty()) {
@@ -156,7 +159,7 @@ public class Server extends AbstractNode {
     }
 
     // Termination-protocol
-    // Server receives transaction outcome from another server
+    // Server receives transaction outcome (decision) from another server
     private void onDecisionResponse(DecisionResponse resp) {
         Optional<ServerRequestContext> ctx = getRequestContext(resp);
         if (ctx.isEmpty()) {
@@ -229,5 +232,12 @@ public class Server extends AbstractNode {
      * cast the vote.
      */
     private void recoveryStartTerminationProtocol() {
+
+        // Not even voted = INIT status => ABORT
+
+        // Voted = Either GLOBAL_ABORT or GLOBAL_COMMIT. Resend to coordinator such status
+
+        // Ready -> termination protocol
+
     }
 }
