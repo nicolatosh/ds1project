@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class Server extends DataStoreNode<ServerRequestContext> {
     private final IDatabaseController controller;
@@ -160,6 +161,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             // Todo: Bad request
             return;
         }
+        if (ctx.get().isDecided()) {
+            // we have already received the decision from another server
+            return;
+        }
 
         ServerRequestContext.TwoPhaseCommitFSM status = resp.getStatus();
         switch (status) {
@@ -181,6 +186,11 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             // Todo: Bad request
             return;
         }
+        if (ctx.get().isDecided()) {
+            // this happens when the coordinator woke up after a crash and sent the decision to the server,
+            // but the server already received it from another server
+            return;
+        }
 
         switch (req.decision) {
             case GLOBAL_COMMIT:
@@ -199,29 +209,33 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     @Override
     protected void resume() {
         super.resume();
-        recoveryAbort();
-        recoveryStartTerminationProtocol();
+        List<ServerRequestContext> voteNotCasted = getActive().stream()
+                .filter(ctx -> ctx.getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.INIT)
+                .collect(Collectors.toList());
+        List<ServerRequestContext> voteCasted = getActive().stream()
+                .filter(ctx -> ctx.getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.READY)
+                .collect(Collectors.toList());
+        voteNotCasted.forEach(this::recoveryAbort);
+        voteCasted.forEach(this::recoveryStartTerminationProtocol);
     }
 
     /**
      * This method implements a recovery action of the Two-phase commit (2PC) protocol.
-     * It aborts all the active transactions for which the server has not yet cast the vote.
+     * If the server has not already cast the vote for the transaction, it aborts it.
      */
-    private void recoveryAbort() {
+    private void recoveryAbort(ServerRequestContext ctx) {
+        ctx.abort();
     }
 
     /**
      * This method implements a recovery action of the Two-phase commit (2PC) protocol.
-     * It starts the termination protocol for all the active transactions for which the server has already
-     * cast the vote.
+     * If the server has already cast the vote for the transaction, it asks the others about the coordinator's
+     * {@link FinalDecision}.
      */
-    private void recoveryStartTerminationProtocol() {
-
-        // Not even voted = INIT status => ABORT
-
-        // Voted = Either GLOBAL_ABORT or GLOBAL_COMMIT. Resend to coordinator such status
-
-        // Ready -> termination protocol
-
+    private void recoveryStartTerminationProtocol(ServerRequestContext ctx) {
+        DecisionRequest request = new DecisionRequest(ctx.uuid);
+        servers.stream()
+                .map(serverInfo -> serverInfo.server)
+                .forEach(server -> server.tell(request, getSelf()));
     }
 }

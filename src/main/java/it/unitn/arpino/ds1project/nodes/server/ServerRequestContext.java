@@ -36,7 +36,7 @@ public class ServerRequestContext extends RequestContext {
     }
 
     @Override
-    public boolean isCompleted() {
+    public boolean isDecided() {
         return protocolState == TwoPhaseCommitFSM.COMMIT || protocolState == TwoPhaseCommitFSM.ABORT;
     }
 

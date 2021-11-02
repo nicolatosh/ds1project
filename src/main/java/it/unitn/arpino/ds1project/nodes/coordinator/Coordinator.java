@@ -13,6 +13,7 @@ import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -208,22 +209,37 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     @Override
     protected void resume() {
         super.resume();
-        recoveryAbort();
-        recoverySendDecision();
+        List<CoordinatorRequestContext> active = getActive();
+        List<CoordinatorRequestContext> decided = getDecided();
+        active.forEach(this::recoveryAbort);
+        decided.forEach(this::recoverySendDecision);
     }
 
     /**
      * This method implements a recovery action of the Two-phase commit (2PC) protocol.
-     * It aborts all the active transactions for which the coordinator has not yet taken the final decision.
+     * If the coordinator has not yet taken the {@link FinalDecision} for the transaction, it aborts it.
      */
-    private void recoveryAbort() {
+    private void recoveryAbort(CoordinatorRequestContext ctx) {
+        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
     }
 
     /**
      * This method implements a recovery action of the Two-phase commit (2PC) protocol.
-     * It sends the decision to all the servers involved in a transaction for which the coordinator has already
-     * taken the final decision.
+     * If the coordinator already taken the {@link FinalDecision} for the transaction, it sends the decision to all
+     * the participants.
      */
-    private void recoverySendDecision() {
+    private void recoverySendDecision(CoordinatorRequestContext ctx) {
+        switch (ctx.getProtocolState()) {
+            case COMMIT: {
+                FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
+                ctx.getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
+                break;
+            }
+            case ABORT: {
+                FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                ctx.getParticipants().forEach(participants -> participants.tell(decision, getSelf()));
+                break;
+            }
+        }
     }
 }

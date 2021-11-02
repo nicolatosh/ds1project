@@ -54,9 +54,9 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     /**
      * @return The contexts of the transactions for which the coordinator has taken the final decision.
      */
-    public final List<RequestContext> getCompleted() {
+    public final List<T> getDecided() {
         return contexts.stream()
-                .filter(RequestContext::isCompleted)
+                .filter(RequestContext::isDecided)
                 .collect(Collectors.toList());
     }
 
@@ -65,7 +65,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
      */
     public final List<T> getActive() {
         return contexts.stream()
-                .filter(ctx -> !ctx.isCompleted())
+                .filter(ctx -> !ctx.isDecided())
                 .collect(Collectors.toList());
     }
 }

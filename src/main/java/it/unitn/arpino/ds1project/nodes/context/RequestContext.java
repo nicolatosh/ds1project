@@ -40,8 +40,8 @@ public abstract class RequestContext {
     }
 
     /**
-     * @return Whether this context is completed. A context is completed when the related transaction committed or
+     * @return Whether this context is decided. A context is decided when the related transaction committed or
      * aborted.
      */
-    public abstract boolean isCompleted();
+    public abstract boolean isDecided();
 }
