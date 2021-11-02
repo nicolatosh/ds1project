@@ -10,7 +10,6 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
-import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,8 +112,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         }
 
         ctx.get().abort();
-
-        ctx.get().setCompleted();
     }
 
     /**
@@ -175,8 +172,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
         }
-
-        ctx.get().setCompleted();
     }
 
 
@@ -199,7 +194,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         }
 
         ctx.get().cancelTimer();
-        ctx.get().setCompleted();
     }
 
     @Override

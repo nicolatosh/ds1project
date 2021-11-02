@@ -35,6 +35,11 @@ public class ServerRequestContext extends RequestContext {
         this.connection = connection;
     }
 
+    @Override
+    public boolean isCompleted() {
+        return protocolState == TwoPhaseCommitFSM.COMMIT || protocolState == TwoPhaseCommitFSM.ABORT;
+    }
+
     /**
      * @return The current state of the Two-phase commit (2PC) protocol.
      */

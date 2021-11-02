@@ -10,8 +10,6 @@ import java.util.UUID;
 public abstract class RequestContext {
     public final UUID uuid;
 
-    private boolean completed;
-
     private Cancellable timeout;
 
     public RequestContext(UUID uuid) {
@@ -31,11 +29,9 @@ public abstract class RequestContext {
         timeout.cancel();
     }
 
-    public boolean isCompleted() {
-        return completed;
-    }
-
-    public void setCompleted() {
-        completed = true;
-    }
+    /**
+     * @return Whether this context is completed. A context is completed when the related transaction committed or
+     * aborted.
+     */
+    public abstract boolean isCompleted();
 }

@@ -92,8 +92,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             AbortRequest req = new AbortRequest(msg.uuid());
             ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
-
-            ctx.get().setCompleted();
         }
 
         ctx.get().startTimer(this);
@@ -128,9 +126,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     // tell the client the result of the transaction
                     TxnResultMsg result = new TxnResultMsg(resp.uuid(), true);
                     ctx.get().getClient().tell(result, getSelf());
-
-                    // the transaction is completed: subsequent requests will begin a new transaction
-                    ctx.get().setCompleted();
                 }
                 break;
             }
@@ -149,9 +144,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 TxnResultMsg result = new TxnResultMsg(resp.uuid(), false);
                 ctx.get().getClient().tell(result, getSelf());
 
-                // the transaction is completed: subsequent requests will begin a new transaction
-                ctx.get().setCompleted();
-
                 break;
             }
         }
@@ -169,8 +161,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
         ctx.get().getParticipants().forEach(server -> server.tell(decision, getSelf()));
-
-        ctx.get().setCompleted();
     }
 
     private void onReadMsg(ReadMsg msg) {

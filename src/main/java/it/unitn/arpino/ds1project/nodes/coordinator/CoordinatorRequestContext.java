@@ -54,6 +54,11 @@ public class CoordinatorRequestContext extends RequestContext {
         return client;
     }
 
+    @Override
+    public boolean isCompleted() {
+        return protocolState == TwoPhaseCommitFSM.COMMIT || protocolState == TwoPhaseCommitFSM.ABORT;
+    }
+
     /**
      * @return The current state of the Two-phase commit (2PC) protocol.
      */
