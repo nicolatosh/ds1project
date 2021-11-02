@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RequestContextTest {
@@ -17,14 +16,11 @@ class RequestContextTest {
 
         SimpleMessage simpleMessage = new SimpleMessage(UUID.randomUUID());
         SimpleContext context = new SimpleContext(simpleMessage.uuid);
+        contextManager.add(context);
 
-        contextManager.setActive(context);
+        context.setCompleted();
         assertTrue(contextManager.contextOf(simpleMessage).isPresent());
-        assertEquals(RequestContext.Status.ACTIVE, context.status);
-
-        contextManager.setCompleted(context);
-        assertTrue(contextManager.contextOf(simpleMessage).isPresent());
-        assertEquals(RequestContext.Status.COMPLETED, context.status);
+        assertTrue(context.isCompleted());
     }
 
     private static class SimpleContext extends RequestContext {

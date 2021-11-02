@@ -70,7 +70,7 @@ public class Coordinator extends AbstractNode {
     private CoordinatorRequestContext newContext() {
         CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), getSender());
 
-        contextManager.setActive(ctx);
+        contextManager.add(ctx);
         return ctx;
     }
 
@@ -107,7 +107,7 @@ public class Coordinator extends AbstractNode {
             AbortRequest req = new AbortRequest(msg.uuid());
             ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
 
-            contextManager.setCompleted(ctx.get());
+            ctx.get().setCompleted();
         }
 
         ctx.get().startTimer(this);
@@ -144,7 +144,7 @@ public class Coordinator extends AbstractNode {
                     ctx.get().getClient().tell(result, getSelf());
 
                     // the transaction is completed: subsequent requests will begin a new transaction
-                    contextManager.setCompleted(ctx.get());
+                    ctx.get().setCompleted();
                 }
                 break;
             }
@@ -164,7 +164,7 @@ public class Coordinator extends AbstractNode {
                 ctx.get().getClient().tell(result, getSelf());
 
                 // the transaction is completed: subsequent requests will begin a new transaction
-                contextManager.setCompleted(ctx.get());
+                ctx.get().setCompleted();
 
                 break;
             }
@@ -184,7 +184,7 @@ public class Coordinator extends AbstractNode {
         FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
         ctx.get().getParticipants().forEach(server -> server.tell(decision, getSelf()));
 
-        contextManager.setCompleted(ctx.get());
+        ctx.get().setCompleted();
     }
 
     private void onReadMsg(ReadMsg msg) {

@@ -3,49 +3,43 @@ package it.unitn.arpino.ds1project.nodes.context;
 import it.unitn.arpino.ds1project.messages.Transactional;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 public class ContextManager<T extends RequestContext> {
-    protected final List<T> active;
-    protected final List<T> completed;
+    private final List<T> contexts;
 
 
     public ContextManager() {
-        this.active = new ArrayList<>();
-        this.completed = new ArrayList<>();
+        contexts = new ArrayList<>();
+    }
+
+    public void add(T context) {
+        contexts.add(context);
     }
 
     /**
      * @return The contexts of the transactions for which the coordinator has not yet taken the final decision.
      */
     public List<T> getActive() {
-        return active;
+        return contexts.stream()
+                .filter(ctx -> !ctx.isCompleted())
+                .collect(Collectors.toList());
     }
 
-    public void setActive(T context) {
-        context.setStatus(RequestContext.Status.ACTIVE);
-        active.add(context);
-    }
 
     /**
      * @return The contexts of the transactions for which the coordinator has taken the final decision.
      */
     public List<T> getCompleted() {
-        return completed;
-    }
-
-    public void setCompleted(T context) {
-        active.remove(context);
-        context.setStatus(RequestContext.Status.COMPLETED);
-        completed.add(context);
+        return contexts.stream()
+                .filter(RequestContext::isCompleted)
+                .collect(Collectors.toList());
     }
 
     public Optional<T> contextOf(Transactional msg) {
-        return Stream.of(active, completed)
-                .flatMap(Collection::stream)
+        return contexts.stream()
                 .filter(ctx -> ctx.uuid == msg.uuid())
                 .findFirst();
     }

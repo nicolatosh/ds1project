@@ -61,7 +61,7 @@ public class Server extends AbstractNode {
     private ServerRequestContext newContext(Transactional msg) {
         ServerRequestContext ctx = new ServerRequestContext(msg.uuid(), controller.beginTransaction());
 
-        contextManager.setActive(ctx);
+        contextManager.add(ctx);
         return ctx;
     }
 
@@ -122,7 +122,7 @@ public class Server extends AbstractNode {
 
         ctx.get().abort();
 
-        contextManager.setCompleted(ctx.get());
+        ctx.get().setCompleted();
     }
 
     /**
@@ -184,7 +184,7 @@ public class Server extends AbstractNode {
             }
         }
 
-        contextManager.setCompleted(ctx.get());
+        ctx.get().setCompleted();
     }
 
 
@@ -207,7 +207,7 @@ public class Server extends AbstractNode {
         }
 
         ctx.get().cancelTimer();
-        contextManager.setCompleted(ctx.get());
+        ctx.get().setCompleted();
     }
 
     @Override

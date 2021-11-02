@@ -8,14 +8,9 @@ import java.time.Duration;
 import java.util.UUID;
 
 public abstract class RequestContext {
-    public enum Status {
-        ACTIVE,
-        COMPLETED
-    }
-
     public final UUID uuid;
 
-    protected Status status;
+    private boolean completed;
 
     private Cancellable timeout;
 
@@ -23,7 +18,6 @@ public abstract class RequestContext {
 
     public RequestContext(UUID uuid) {
         this.uuid = uuid;
-        status = Status.ACTIVE;
     }
 
     public void startTimer(AbstractNode node, int timeoutDuration) {
@@ -39,12 +33,12 @@ public abstract class RequestContext {
         timeout.cancel();
     }
 
-    public Status getStatus() {
-        return status;
+    public boolean isCompleted() {
+        return completed;
     }
 
-    void setStatus(Status status) {
-        this.status = status;
+    public void setCompleted() {
+        completed = true;
     }
 
     public void setCrashed() {

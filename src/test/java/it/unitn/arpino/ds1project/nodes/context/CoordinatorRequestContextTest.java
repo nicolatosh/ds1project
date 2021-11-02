@@ -45,7 +45,7 @@ public class CoordinatorRequestContextTest {
 
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 ctx.addParticipant(server);
-                coordinator.underlyingActor().getContextManager().setActive(ctx);
+                coordinator.underlyingActor().getContextManager().add(ctx);
 
                 ctx.startTimer(coordinator.underlyingActor());
                 // must account for the timeout duration to elapse and the message to be processed.
