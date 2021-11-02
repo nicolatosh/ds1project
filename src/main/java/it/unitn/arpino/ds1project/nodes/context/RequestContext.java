@@ -10,8 +10,7 @@ import java.util.UUID;
 public abstract class RequestContext {
     public enum Status {
         ACTIVE,
-        COMPLETED,
-        EXPIRED
+        COMPLETED
     }
 
     public final UUID uuid;
