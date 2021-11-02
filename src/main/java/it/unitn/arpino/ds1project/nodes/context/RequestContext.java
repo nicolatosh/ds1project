@@ -2,7 +2,7 @@ package it.unitn.arpino.ds1project.nodes.context;
 
 import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.messages.TimeoutExpired;
-import it.unitn.arpino.ds1project.nodes.AbstractNode;
+import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -20,7 +20,7 @@ public abstract class RequestContext {
         this.uuid = uuid;
     }
 
-    public void startTimer(AbstractNode node, int timeoutDuration) {
+    public void startTimer(DataStoreNode<?> node, int timeoutDuration) {
         timeout = node.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(timeoutDuration), // delay
                 node.getSelf(), // receiver

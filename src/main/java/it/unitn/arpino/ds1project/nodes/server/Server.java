@@ -6,19 +6,18 @@ import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.TimeoutExpired;
-import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
-import it.unitn.arpino.ds1project.nodes.context.ContextManager;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-public class Server extends DataStoreNode {
+public class Server extends DataStoreNode<ServerRequestContext> {
     private final IDatabaseController controller;
 
     /**
@@ -26,13 +25,10 @@ public class Server extends DataStoreNode {
      */
     private final List<ServerInfo> servers;
 
-    ContextManager<ServerRequestContext> contextManager;
-
     public Server(int lowerKey, int upperKey) {
         controller = DatabaseBuilder.newBuilder()
                 .keyRange(lowerKey, upperKey)
                 .create();
-        contextManager = new ContextManager<>();
         servers = new ArrayList<>();
     }
 
@@ -54,23 +50,19 @@ public class Server extends DataStoreNode {
                 .build();
     }
 
-    private Optional<ServerRequestContext> getRequestContext(Transactional msg) {
-        return contextManager.contextOf(msg);
-    }
-
-    private ServerRequestContext newContext(Transactional msg) {
-        ServerRequestContext ctx = new ServerRequestContext(msg.uuid(), controller.beginTransaction());
-
-        contextManager.add(ctx);
-        return ctx;
-    }
-
     private void onServerInfo(ServerInfo server) {
         servers.add(server);
     }
 
+    public ServerRequestContext newContext(UUID uuid) {
+        ServerRequestContext ctx = new ServerRequestContext(uuid, controller.beginTransaction());
+        addContext(ctx);
+        return ctx;
+    }
+
+
     private void onReadRequest(ReadRequest req) {
-        ServerRequestContext ctx = getRequestContext(req).orElse(this.newContext(req));
+        ServerRequestContext ctx = getRequestContext(req).orElse(newContext(req.uuid()));
 
         int value = ctx.read(req.key);
 
@@ -79,7 +71,7 @@ public class Server extends DataStoreNode {
     }
 
     private void onWriteRequest(WriteRequest req) {
-        ServerRequestContext ctx = getRequestContext(req).orElse(this.newContext(req));
+        ServerRequestContext ctx = getRequestContext(req).orElse(newContext(req.uuid()));
 
         ctx.write(req.key, req.value);
     }
@@ -213,7 +205,7 @@ public class Server extends DataStoreNode {
     @Override
     protected void resume() {
         super.resume();
-        contextManager.getActive().forEach(RequestContext::setCrashed);
+        getActive().forEach(RequestContext::setCrashed);
         recoveryAbort();
         recoveryStartTerminationProtocol();
     }

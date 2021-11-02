@@ -5,14 +5,12 @@ import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.TimeoutExpired;
-import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
-import it.unitn.arpino.ds1project.nodes.context.ContextManager;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 
 import java.time.Duration;
@@ -20,22 +18,15 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-public class Coordinator extends DataStoreNode {
+public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     private final Dispatcher dispatcher;
-
-    private final ContextManager<CoordinatorRequestContext> contextManager;
 
     public Coordinator() {
         dispatcher = new Dispatcher();
-        contextManager = new ContextManager<>();
     }
 
     public Dispatcher getDispatcher() {
         return dispatcher;
-    }
-
-    public ContextManager<CoordinatorRequestContext> getContextManager() {
-        return contextManager;
     }
 
     public static Props props() {
@@ -63,14 +54,10 @@ public class Coordinator extends DataStoreNode {
                 .build();
     }
 
-    private Optional<CoordinatorRequestContext> getRequestContext(Transactional msg) {
-        return contextManager.contextOf(msg);
-    }
-
     private CoordinatorRequestContext newContext() {
         CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), getSender());
 
-        contextManager.add(ctx);
+        addContext(ctx);
         return ctx;
     }
 
@@ -232,7 +219,7 @@ public class Coordinator extends DataStoreNode {
     @Override
     protected void resume() {
         super.resume();
-        contextManager.getActive().forEach(RequestContext::setCrashed);
+        getActive().forEach(RequestContext::setCrashed);
         recoveryAbort();
         recoverySendDecision();
     }

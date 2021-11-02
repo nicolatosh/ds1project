@@ -7,7 +7,6 @@ import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
-import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 public class CoordinatorRequestContextTest {
     ActorSystem system;
     TestActorRef<Coordinator> coordinator;
-    TestActorRef<Server> server;
 
     @BeforeEach
     void setUp() {
@@ -45,7 +43,7 @@ public class CoordinatorRequestContextTest {
 
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 ctx.addParticipant(server);
-                coordinator.underlyingActor().getContextManager().add(ctx);
+                coordinator.underlyingActor().addContext(ctx);
 
                 ctx.startTimer(coordinator.underlyingActor());
                 // must account for the timeout duration to elapse and the message to be processed.
