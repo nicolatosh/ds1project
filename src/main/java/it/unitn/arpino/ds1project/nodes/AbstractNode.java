@@ -1,17 +1,20 @@
 package it.unitn.arpino.ds1project.nodes;
 
 import akka.actor.AbstractActor;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
 import it.unitn.arpino.ds1project.messages.Message;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public abstract class AbstractNode extends AbstractActor {
-    protected LoggingAdapter log = Logging.getLogger(getContext().getSystem(), this);
+    protected final Logger logger;
+
+    public AbstractNode() {
+        logger = Logger.getLogger(getSelf().path().name());
+    }
 
     @Override
     public void aroundPreStart() {
@@ -28,7 +31,7 @@ public abstract class AbstractNode extends AbstractActor {
                 delay();
             }
 
-            log.info("received " + message.getType() +
+            logger.info("received " + message.getType() +
                     "/" + message.getClass().getSimpleName() +
                     " from " + getSender().path().name());
         }

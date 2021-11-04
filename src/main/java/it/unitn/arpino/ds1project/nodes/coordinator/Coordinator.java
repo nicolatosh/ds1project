@@ -116,7 +116,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                 if (ctx.get().allVotedYes()) {
                     ctx.get().cancelTimer();
-                    log.info("GLOBAL_COMMIT");
+                    logger.info("GLOBAL_COMMIT");
                     ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     // multicast GLOBAL_COMMIT to all participants
@@ -132,7 +132,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             }
             case NO: {
                 ctx.get().cancelTimer();
-                log.info("GLOBAL_ABORT");
+                logger.info("GLOBAL_ABORT");
                 ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
 
@@ -157,7 +157,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        log.info("GLOBAL_ABORT");
+        logger.info("GLOBAL_ABORT");
         ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
         FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);

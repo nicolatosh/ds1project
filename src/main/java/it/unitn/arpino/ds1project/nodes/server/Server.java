@@ -87,14 +87,14 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         switch (ctx.get().getProtocolState()) {
             case READY: {
-                log.info("VOTE_COMMIT");
+                logger.info("VOTE_COMMIT");
 
                 VoteResponse vote = new VoteResponse(req.uuid(), Vote.YES);
                 getSender().tell(vote, getSelf());
                 break;
             }
             case ABORT: {
-                log.info("GLOBAL_ABORT");
+                logger.info("GLOBAL_ABORT");
 
                 VoteResponse vote = new VoteResponse(req.uuid(), Vote.NO);
                 getSender().tell(vote, getSelf());
@@ -126,7 +126,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        log.info("TERMINATION_PROTOCOL_TIMEOUT_FOR_FINALDECISION");
+        logger.info("TERMINATION_PROTOCOL_TIMEOUT_FOR_FINALDECISION");
         DecisionRequest req = new DecisionRequest(ctx.get().uuid);
 
         servers.forEach(s -> s.server.tell(req, getSelf()));
