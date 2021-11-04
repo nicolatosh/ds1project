@@ -5,7 +5,6 @@ import it.unitn.arpino.ds1project.messages.Message;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
-import java.time.Duration;
 import java.util.logging.Logger;
 
 public abstract class AbstractNode extends AbstractActor {
@@ -13,12 +12,6 @@ public abstract class AbstractNode extends AbstractActor {
 
     public AbstractNode() {
         logger = Logger.getLogger(getSelf().path().name());
-    }
-
-    @Override
-    public void aroundPreStart() {
-        super.aroundPreStart();
-        getContext().setReceiveTimeout(Duration.ofSeconds(10));
     }
 
     @Override
