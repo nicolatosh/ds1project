@@ -1,19 +1,19 @@
 package it.unitn.arpino.ds1project.datastore.lock;
 
 public class Lock {
-    private final ILockRepository repository;
+    private final ILockManager repository;
     public final int key;
 
-    public Lock(ILockRepository repository, int key) {
+    public Lock(ILockManager repository, int key) {
         this.repository = repository;
         this.key = key;
     }
 
-    public boolean lock() {
+    public final boolean lock() {
         return repository.lock(this);
     }
 
-    public void unlock() {
+    public final void unlock() {
         repository.release(this);
     }
 

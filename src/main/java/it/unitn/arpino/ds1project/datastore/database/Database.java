@@ -14,10 +14,10 @@ public class Database implements IDatabase {
     }
 
     @Override
-    public void initializeDb(Map<Integer, Integer> initialValues) {
+    public void initialize(Map<Integer, Integer> keyValues) {
 
         // Setting up keys, values and versions. Versions by default are 0
-        initialValues.forEach((k, v) -> {
+        keyValues.forEach((k, v) -> {
             values.put(k, v);
             versions.put(k, 0);
         });

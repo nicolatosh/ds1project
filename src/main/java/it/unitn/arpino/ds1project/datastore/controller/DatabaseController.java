@@ -3,8 +3,8 @@ package it.unitn.arpino.ds1project.datastore.controller;
 import it.unitn.arpino.ds1project.datastore.connection.Connection;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.datastore.database.IDatabase;
-import it.unitn.arpino.ds1project.datastore.lock.ILockRepository;
-import it.unitn.arpino.ds1project.datastore.lock.LockRepository;
+import it.unitn.arpino.ds1project.datastore.lock.ILockManager;
+import it.unitn.arpino.ds1project.datastore.lock.LockManager;
 import it.unitn.arpino.ds1project.datastore.transaction.ITransaction;
 import it.unitn.arpino.ds1project.datastore.transaction.Transaction;
 import it.unitn.arpino.ds1project.datastore.transaction.TransactionRepository;
@@ -13,12 +13,12 @@ import it.unitn.arpino.ds1project.datastore.workspace.IWorkspace;
 public class DatabaseController implements IDatabaseController {
     private final IDatabase database;
     private final TransactionRepository transactionRepository;
-    private final ILockRepository lockRepository;
+    private final ILockManager lockRepository;
 
     public DatabaseController(IDatabase database) {
         this.database = database;
         transactionRepository = new TransactionRepository();
-        lockRepository = new LockRepository();
+        lockRepository = new LockManager();
     }
 
     @Override

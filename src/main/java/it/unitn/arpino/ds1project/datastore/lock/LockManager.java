@@ -3,10 +3,10 @@ package it.unitn.arpino.ds1project.datastore.lock;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LockRepository implements ILockRepository {
+public class LockManager implements ILockManager {
     private final List<Lock> locks;
 
-    public LockRepository() {
+    public LockManager() {
         locks = new ArrayList<>();
     }
 

@@ -15,13 +15,13 @@ public class DatabaseBuilder {
     private int lowerKey;
     private int upperKey;
     private int value;
-    private final Map<Integer, Integer> keyvalues;
+    private final Map<Integer, Integer> keyValues;
 
     private DatabaseBuilder() {
         lowerKey = DEFAULT_LOWER_KEY;
         upperKey = DEFAULT_UPPER_KEY;
         value = DEFAULT_DATA_VALUE;
-        keyvalues = new HashMap<>();
+        keyValues = new HashMap<>();
     }
 
     public static DatabaseBuilder newBuilder() {
@@ -41,11 +41,10 @@ public class DatabaseBuilder {
 
 
     public IDatabaseController create() {
-        // Generating keys
-        IntStream.rangeClosed(lowerKey, upperKey).forEach(key -> keyvalues.put(key, value));
+        IntStream.rangeClosed(lowerKey, upperKey).forEach(key -> keyValues.put(key, value));
 
         IDatabase database = new Database();
-        database.initializeDb(keyvalues);
+        database.initialize(keyValues);
         return new DatabaseController(database);
     }
 }
