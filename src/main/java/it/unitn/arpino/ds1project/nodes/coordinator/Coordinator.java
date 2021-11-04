@@ -63,7 +63,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
     private void onServerInfo(ServerInfo server) {
         IntStream.rangeClosed(server.lowerKey, server.upperKey)
-                .forEach(key -> dispatcher.map(server.server, key));
+                .forEach(key -> dispatcher.map(key, server.server));
     }
 
     private void onTxnBeginMsg(TxnBeginMsg msg) {
@@ -173,7 +173,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         ReadRequest req = new ReadRequest(msg.uuid(), msg.key);
 
-        ActorRef server = dispatcher.byKey(msg.key);
+        ActorRef server = dispatcher.getServer(msg.key);
         server.tell(req, getSelf());
 
         ctx.get().addParticipant(server);
@@ -200,7 +200,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         WriteRequest req = new WriteRequest(msg.uuid(), msg.key, msg.value);
 
-        ActorRef server = dispatcher.byKey(msg.key);
+        ActorRef server = dispatcher.getServer(msg.key);
         server.tell(req, getSelf());
 
         ctx.get().addParticipant(server);

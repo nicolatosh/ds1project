@@ -13,7 +13,6 @@ import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.server.Server;
-import it.unitn.arpino.ds1project.nodes.server.Vote;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,12 +78,12 @@ public class ServerTimeoutTest {
                 VoteRequest voteRequest1 = new VoteRequest(uuid1);
                 server.tell(voteRequest1, coord);
                 VoteResponse voteResponse1 = expectMsgClass(VoteResponse.class);
-                assertEquals(Vote.YES, voteResponse1.vote);
+                assertEquals(VoteResponse.Vote.YES, voteResponse1.vote);
 
                 VoteRequest voteRequest2 = new VoteRequest(uuid1);
                 server2.tell(voteRequest2, coord);
                 VoteResponse voteResponse2 = expectMsgClass(VoteResponse.class);
-                assertEquals(Vote.YES, voteResponse2.vote);
+                assertEquals(VoteResponse.Vote.YES, voteResponse2.vote);
 
                 // Coordinator sends decision to Server2
                 FinalDecision decision = new FinalDecision(uuid1, FinalDecision.Decision.GLOBAL_COMMIT);

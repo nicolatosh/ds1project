@@ -7,6 +7,9 @@ import scala.runtime.BoxedUnit;
 
 import java.util.logging.Logger;
 
+/**
+ * Base class for all nodes. Logs all received {@link Message}s.
+ */
 public abstract class AbstractNode extends AbstractActor {
     protected final Logger logger;
 

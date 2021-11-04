@@ -89,14 +89,14 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             case READY: {
                 logger.info("VOTE_COMMIT");
 
-                VoteResponse vote = new VoteResponse(req.uuid(), Vote.YES);
+                VoteResponse vote = new VoteResponse(req.uuid(), VoteResponse.Vote.YES);
                 getSender().tell(vote, getSelf());
                 break;
             }
             case ABORT: {
                 logger.info("GLOBAL_ABORT");
 
-                VoteResponse vote = new VoteResponse(req.uuid(), Vote.NO);
+                VoteResponse vote = new VoteResponse(req.uuid(), VoteResponse.Vote.NO);
                 getSender().tell(vote, getSelf());
                 break;
             }

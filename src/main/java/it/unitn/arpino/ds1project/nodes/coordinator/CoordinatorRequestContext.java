@@ -1,7 +1,15 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
+import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
+import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
+import it.unitn.arpino.ds1project.messages.server.FinalDecision;
+import it.unitn.arpino.ds1project.messages.server.ReadRequest;
+import it.unitn.arpino.ds1project.messages.server.VoteRequest;
+import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
+import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -9,6 +17,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CoordinatorRequestContext extends RequestContext {
+    /**
+     * State of the Two-phase commit (2PC) protocol of a transaction.
+     */
     public enum TwoPhaseCommitFSM {
         INIT,
         WAIT,
@@ -17,7 +28,7 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * Duration (in seconds) within which all the participants' VoteResponses should be collected.
+     * Duration (in seconds) within which all the participants' {@link VoteResponse}s should be collected.
      */
     public static final int TIMEOUT_DURATION_S = 1;
 
@@ -26,19 +37,10 @@ public class CoordinatorRequestContext extends RequestContext {
      */
     private final ActorRef client;
 
-    /**
-     * The servers that the coordinator has contacted in the context of the request.
-     */
     private final Set<ActorRef> participants;
 
-    /**
-     * The servers that voted positively on the coordinator's request and are ready to commit.
-     */
     private final Set<ActorRef> yesVoters;
 
-    /**
-     * The current state of the Two-phase commit protocol.
-     */
     private TwoPhaseCommitFSM protocolState;
 
     public CoordinatorRequestContext(UUID uuid, ActorRef client) {
@@ -60,36 +62,58 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * @return The current state of the Two-phase commit (2PC) protocol.
+     * @return The current state of the Two-phase commit (2PC) protocol of the transaction.
      */
     public TwoPhaseCommitFSM getProtocolState() {
         return protocolState;
     }
 
+    /**
+     * Sets the current state of the Two-phase commit (2PC) protocol of the transaction.
+     */
     public void setProtocolState(TwoPhaseCommitFSM protocolState) {
         this.protocolState = protocolState;
     }
 
+    /**
+     * @return The participants involved in this transaction. A participant is a {@link Server} to which
+     * the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}s to fulfill the client's
+     * {@link ReadMsg} or {@link WriteMsg}.
+     */
     public Set<ActorRef> getParticipants() {
         return participants;
     }
 
+    /**
+     * Adds a participant to the list of participants of this transaction. A participant is a {@link Server} to which
+     * the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}s to fulfill the client's
+     * {@link ReadMsg} or {@link WriteMsg}.
+     */
     public void addParticipant(ActorRef participant) {
         participants.add(participant);
     }
 
-    public Set<ActorRef> getYesVoters() {
-        return yesVoters;
-    }
-
+    /**
+     * Adds a participant to the list of participants which, upon the {@link Coordinator}'s {@link VoteRequest},
+     * cast a positive {@link VoteResponse}.
+     */
     public void addYesVoter(ActorRef yesVoter) {
         yesVoters.add(yesVoter);
     }
 
+    /**
+     * @return Whether all participants have cast a positive {@link VoteResponse}. If true, the {@link Coordinator}
+     * can request to commit the transaction, sending them the {@link FinalDecision}.
+     */
     boolean allVotedYes() {
         return yesVoters.size() == participants.size();
     }
 
+    /**
+     * Starts a countdown timer, within which the {@link Coordinator} should receive the participants'
+     * {@link VoteResponse}s. If the responses do not arrive in time, the Coordinator assumes one participant has
+     * crashed.
+     */
     public void startTimer(Coordinator coordinator) {
         super.startTimer(coordinator, TIMEOUT_DURATION_S);
     }

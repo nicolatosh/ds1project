@@ -39,7 +39,7 @@ public class CoordinatorRequestContextTest {
         new TestKit(system) {
             {
                 ActorRef server = testActor();
-                coordinator.underlyingActor().getDispatcher().map(server, 0);
+                coordinator.underlyingActor().getDispatcher().map(0, server);
 
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 ctx.addParticipant(server);

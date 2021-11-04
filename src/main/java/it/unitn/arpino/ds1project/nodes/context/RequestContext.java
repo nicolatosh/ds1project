@@ -7,18 +7,24 @@ import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import java.time.Duration;
 import java.util.UUID;
 
+/**
+ * Base class which is used to encapsulate everything related to a transaction.
+ */
 public abstract class RequestContext {
     public final UUID uuid;
 
     private Cancellable timeout;
 
+    /**
+     * @param uuid Unique identifier for this context.
+     */
     public RequestContext(UUID uuid) {
         this.uuid = uuid;
     }
 
     /**
      * Starts a countdown timer. If the timer is not canceled before expiring, sends a {@link TimeoutExpired} message
-     * to the node which started the timer.
+     * to the {@link DataStoreNode} which started the timer.
      *
      * @param node            The node which starts the timer.
      * @param timeoutDuration Duration in seconds of the timer.
@@ -40,8 +46,7 @@ public abstract class RequestContext {
     }
 
     /**
-     * @return Whether this context is decided. A context is decided when the related transaction committed or
-     * aborted.
+     * @return Whether the transaction of this context has already been committed or aborted.
      */
     public abstract boolean isDecided();
 }

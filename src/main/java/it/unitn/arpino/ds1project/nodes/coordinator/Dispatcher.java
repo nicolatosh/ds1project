@@ -1,13 +1,18 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
+import it.unitn.arpino.ds1project.messages.server.ReadRequest;
+import it.unitn.arpino.ds1project.messages.server.WriteRequest;
+import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-
+/**
+ * Holds the mappings between keys and the {@link ActorRef}s of the {@link Server}s in the distributed Data Store which
+ * store the data items with those key, and to which the {@link Coordinator} can send {@link ReadRequest}s and
+ * {@link WriteRequest}s.
+ */
 public class Dispatcher {
     private final Map<Integer, ActorRef> map;
 
@@ -15,15 +20,18 @@ public class Dispatcher {
         this.map = new HashMap<>();
     }
 
-    public void map(ActorRef actorRef, int key) {
+    /**
+     * Adds a mapping for the specified key and ActorRef.
+     */
+    public void map(int key, ActorRef actorRef) {
         map.put(key, actorRef);
     }
 
-    public ActorRef byKey(int key) {
+    /**
+     * @param key The key of the data item for which a reference to the {@link Server} storing that data item is wanted.
+     * @return The {@link Server} in the distributed Data Store which stores the data item with the specified key.
+     */
+    public ActorRef getServer(int key) {
         return map.get(key);
-    }
-
-    public List<ActorRef> all() {
-        return new ArrayList<>(map.values());
     }
 }
