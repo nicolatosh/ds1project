@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ServerTimeoutTest {
     ActorSystem system;
@@ -44,7 +45,9 @@ public class ServerTimeoutTest {
             {
                 // Mock the coordinator and the second server
                 ActorRef coord = testActor();
-                ActorRef server2 = testActor();
+
+                TestKit testKit2 = new TestKit(system);
+                ActorRef server2 = testKit2.testActor();
 
                 // Updating server knowledge of the other
                 ServerInfo info2 = new ServerInfo(server2, 20, 29);
@@ -70,28 +73,21 @@ public class ServerTimeoutTest {
                 ServerRequestContext ctx2 = server_actor.getRequestContext(write1).orElseThrow();
                 assertEquals(ctx, ctx2);
 
-
                 VoteRequest voteRequest1 = new VoteRequest(uuid1);
                 server.tell(voteRequest1, coord);
                 VoteResponse voteResponse1 = expectMsgClass(VoteResponse.class);
-                assertEquals(VoteResponse.Vote.YES, voteResponse1.vote);
-
-                // Coordinator sends decision to server2 but not to server1
-                FinalDecision decision = new FinalDecision(uuid1, FinalDecision.Decision.GLOBAL_COMMIT);
-                server2.tell(decision, coord);
-                expectMsgClass(FinalDecision.class);
+                assertSame(VoteResponse.Vote.YES, voteResponse1.vote);
 
                 // Server1 does not receive the final decision from coordinator
                 // DecisionRequest issued
                 TimeoutExpired timeout = new TimeoutExpired(uuid1);
                 server.tell(timeout, server);
-                expectMsgClass(DecisionRequest.class);
+                testKit2.expectMsgClass(DecisionRequest.class);
 
                 // Suppose that Server2 do not know the decision
                 DecisionResponse response = new DecisionResponse(uuid1, ServerRequestContext.TwoPhaseCommitFSM.READY);
                 server.tell(response, server2);
                 expectNoMessage();
-
 
                 Server server_actor2 = server.underlyingActor();
                 ServerRequestContext ctx_response = server_actor2.getRequestContext(response).orElseThrow();
