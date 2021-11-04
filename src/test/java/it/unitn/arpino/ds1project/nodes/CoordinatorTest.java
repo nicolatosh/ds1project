@@ -57,7 +57,9 @@ public class CoordinatorTest {
                 // Mock the clients
 
                 ActorRef client1 = testActor();
-                ActorRef client2 = testActor();
+
+                var testKit2 = new TestKit(system);
+                ActorRef client2 = testKit2.testActor();
 
                 // The clients begin two transactions. They must obtain different UUIDs.
 
@@ -66,7 +68,7 @@ public class CoordinatorTest {
                 UUID uuid1 = accept1.uuid();
 
                 coordinator.tell(new TxnBeginMsg(), client2);
-                TxnAcceptMsg accept2 = expectMsgClass(TxnAcceptMsg.class);
+                TxnAcceptMsg accept2 = testKit2.expectMsgClass(TxnAcceptMsg.class);
                 UUID uuid2 = accept2.uuid();
 
                 assertNotEquals(uuid1, uuid2);
@@ -93,12 +95,12 @@ public class CoordinatorTest {
                 // the values read by the first transaction.
 
                 coordinator.tell(new ReadMsg(uuid2, 4), client2);
-                ReadResultMsg read2_1 = expectMsgClass(ReadResultMsg.class);
+                ReadResultMsg read2_1 = testKit2.expectMsgClass(ReadResultMsg.class);
                 assertNotEquals(40, read2_1.value);
                 assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, read2_1.value);
 
                 coordinator.tell(new ReadMsg(uuid2, 13), client2);
-                ReadResultMsg read2_2 = expectMsgClass(ReadResultMsg.class);
+                ReadResultMsg read2_2 = testKit2.expectMsgClass(ReadResultMsg.class);
                 assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, read2_2.value);
 
                 // The first transaction commits. The response from the server must be positive.
@@ -110,7 +112,7 @@ public class CoordinatorTest {
                 // The second transaction commits. The response from the server must be negative.
 
                 coordinator.tell(new TxnEndMsg(uuid2, true), client2);
-                TxnResultMsg result2 = expectMsgClass(TxnResultMsg.class);
+                TxnResultMsg result2 = testKit2.expectMsgClass(TxnResultMsg.class);
                 assertFalse(result2.commit);
             }
         };
