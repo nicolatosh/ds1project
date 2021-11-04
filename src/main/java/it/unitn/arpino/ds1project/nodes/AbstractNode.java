@@ -6,7 +6,6 @@ import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public abstract class AbstractNode extends AbstractActor {
@@ -27,22 +26,11 @@ public abstract class AbstractNode extends AbstractActor {
         if (msg instanceof Message) {
             Message message = (Message) msg;
 
-            if (message.getType() != Message.TYPE.NodeControl) {
-                delay();
-            }
-
             logger.info("received " + message.getType() +
                     "/" + message.getClass().getSimpleName() +
                     " from " + getSender().path().name());
         }
 
         super.aroundReceive(receive, msg);
-    }
-
-    private void delay() {
-        try {
-            TimeUnit.SECONDS.sleep(0);
-        } catch (InterruptedException ignored) {
-        }
     }
 }
