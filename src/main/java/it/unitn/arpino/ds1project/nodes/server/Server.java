@@ -10,6 +10,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
+import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,10 +44,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(WriteRequest.class, this::onWriteRequest)
                 .match(VoteRequest.class, this::onVoteRequest)
                 .match(FinalDecision.class, this::onFinalDecision)
-                .match(AbortRequest.class, this::onAbortRequest)
                 .match(TimeoutExpired.class, this::onTimeoutExpired)
                 .match(DecisionRequest.class, this::onDecisionRequest)
-                .match(DecisionResponse.class, this::onDecisionResponse)
                 .build();
     }
 
@@ -56,6 +55,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     public ServerRequestContext newContext(UUID uuid) {
         ServerRequestContext ctx = new ServerRequestContext(uuid, controller.beginTransaction());
+        ctx.startTimer(this);
         addContext(ctx);
         return ctx;
     }
@@ -83,6 +83,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
+        ctx.get().cancelTimer();
+
         ctx.get().prepare();
 
         switch (ctx.get().getProtocolState()) {
@@ -105,20 +107,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         ctx.get().startTimer(this);
     }
 
-    private void onAbortRequest(AbortRequest msg) {
-        Optional<ServerRequestContext> ctx = getRequestContext(msg);
-        if (ctx.isEmpty()) {
-            // Todo: Bad request
-            return;
-        }
-
-        ctx.get().abort();
-    }
-
-    /**
-     * Starts the termination protocol: the server asks every other server for the decision
-     * and remains blocked until it receives a response.
-     */
     private void onTimeoutExpired(TimeoutExpired timeout) {
         Optional<ServerRequestContext> ctx = getRequestContext(timeout);
         if (ctx.isEmpty()) {
@@ -126,10 +114,21 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        logger.info("TERMINATION_PROTOCOL_TIMEOUT_FOR_FINALDECISION");
-        DecisionRequest req = new DecisionRequest(ctx.get().uuid);
-
-        servers.forEach(s -> s.server.tell(req, getSelf()));
+        switch (ctx.get().getProtocolState()) {
+            case INIT: {
+                logger.info("Timeout expired. Reason: too much time passed in INIT state");
+                ctx.get().abort();
+                break;
+            }
+            case READY: {
+                logger.info("Timeout expired. Reason: did not receive in time the FinalDecision." +
+                        "Starting the Termination Protocol.");
+                terminationProtocol(ctx.get());
+                break;
+            }
+            default:
+                logger.severe("Invalid Two-phase commit protocol state: " + ctx.get().getProtocolState());
+        }
     }
 
     /**
@@ -143,100 +142,92 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        ServerRequestContext.TwoPhaseCommitFSM status = ctx.get().getProtocolState();
-        if (status == ServerRequestContext.TwoPhaseCommitFSM.COMMIT ||
-                status == ServerRequestContext.TwoPhaseCommitFSM.ABORT) {
-            DecisionResponse resp = new DecisionResponse(req.uuid(), status);
-            getSender().tell(resp, getSelf());
+        switch (ctx.get().getProtocolState()) {
+            case COMMIT: {
+                FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_COMMIT);
+                getSender().tell(decision, getSelf());
+                break;
+            }
+            case ABORT: {
+                FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                getSender().tell(decision, getSelf());
+                break;
+            }
+            default: {
+                logger.severe("Invalid Two-phase commit protocol state: " + ctx.get().getProtocolState());
+                break;
+            }
         }
     }
 
     /**
-     * This method is executed if the server is executing the termination protocol.
-     * The server receives the transaction's outcome (i.e., the coordinator's final decision) from another server.
+     * Either the {@link Coordinator} or another participant is sending the {@link FinalDecision} to this Server.
      */
-    private void onDecisionResponse(DecisionResponse resp) {
-        Optional<ServerRequestContext> ctx = getRequestContext(resp);
-        if (ctx.isEmpty()) {
-            // Todo: Bad request
-            return;
-        }
-        if (ctx.get().isDecided()) {
-            // The Server has already received a DecisionResponse from another participant
-            return;
-        }
-
-        ServerRequestContext.TwoPhaseCommitFSM status = resp.getStatus();
-        switch (status) {
-            case ABORT: {
-                ctx.get().abort();
-                break;
-            }
-            case COMMIT: {
-                ctx.get().commit();
-                break;
-            }
-        }
-    }
-
-
     private void onFinalDecision(FinalDecision req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
         }
-        if (ctx.get().isDecided()) {
-            // This happens when the Coordinator wakes up after a crash and sends to this Server the FinalDecision,
-            // but this Server has already received the final decision from another participant under the form of a
-            // DecisionResponse.
-            return;
-        }
 
-        switch (req.decision) {
-            case GLOBAL_COMMIT:
-                ctx.get().commit();
-                break;
-
-            case GLOBAL_ABORT:
+        switch (ctx.get().getProtocolState()) {
+            case INIT: {
+                ctx.get().cancelTimer();
                 ctx.get().abort();
                 break;
-
+            }
+            case READY: {
+                ctx.get().cancelTimer();
+                switch (req.decision) {
+                    case GLOBAL_COMMIT:
+                        ctx.get().commit();
+                        break;
+                    case GLOBAL_ABORT:
+                        ctx.get().abort();
+                        break;
+                }
+                break;
+            }
+            default: {
+                // (1) we are receiving the FinalDecision from the Coordinator, which has just woken up after a crash, but
+                // we already know the FinalDecision as another participant has already sent it to us,
+                // (2) we are receiving the FinalDecision from a participant, but we already know it aas another participant
+                // has already sent it to us.
+                break;
+            }
         }
+    }
 
-        ctx.get().cancelTimer();
+    /**
+     * The server asks every other server for the {@link FinalDecision} with a {@link DecisionRequest} and remains
+     * blocked until it receives a response.
+     *
+     * @param ctx Context for which to start the termination protocol
+     */
+    private void terminationProtocol(ServerRequestContext ctx) {
+        DecisionRequest request = new DecisionRequest(ctx.uuid);
+        servers.stream()
+                .map(serverInfo -> serverInfo.server)
+                .forEach(server -> server.tell(request, getSelf()));
     }
 
     @Override
     protected void resume() {
         super.resume();
+
         List<ServerRequestContext> voteNotCasted = getActive().stream()
                 .filter(ctx -> ctx.getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.INIT)
                 .collect(Collectors.toList());
+
         List<ServerRequestContext> voteCasted = getActive().stream()
                 .filter(ctx -> ctx.getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.READY)
                 .collect(Collectors.toList());
-        voteNotCasted.forEach(this::recoveryAbort);
-        voteCasted.forEach(this::recoveryStartTerminationProtocol);
-    }
 
-    /**
-     * This method implements a recovery action of the Two-phase commit (2PC) protocol.
-     * If the server has not already cast the vote for the transaction, it aborts it.
-     */
-    private void recoveryAbort(ServerRequestContext ctx) {
-        ctx.abort();
-    }
+        // If the server has not already cast the vote for the transaction, it aborts it.
+        voteNotCasted.forEach(ServerRequestContext::abort);
 
-    /**
-     * This method implements a recovery action of the Two-phase commit (2PC) protocol.
-     * If the server has already cast the vote for the transaction, it asks the others about the coordinator's
-     * {@link FinalDecision}.
-     */
-    private void recoveryStartTerminationProtocol(ServerRequestContext ctx) {
-        DecisionRequest request = new DecisionRequest(ctx.uuid);
-        servers.stream()
-                .map(serverInfo -> serverInfo.server)
-                .forEach(server -> server.tell(request, getSelf()));
+        // If the server has already cast the vote for the transaction, it asks the others about the coordinator's
+        // FinalDecision.
+        voteCasted.forEach(this::terminationProtocol);
     }
 }

@@ -31,9 +31,16 @@ public class FinalDecision extends Message implements Transactional {
      */
     public final Decision decision;
 
+    public boolean clientAbort;
+
     public FinalDecision(UUID uuid, Decision decision) {
         this.uuid = uuid;
         this.decision = decision;
+    }
+
+    public FinalDecision(UUID uuid, Decision decision, boolean clientAbort) {
+        this(uuid, decision);
+        this.clientAbort = clientAbort;
     }
 
     @Override

@@ -9,7 +9,10 @@ import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
-import it.unitn.arpino.ds1project.messages.server.*;
+import it.unitn.arpino.ds1project.messages.server.FinalDecision;
+import it.unitn.arpino.ds1project.messages.server.ReadRequest;
+import it.unitn.arpino.ds1project.messages.server.VoteRequest;
+import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 
 import java.time.Duration;
@@ -91,8 +94,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         } else {
             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
-            AbortRequest req = new AbortRequest(msg.uuid());
-            ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
+            FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT, true);
+            ctx.get().getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
         }
 
         ctx.get().startTimer(this);

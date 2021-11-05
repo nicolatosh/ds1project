@@ -5,7 +5,6 @@ import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.messages.ServerInfo;
-import it.unitn.arpino.ds1project.messages.TimeoutExpired;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -19,83 +18,86 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ServerTimeoutTest {
     ActorSystem system;
-    TestActorRef<Server> server;
+    TestActorRef<Server> server1;
 
     @BeforeEach
     void setUp() {
         system = ActorSystem.create();
-        server = TestActorRef.create(system, Server.props(0, 9), "server");
+        server1 = TestActorRef.create(system, Server.props(0, 9), "server");
     }
 
     @AfterEach
     void tearDown() {
         TestKit.shutdownActorSystem(system, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS), false);
         system = null;
-        server = null;
+        server1 = null;
     }
 
     @Test
     void testTimeout() {
         new TestKit(system) {
             {
-                // Mock the coordinator and the second server
+                // Mock the coordinator and the second server.
+
                 ActorRef coord = testActor();
 
                 TestKit testKit2 = new TestKit(system);
                 ActorRef server2 = testKit2.testActor();
 
-                // Updating server knowledge of the other
-                ServerInfo info2 = new ServerInfo(server2, 20, 29);
-                server.tell(info2, ActorRef.noSender());
+                // Update server1's knowledge of the server2
 
-                // Trasaction affecting 2 servers
-                // Server2 read/writes are emulated
+                ServerInfo info2 = new ServerInfo(server2, 10, 19);
+                server1.tell(info2, ActorRef.noSender());
+
+                // Simulate a transaction by requesting two operations: a WriteRequest and a ReadRequest.
 
                 UUID uuid1 = UUID.randomUUID();
+
                 WriteRequest write1 = new WriteRequest(uuid1, 6, 742);
-                server.tell(write1, coord);
+                server1.tell(write1, coord);
                 expectNoMessage();
 
                 ReadRequest read1 = new ReadRequest(uuid1, 6);
-                server.tell(read1, coord);
+                server1.tell(read1, coord);
                 ReadResult result1 = expectMsgClass(ReadResult.class);
                 Assertions.assertEquals(742, result1.value);
 
-                // Checking that read and write requests are part of the same transaction
+                // server1 should have placed the two operations in the same ServerRequestContext
+                // (in the future, this test might be put in another class).
 
-                Server server_actor = server.underlyingActor();
-                ServerRequestContext ctx = server_actor.getRequestContext(read1).orElseThrow();
-                ServerRequestContext ctx2 = server_actor.getRequestContext(write1).orElseThrow();
-                assertEquals(ctx, ctx2);
+                assertSame(server1.underlyingActor().getRequestContext(read1).orElseThrow(),
+                        server1.underlyingActor().getRequestContext(write1).orElseThrow());
+
+                // Send a VoteRequest to server1. The ServerRequestContext must switch to the READY state.
+                // server1 starts a timer within which to receive the FinalDecision from coord.
 
                 VoteRequest voteRequest1 = new VoteRequest(uuid1);
-                server.tell(voteRequest1, coord);
+                server1.tell(voteRequest1, coord);
+                assertSame(ServerRequestContext.TwoPhaseCommitFSM.READY,
+                        server1.underlyingActor().getRequestContext(voteRequest1).orElseThrow().getProtocolState());
+
                 VoteResponse voteResponse1 = expectMsgClass(VoteResponse.class);
                 assertSame(VoteResponse.Vote.YES, voteResponse1.vote);
 
-                // Server1 does not receive the final decision from coordinator
-                // DecisionRequest issued
-                TimeoutExpired timeout = new TimeoutExpired(uuid1);
-                server.tell(timeout, server);
+                // The timeout expires, and server1 sends a TimeoutExpire message to itself, upon which it asks server2
+                // if it knows about the FinalDecision.
+
                 testKit2.expectMsgClass(DecisionRequest.class);
 
-                // Suppose that Server2 do not know the decision
-                DecisionResponse response = new DecisionResponse(uuid1, ServerRequestContext.TwoPhaseCommitFSM.READY);
-                server.tell(response, server2);
+                // Suppose that server2 knows the FinalDecision: it sends it to server1.
+
+                FinalDecision decision = new FinalDecision(uuid1, FinalDecision.Decision.GLOBAL_COMMIT);
+                server1.tell(decision, server2);
                 expectNoMessage();
 
-                Server server_actor2 = server.underlyingActor();
-                ServerRequestContext ctx_response = server_actor2.getRequestContext(response).orElseThrow();
-                ServerRequestContext.TwoPhaseCommitFSM state = ctx_response.getProtocolState();
+                // The ServerRequestContext must switch to the COMMIT state.
 
-                // Server must be still in Ready state since the other server did not know the decision
-                assertEquals(state, ServerRequestContext.TwoPhaseCommitFSM.READY);
-
+                ServerRequestContext ctx = server1.underlyingActor().getRequestContext(decision).orElseThrow();
+                assertSame(ServerRequestContext.TwoPhaseCommitFSM.COMMIT, ctx.getProtocolState());
             }
         };
     }

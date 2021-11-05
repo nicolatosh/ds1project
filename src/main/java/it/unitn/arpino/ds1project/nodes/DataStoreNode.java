@@ -48,6 +48,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
 
     /**
      * Resumes the {@link DataStoreNode} from a crash. A resumed note starts handling new messages.
+     * This method implements the recovery actions of the Two-phase commit (2PC) protocol.
      */
     protected void resume() {
         getContext().become(createReceive());
