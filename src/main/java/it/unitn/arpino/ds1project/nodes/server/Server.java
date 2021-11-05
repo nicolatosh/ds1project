@@ -62,16 +62,16 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
 
     private void onReadRequest(ReadRequest req) {
-        ServerRequestContext ctx = getRequestContext(req).orElse(newContext(req.uuid()));
+        ServerRequestContext ctx = getRequestContext(req).orElse(newContext(req.uuid));
 
         int value = ctx.read(req.key);
 
-        ReadResult res = new ReadResult(req.uuid(), req.key, value);
+        ReadResult res = new ReadResult(req.uuid, req.key, value);
         getSender().tell(res, getSelf());
     }
 
     private void onWriteRequest(WriteRequest req) {
-        ServerRequestContext ctx = getRequestContext(req).orElse(newContext(req.uuid()));
+        ServerRequestContext ctx = getRequestContext(req).orElse(newContext(req.uuid));
 
         ctx.write(req.key, req.value);
     }
@@ -91,14 +91,14 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             case READY: {
                 logger.info("VOTE_COMMIT");
 
-                VoteResponse vote = new VoteResponse(req.uuid(), VoteResponse.Vote.YES);
+                VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.YES);
                 getSender().tell(vote, getSelf());
                 break;
             }
             case ABORT: {
                 logger.info("GLOBAL_ABORT");
 
-                VoteResponse vote = new VoteResponse(req.uuid(), VoteResponse.Vote.NO);
+                VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
                 getSender().tell(vote, getSelf());
                 break;
             }

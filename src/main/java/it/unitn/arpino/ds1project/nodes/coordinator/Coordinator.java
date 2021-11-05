@@ -89,7 +89,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         if (msg.commit) {
             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
 
-            VoteRequest req = new VoteRequest(msg.uuid());
+            VoteRequest req = new VoteRequest(msg.uuid);
             ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
         } else {
             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
@@ -123,12 +123,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     // multicast GLOBAL_COMMIT to all participants
-                    FinalDecision decision = new FinalDecision(resp.uuid(), FinalDecision.Decision.GLOBAL_COMMIT);
+                    FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                     ctx.get().getParticipants().forEach(server -> getContext().system().scheduler().scheduleOnce(
                             Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
 
                     // tell the client the result of the transaction
-                    TxnResultMsg result = new TxnResultMsg(resp.uuid(), true);
+                    TxnResultMsg result = new TxnResultMsg(resp.uuid, true);
                     ctx.get().getClient().tell(result, getSelf());
                 }
                 break;
@@ -140,12 +140,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
 
                 // multicast GLOBAL_ABORT to all participants
-                FinalDecision decision = new FinalDecision(resp.uuid(), FinalDecision.Decision.GLOBAL_ABORT);
+                FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                 ctx.get().getParticipants().forEach(server -> getContext().system().scheduler().scheduleOnce(
                         Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
 
                 // tell the client the result of the transaction
-                TxnResultMsg result = new TxnResultMsg(resp.uuid(), false);
+                TxnResultMsg result = new TxnResultMsg(resp.uuid, false);
                 ctx.get().getClient().tell(result, getSelf());
 
                 break;
@@ -174,7 +174,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        ReadRequest req = new ReadRequest(msg.uuid(), msg.key);
+        ReadRequest req = new ReadRequest(msg.uuid, msg.key);
 
         ActorRef server = dispatcher.getServer(msg.key);
         server.tell(req, getSelf());
@@ -189,7 +189,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        ReadResultMsg result = new ReadResultMsg(msg.uuid(), msg.key, msg.value);
+        ReadResultMsg result = new ReadResultMsg(msg.uuid, msg.key, msg.value);
 
         ctx.get().getClient().tell(result, getSelf());
     }
@@ -201,7 +201,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        WriteRequest req = new WriteRequest(msg.uuid(), msg.key, msg.value);
+        WriteRequest req = new WriteRequest(msg.uuid, msg.key, msg.value);
 
         ActorRef server = dispatcher.getServer(msg.key);
         server.tell(req, getSelf());

@@ -1,32 +1,24 @@
 package it.unitn.arpino.ds1project.messages.client;
 
 import it.unitn.arpino.ds1project.messages.Message;
-import it.unitn.arpino.ds1project.messages.Transactional;
+import it.unitn.arpino.ds1project.nodes.client.TxnClient;
+import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
 import java.util.UUID;
 
 /**
- * Message from the coordinator to the client with the outcome of the TXN
+ * A message that a {@link Coordinator} sends to a {@link TxnClient} indicating the overall outcome of the transaction.
  */
-public class TxnResultMsg extends Message implements Transactional {
-    private final UUID uuid;
-    public final Boolean commit;
+public class TxnResultMsg extends Message {
+    public final boolean commit;
 
-    /**
-     * @param commit If false, the transaction was aborted
-     */
     public TxnResultMsg(UUID uuid, boolean commit) {
-        this.uuid = uuid;
+        super(uuid);
         this.commit = commit;
     }
 
     @Override
-    public Message.TYPE getType() {
-        return Message.TYPE.TxnControl;
-    }
-
-    @Override
-    public UUID uuid() {
-        return uuid;
+    public Type getType() {
+        return Type.Conversational;
     }
 }

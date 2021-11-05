@@ -65,11 +65,11 @@ public class CoordinatorTest {
 
                 coordinator.tell(new TxnBeginMsg(), client1);
                 TxnAcceptMsg accept1 = expectMsgClass(TxnAcceptMsg.class);
-                UUID uuid1 = accept1.uuid();
+                UUID uuid1 = accept1.uuid;
 
                 coordinator.tell(new TxnBeginMsg(), client2);
                 TxnAcceptMsg accept2 = testKit2.expectMsgClass(TxnAcceptMsg.class);
-                UUID uuid2 = accept2.uuid();
+                UUID uuid2 = accept2.uuid;
 
                 assertNotEquals(uuid1, uuid2);
 

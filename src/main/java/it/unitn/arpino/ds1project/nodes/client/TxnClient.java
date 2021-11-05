@@ -145,7 +145,7 @@ public class TxnClient extends AbstractActor {
     private void onTxnAcceptMsg(TxnAcceptMsg msg) {
         acceptedTxn = true;
         acceptTimeout.cancel();
-        uuid = msg.uuid();
+        uuid = msg.uuid;
         readTwo();
     }
 

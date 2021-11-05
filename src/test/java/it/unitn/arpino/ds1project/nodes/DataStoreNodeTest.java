@@ -50,10 +50,13 @@ class DataStoreNodeTest {
 
     private static class SimpleNode extends DataStoreNode {
         private static class SimpleMessage extends Message {
+            public SimpleMessage() {
+                super(null);
+            }
 
             @Override
-            public TYPE getType() {
-                return TYPE.Conversational;
+            public Type getType() {
+                return Type.Conversational;
             }
         }
 

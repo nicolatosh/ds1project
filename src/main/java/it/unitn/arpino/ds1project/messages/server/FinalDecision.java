@@ -1,40 +1,27 @@
 package it.unitn.arpino.ds1project.messages.server;
 
 import it.unitn.arpino.ds1project.messages.Message;
-import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.util.UUID;
 
 /**
- * A message that a coordinator sends to a server containing its final decision on
- * committing or aborting the transaction.
- *
- * @see Coordinator
- * @see Server
- * @see Decision
+ * A message that a {@link Coordinator} sends to a {@link Server} (or a Server to another Server, if executing the
+ * termination protocol), representing the decision that the Coordinator has taken about whether to commit or abort the
+ * transaction.
  */
-public class FinalDecision extends Message implements Transactional {
+public class FinalDecision extends Message {
     public enum Decision {
         GLOBAL_COMMIT,
         GLOBAL_ABORT
     }
 
-    private final UUID uuid;
-
-    /**
-     * The decision of the coordinator about committing or aborting the transaction.
-     *
-     * @see Coordinator
-     * @see Decision
-     */
     public final Decision decision;
-
     public boolean clientAbort;
 
     public FinalDecision(UUID uuid, Decision decision) {
-        this.uuid = uuid;
+        super(uuid);
         this.decision = decision;
     }
 
@@ -44,12 +31,7 @@ public class FinalDecision extends Message implements Transactional {
     }
 
     @Override
-    public Message.TYPE getType() {
-        return Message.TYPE.TwoPC;
-    }
-
-    @Override
-    public UUID uuid() {
-        return uuid;
+    public Type getType() {
+        return Type.Internal;
     }
 }

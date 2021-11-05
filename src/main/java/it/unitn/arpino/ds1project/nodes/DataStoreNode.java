@@ -1,7 +1,7 @@
 package it.unitn.arpino.ds1project.nodes;
 
 import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.messages.Transactional;
+import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
@@ -56,11 +56,11 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     }
 
     /**
-     * @return The {@link RequestContext} related to the {@link Transactional} message, if present.
+     * @return The {@link RequestContext} related to the message, if present.
      */
-    public final Optional<T> getRequestContext(Transactional msg) {
+    public final Optional<T> getRequestContext(Message msg) {
         return contexts.stream()
-                .filter(ctx -> ctx.uuid == msg.uuid())
+                .filter(ctx -> ctx.uuid == msg.uuid)
                 .findFirst();
     }
 

@@ -1,38 +1,24 @@
 package it.unitn.arpino.ds1project.messages.coordinator;
 
 import it.unitn.arpino.ds1project.messages.Message;
-import it.unitn.arpino.ds1project.messages.Transactional;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
 import java.util.UUID;
 
 /**
- * A message that a client sends to a coordinator to end the transaction (TXN): it may ask for commit or abort
- *
- * @see Coordinator
- * @see TxnClient
+ * A message that a {@link TxnClient} uses to end a transaction with a {@link Coordinator}.
  */
-public class TxnEndMsg extends Message implements Transactional {
-    private final UUID uuid;
-
-    /**
-     * If false, the transaction should abort
-     */
+public class TxnEndMsg extends Message {
     public final boolean commit;
 
     public TxnEndMsg(UUID uuid, boolean commit) {
-        this.uuid = uuid;
+        super(uuid);
         this.commit = commit;
     }
 
     @Override
-    public Message.TYPE getType() {
-        return Message.TYPE.TxnControl;
-    }
-
-    @Override
-    public UUID uuid() {
-        return uuid;
+    public Type getType() {
+        return Type.Conversational;
     }
 }

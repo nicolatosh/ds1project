@@ -8,30 +8,21 @@ import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import java.util.List;
 
 /**
- * A message that is used to provide to a client the list of coordinators it can contact to start a transaction,
- * and the list of keys representing the data item it can request to read and write during the transaction.
- *
- * @see TxnClient
- * @see Coordinator
+ * A message that is used to provide to a {@link TxnClient} the list of {@link Coordinator}s that are available,
+ * and the list of keys of data items it can request to read or write in a transaction.
  */
 public class ClientStartMsg extends Message {
-    /**
-     * The coordinators that the client can contact to start a transaction.
-     *
-     * @see TxnClient
-     * @see Coordinator
-     */
     public final List<ActorRef> coordinators;
-
     public final int maxKey;
 
     public ClientStartMsg(List<ActorRef> coordinators, int maxKey) {
+        super(null);
         this.coordinators = List.copyOf(coordinators);
         this.maxKey = maxKey;
     }
 
     @Override
-    public Message.TYPE getType() {
-        return Message.TYPE.NodeControl;
+    public Type getType() {
+        return Type.Setup;
     }
 }

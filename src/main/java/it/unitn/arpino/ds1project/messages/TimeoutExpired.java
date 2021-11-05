@@ -1,25 +1,19 @@
 package it.unitn.arpino.ds1project.messages;
 
+import it.unitn.arpino.ds1project.nodes.DataStoreNode;
+
 import java.util.UUID;
 
 /**
- * This is a message that the coordinator sends to itself indicating that the timeout duration for collecting
- * all VoteResponses has elapsed. Upon receiving it, the coordinator should abort the ongoing transaction.
+ * A message that a {@link DataStoreNode} can send to itself to signal the expiration of a timer.
  */
-public class TimeoutExpired extends Message implements Transactional {
-    private UUID uuid;
-
+public class TimeoutExpired extends Message {
     public TimeoutExpired(UUID uuid) {
-        this.uuid = uuid;
+        super(uuid);
     }
 
     @Override
-    public Message.TYPE getType() {
-        return TYPE.TwoPC;
-    }
-
-    @Override
-    public UUID uuid() {
-        return uuid;
+    public Type getType() {
+        return Type.Internal;
     }
 }

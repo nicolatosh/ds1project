@@ -1,25 +1,20 @@
 package it.unitn.arpino.ds1project.messages.server;
 
 import it.unitn.arpino.ds1project.messages.Message;
-import it.unitn.arpino.ds1project.messages.Transactional;
+import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.util.UUID;
 
-public class DecisionRequest extends Message implements Transactional {
-    private final UUID uuid;
-
+/**
+ * A message that a {@link Server} sends to another Server requesting the {@link FinalDecision}.
+ */
+public class DecisionRequest extends Message {
     public DecisionRequest(UUID uuid) {
-        this.uuid = uuid;
+        super(uuid);
     }
 
     @Override
-    public Message.TYPE getType() {
-        return Message.TYPE.TwoPC;
+    public Type getType() {
+        return Type.Internal;
     }
-
-    @Override
-    public UUID uuid() {
-        return uuid;
-    }
-
 }

@@ -1,34 +1,43 @@
 package it.unitn.arpino.ds1project.messages;
 
+import it.unitn.arpino.ds1project.nodes.AbstractNode;
+import it.unitn.arpino.ds1project.nodes.DataStoreNode;
+import it.unitn.arpino.ds1project.nodes.client.TxnClient;
+import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
+import it.unitn.arpino.ds1project.nodes.server.Server;
+
 import java.io.Serializable;
+import java.util.UUID;
 
+/**
+ * Base class for a message exchanged between {@link AbstractNode}s.
+ */
 public abstract class Message implements Serializable {
-    public enum TYPE {
-        /**
-         * Requests from clients to begin or end transactions.
-         */
-        TxnControl,
+    /**
+     * Identifier of the transaction.
+     */
+    public final UUID uuid;
 
+    public Message(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    public enum Type {
         /**
-         * Read or Write requests from clients to coordinators.
+         * Request between a {@link TxnClient} and a {@link Coordinator}.
          */
         Conversational,
 
         /**
-         * Read or Write requests from coordinators to servers, on behalf of clients.
+         * Message between {@link DataStoreNode}s (i.e., a {@link Coordinator} and a {@link Server}).
          */
         Internal,
 
         /**
-         * Messages exchanged in the context of the Two-phase commit (2PC) protocol.
+         * Message to set up a {@link AbstractNode} or control its behavior.
          */
-        TwoPC,
-
-        /**
-         * Messages to control the behavior of nodes at runtime, without a sender.
-         */
-        NodeControl
+        Setup
     }
 
-    public abstract TYPE getType();
+    public abstract Type getType();
 }
