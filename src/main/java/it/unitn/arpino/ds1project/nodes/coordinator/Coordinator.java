@@ -215,8 +215,26 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         super.resume();
         List<CoordinatorRequestContext> active = getActive();
         List<CoordinatorRequestContext> decided = getDecided();
-        active.forEach(this::recoveryAbort);
-        decided.forEach(this::recoverySendDecision);
+
+        // If the Coordinator has not yet taken the FinalDecision for the transaction, it aborts it.
+        active.forEach(ctx -> ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT));
+
+        // If the coordinator has already taken the FinalDecision for the transaction, it sends the decision to all
+        // the participants.
+        decided.forEach(ctx -> {
+            switch (ctx.getProtocolState()) {
+                case COMMIT: {
+                    FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
+                    ctx.getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
+                    break;
+                }
+                case ABORT: {
+                    FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                    ctx.getParticipants().forEach(participants -> participants.tell(decision, getSelf()));
+                    break;
+                }
+            }
+        });
     }
 
     /**
