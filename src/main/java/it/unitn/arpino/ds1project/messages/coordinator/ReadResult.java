@@ -5,6 +5,7 @@ import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -23,5 +24,19 @@ public class ReadResult extends Message {
     @Override
     public Type getType() {
         return Type.Internal;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ReadResult)) return false;
+        if (!super.equals(o)) return false;
+        ReadResult result = (ReadResult) o;
+        return key == result.key && value == result.value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), key, value);
     }
 }

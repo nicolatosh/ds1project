@@ -5,6 +5,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -23,5 +24,19 @@ public class ReadResultMsg extends Message {
     @Override
     public Type getType() {
         return Type.Conversational;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ReadResultMsg)) return false;
+        if (!super.equals(o)) return false;
+        ReadResultMsg that = (ReadResultMsg) o;
+        return key == that.key && value == that.value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), key, value);
     }
 }

@@ -11,13 +11,13 @@ import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ServerTimeoutTest {
@@ -55,33 +55,33 @@ public class ServerTimeoutTest {
 
                 // Simulate a transaction by requesting two operations: a WriteRequest and a ReadRequest.
 
-                UUID uuid1 = UUID.randomUUID();
+                UUID uuid = UUID.randomUUID();
 
-                WriteRequest write1 = new WriteRequest(uuid1, 6, 742);
-                server1.tell(write1, coord);
+                WriteRequest write = new WriteRequest(uuid, 6, 742);
+                server1.tell(write, coord);
                 expectNoMessage();
 
-                ReadRequest read1 = new ReadRequest(uuid1, 6);
-                server1.tell(read1, coord);
+                ReadRequest read = new ReadRequest(uuid, 6);
+                server1.tell(read, coord);
                 ReadResult result1 = expectMsgClass(ReadResult.class);
-                Assertions.assertEquals(742, result1.value);
+                assertEquals(new ReadResult(uuid, 6, 742), result1);
 
                 // server1 should have placed the two operations in the same ServerRequestContext
                 // (in the future, this test might be put in another class).
 
-                assertSame(server1.underlyingActor().getRequestContext(read1).orElseThrow(),
-                        server1.underlyingActor().getRequestContext(write1).orElseThrow());
+                assertSame(server1.underlyingActor().getRequestContext(read).orElseThrow(),
+                        server1.underlyingActor().getRequestContext(write).orElseThrow());
 
                 // Send a VoteRequest to server1. The ServerRequestContext must switch to the READY state.
                 // server1 starts a timer within which to receive the FinalDecision from coord.
 
-                VoteRequest voteRequest1 = new VoteRequest(uuid1);
-                server1.tell(voteRequest1, coord);
+                VoteRequest voteRequest = new VoteRequest(uuid);
+                server1.tell(voteRequest, coord);
                 assertSame(ServerRequestContext.TwoPhaseCommitFSM.READY,
-                        server1.underlyingActor().getRequestContext(voteRequest1).orElseThrow().getProtocolState());
+                        server1.underlyingActor().getRequestContext(voteRequest).orElseThrow().getProtocolState());
 
-                VoteResponse voteResponse1 = expectMsgClass(VoteResponse.class);
-                assertSame(VoteResponse.Vote.YES, voteResponse1.vote);
+                VoteResponse voteResponse = expectMsgClass(VoteResponse.class);
+                assertEquals(new VoteResponse(uuid, VoteResponse.Vote.YES), voteResponse);
 
                 // The timeout expires, and server1 sends a TimeoutExpire message to itself, upon which it asks server2
                 // if it knows about the FinalDecision.
@@ -90,7 +90,7 @@ public class ServerTimeoutTest {
 
                 // Suppose that server2 knows the FinalDecision: it sends it to server1.
 
-                FinalDecision decision = new FinalDecision(uuid1, FinalDecision.Decision.GLOBAL_COMMIT);
+                FinalDecision decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                 server1.tell(decision, server2);
                 expectNoMessage();
 

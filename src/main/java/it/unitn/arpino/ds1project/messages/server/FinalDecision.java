@@ -4,6 +4,7 @@ import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -33,5 +34,19 @@ public class FinalDecision extends Message {
     @Override
     public Type getType() {
         return Type.Internal;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof FinalDecision)) return false;
+        if (!super.equals(o)) return false;
+        FinalDecision decision1 = (FinalDecision) o;
+        return clientAbort == decision1.clientAbort && decision == decision1.decision;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), decision, clientAbort);
     }
 }

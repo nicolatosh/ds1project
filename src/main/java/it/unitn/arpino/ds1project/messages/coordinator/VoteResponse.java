@@ -5,6 +5,7 @@ import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -32,5 +33,19 @@ public class VoteResponse extends Message {
     @Override
     public Type getType() {
         return Type.Internal;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof VoteResponse)) return false;
+        if (!super.equals(o)) return false;
+        VoteResponse that = (VoteResponse) o;
+        return vote == that.vote;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), vote);
     }
 }

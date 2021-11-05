@@ -23,7 +23,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class CoordinatorTest {
     ActorSystem system;
@@ -84,11 +85,11 @@ public class CoordinatorTest {
 
                 coordinator.tell(new ReadMsg(uuid1, 4), client1);
                 ReadResultMsg read1_1 = expectMsgClass(ReadResultMsg.class);
-                assertEquals(40, read1_1.value);
+                assertEquals(new ReadResultMsg(uuid1, 4, 40), read1_1);
 
                 coordinator.tell(new ReadMsg(uuid1, 17), client1);
                 ReadResultMsg read1_2 = expectMsgClass(ReadResultMsg.class);
-                assertEquals(170, read1_2.value);
+                assertEquals(new ReadResultMsg(uuid1, 17, 170), read1_2);
 
                 // The second transaction reads two elements, one of which was written by the first transaction.
                 // Since the first transaction has not yet committed, both the read values must be different from
@@ -96,24 +97,24 @@ public class CoordinatorTest {
 
                 coordinator.tell(new ReadMsg(uuid2, 4), client2);
                 ReadResultMsg read2_1 = testKit2.expectMsgClass(ReadResultMsg.class);
-                assertNotEquals(40, read2_1.value);
-                assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, read2_1.value);
+                assertNotEquals(new ReadResultMsg(uuid2, 4, 40), read2_1);
+                assertEquals(new ReadResultMsg(uuid2, 4, DatabaseBuilder.DEFAULT_DATA_VALUE), read2_1);
 
                 coordinator.tell(new ReadMsg(uuid2, 13), client2);
                 ReadResultMsg read2_2 = testKit2.expectMsgClass(ReadResultMsg.class);
-                assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, read2_2.value);
+                assertEquals(new ReadResultMsg(uuid2, 13, DatabaseBuilder.DEFAULT_DATA_VALUE), read2_2);
 
                 // The first transaction commits. The response from the server must be positive.
 
                 coordinator.tell(new TxnEndMsg(uuid1, true), client1);
                 TxnResultMsg result1 = expectMsgClass(TxnResultMsg.class);
-                assertTrue(result1.commit);
+                assertEquals(new TxnResultMsg(uuid1, true), result1);
 
                 // The second transaction commits. The response from the server must be negative.
 
                 coordinator.tell(new TxnEndMsg(uuid2, true), client2);
                 TxnResultMsg result2 = testKit2.expectMsgClass(TxnResultMsg.class);
-                assertFalse(result2.commit);
+                assertEquals(new TxnResultMsg(uuid2, false), result2);
             }
         };
     }
