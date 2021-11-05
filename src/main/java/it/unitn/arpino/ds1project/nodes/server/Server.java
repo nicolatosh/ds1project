@@ -96,8 +96,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
             case ABORT: {
-                logger.info("GLOBAL_ABORT");
-
                 VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
                 getSender().tell(vote, getSelf());
                 break;
@@ -116,12 +114,13 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         switch (ctx.get().getProtocolState()) {
             case INIT: {
-                logger.info("Timeout expired. Reason: too much time passed in INIT state");
+                logger.info("Timeout expired. Reason: did not receive VoteRequest from Coordinator in time");
+                logger.info("GLOBAL_ABORT");
                 ctx.get().abort();
                 break;
             }
             case READY: {
-                logger.info("Timeout expired. Reason: did not receive in time the FinalDecision." +
+                logger.info("Timeout expired. Reason: did not receive FinalDecision from Coordinator in time. " +
                         "Starting the Termination Protocol.");
                 terminationProtocol(ctx.get());
                 break;

@@ -119,7 +119,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                 if (ctx.get().allVotedYes()) {
                     ctx.get().cancelTimer();
-                    logger.info("GLOBAL_COMMIT");
                     ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     // multicast GLOBAL_COMMIT to all participants
