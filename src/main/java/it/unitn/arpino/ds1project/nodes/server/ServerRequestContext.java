@@ -92,7 +92,10 @@ public class ServerRequestContext extends RequestContext {
      * Aborts the transaction, and updates the state of the Two-phase commit (2PC) protocol accordingly.
      */
     public void abort() {
-        if (protocolState == TwoPhaseCommitFSM.READY) {
+        // case 1: The Server has attempted to prepare and the outcome was negative. Thus, the state is ABORT.
+        // case 2: The Server has attempted to prepare and the outcome was positive. Thus, the state is READY.
+        // case 3: The client asked to abort (a requested to prepare was never generated). Thus, the state is INIT.
+        if (protocolState == TwoPhaseCommitFSM.READY || protocolState == TwoPhaseCommitFSM.INIT) {
             connection.abort();
             protocolState = TwoPhaseCommitFSM.ABORT;
         }
