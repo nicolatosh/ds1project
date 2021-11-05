@@ -22,14 +22,13 @@ public class Main {
         final ActorRef coord1 = system.actorOf(Coordinator.props(), "coord1");
         final ActorRef coord2 = system.actorOf(Coordinator.props(), "coord2");
 
-        List.of(new ServerInfo(server0, 0, 9),
-                new ServerInfo(server1, 10, 19)
-        ).forEach(serverInfo -> {
-            server0.tell(serverInfo, ActorRef.noSender());
-            server1.tell(serverInfo, ActorRef.noSender());
-            coord1.tell(serverInfo, ActorRef.noSender());
-            coord2.tell(serverInfo, ActorRef.noSender());
-        });
+        server0.tell(new ServerInfo(server1, 10, 19), ActorRef.noSender());
+        server1.tell(new ServerInfo(server0, 0, 9), ActorRef.noSender());
+
+        coord1.tell(new ServerInfo(server0, 0, 9), ActorRef.noSender());
+        coord1.tell(new ServerInfo(server1, 10, 19), ActorRef.noSender());
+        coord2.tell(new ServerInfo(server0, 0, 9), ActorRef.noSender());
+        coord2.tell(new ServerInfo(server1, 10, 19), ActorRef.noSender());
 
         // setup client
 
