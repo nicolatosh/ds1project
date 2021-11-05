@@ -172,6 +172,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         switch (ctx.get().getProtocolState()) {
             case INIT: {
                 ctx.get().cancelTimer();
+                assert req.decision == FinalDecision.Decision.GLOBAL_ABORT;
                 ctx.get().abort();
                 break;
             }

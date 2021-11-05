@@ -85,9 +85,9 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * Adds a participant to the list of participants of this transaction. A participant is a {@link Server} to which
-     * the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}s to fulfill the client's
-     * {@link ReadMsg} or {@link WriteMsg}.
+     * Adds a participant to the list of participants of this transaction, if not already present. A participant is a
+     * {@link Server} to which the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}s to
+     * fulfill the client's {@link ReadMsg} or {@link WriteMsg}.
      */
     public void addParticipant(ActorRef participant) {
         participants.add(participant);

@@ -39,6 +39,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
      * message queue and newly received ones.
      */
     protected void crash() {
+        logger.info("Crashing...");
         getContext().become(new ReceiveBuilder()
                 .matchAny(msg -> {
                     // this suppresses Dead Letter warnings.
@@ -51,6 +52,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
      * This method implements the recovery actions of the Two-phase commit (2PC) protocol.
      */
     protected void resume() {
+        logger.info("Resuming...");
         getContext().become(createReceive());
         status = DataStoreNode.Status.ALIVE;
     }
