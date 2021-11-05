@@ -164,6 +164,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
         ctx.get().getParticipants().forEach(server -> server.tell(decision, getSelf()));
+
+        ctx.get().getClient().tell(new TxnResultMsg(ctx.get().uuid, false), getSelf());
     }
 
     private void onReadMsg(ReadMsg msg) {
