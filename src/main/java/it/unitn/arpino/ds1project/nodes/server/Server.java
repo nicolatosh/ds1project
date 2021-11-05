@@ -162,7 +162,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
         if (ctx.get().isDecided()) {
-            // we have already received the decision from another server
+            // The Server has already received a DecisionResponse from another participant
             return;
         }
 
@@ -187,8 +187,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
         if (ctx.get().isDecided()) {
-            // this happens when the coordinator woke up after a crash and sent the decision to the server,
-            // but the server already received it from another server
+            // This happens when the Coordinator wakes up after a crash and sends to this Server the FinalDecision,
+            // but this Server has already received the final decision from another participant under the form of a
+            // DecisionResponse.
             return;
         }
 
