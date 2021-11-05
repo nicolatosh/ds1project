@@ -125,8 +125,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 terminationProtocol(ctx.get());
                 break;
             }
-            default:
+            default: {
                 logger.severe("Invalid Two-phase commit protocol state: " + ctx.get().getProtocolState());
+                break;
+            }
         }
     }
 
@@ -179,12 +181,14 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             case READY: {
                 ctx.get().cancelTimer();
                 switch (req.decision) {
-                    case GLOBAL_COMMIT:
+                    case GLOBAL_COMMIT: {
                         ctx.get().commit();
                         break;
-                    case GLOBAL_ABORT:
+                    }
+                    case GLOBAL_ABORT: {
                         ctx.get().abort();
                         break;
+                    }
                 }
                 break;
             }
