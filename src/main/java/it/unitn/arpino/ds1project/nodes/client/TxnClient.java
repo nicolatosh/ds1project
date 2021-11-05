@@ -1,7 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.client;
 
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Props;
@@ -10,6 +9,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
+import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import scala.concurrent.duration.Duration;
 
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class TxnClient extends AbstractActor {
+public class TxnClient extends AbstractNode {
     private static final double COMMIT_PROBABILITY = 0.8;
     private static final double WRITE_PROBABILITY = 0.5;
     private static final int MIN_TXN_LENGTH = 20;
@@ -89,7 +89,7 @@ public class TxnClient extends AbstractActor {
                 new TxnAcceptTimeoutMsg(), // message sent to myself
                 getContext().system().dispatcher(), getSelf()
         );
-        System.out.println("CLIENT " + clientId + " BEGIN");
+        logger.info("CLIENT " + clientId + " BEGIN");
     }
 
     // end the current TXN sending TxnEndMsg to the coordinator
@@ -98,7 +98,7 @@ public class TxnClient extends AbstractActor {
         currentCoordinator.tell(new TxnEndMsg(uuid, doCommit), getSelf());
         firstValue = null;
         secondValue = null;
-        System.out.println("CLIENT " + clientId + " END");
+        logger.info("CLIENT " + clientId + " END");
     }
 
     // READ two items (will move some amount from the value of the first to the second)
@@ -116,7 +116,7 @@ public class TxnClient extends AbstractActor {
         firstValue = null;
         secondValue = null;
 
-        System.out.println("CLIENT " + clientId + " READ #" + numOpDone + " (" + firstKey + "), (" + secondKey + ")");
+        logger.info("CLIENT " + clientId + " READ #" + numOpDone + " (" + firstKey + "), (" + secondKey + ")");
     }
 
     // WRITE two items (called with probability WRITE_PROBABILITY after readTwo() values are returned)
@@ -127,7 +127,7 @@ public class TxnClient extends AbstractActor {
         if (firstValue >= 1) amountTaken = 1 + r.nextInt(firstValue);
         currentCoordinator.tell(new WriteMsg(uuid, firstKey, firstValue - amountTaken), getSelf());
         currentCoordinator.tell(new WriteMsg(uuid, secondKey, secondValue + amountTaken), getSelf());
-        System.out.println("CLIENT " + clientId + " WRITE #" + numOpDone
+        logger.info("CLIENT " + clientId + " WRITE #" + numOpDone
                 + " taken " + amountTaken
                 + " (" + firstKey + ", " + (firstValue - amountTaken) + "), ("
                 + secondKey + ", " + (secondValue + amountTaken) + ")");
@@ -137,7 +137,7 @@ public class TxnClient extends AbstractActor {
 
     private void onWelcomeMsg(ClientStartMsg msg) {
         this.coordinators = msg.coordinators;
-        System.out.println(coordinators);
+        logger.info(coordinators.toString());
         this.maxKey = msg.maxKey;
         beginTxn();
     }
@@ -154,7 +154,7 @@ public class TxnClient extends AbstractActor {
     }
 
     private void onReadResultMsg(ReadResultMsg msg) {
-        System.out.println("CLIENT " + clientId + " READ RESULT (" + msg.key + ", " + msg.value + ")");
+        logger.info("CLIENT " + clientId + " READ RESULT (" + msg.key + ", " + msg.value + ")");
 
         // save the read value(s)
         if (msg.key == firstKey) firstValue = msg.value;
@@ -180,9 +180,9 @@ public class TxnClient extends AbstractActor {
     private void onTxnResultMsg(TxnResultMsg msg) throws InterruptedException {
         if (msg.commit) {
             numCommittedTxn++;
-            System.out.println("CLIENT " + clientId + " COMMIT OK (" + numCommittedTxn + "/" + numAttemptedTxn + ")");
+            logger.info("CLIENT " + clientId + " COMMIT OK (" + numCommittedTxn + "/" + numAttemptedTxn + ")");
         } else {
-            System.out.println("CLIENT " + clientId + " COMMIT FAIL (" + (numAttemptedTxn - numCommittedTxn) + "/" + numAttemptedTxn + ")");
+            logger.info("CLIENT " + clientId + " COMMIT FAIL (" + (numAttemptedTxn - numCommittedTxn) + "/" + numAttemptedTxn + ")");
         }
         beginTxn();
     }
