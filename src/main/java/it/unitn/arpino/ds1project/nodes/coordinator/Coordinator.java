@@ -217,7 +217,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         List<CoordinatorRequestContext> decided = getDecided();
 
         // If the Coordinator has not yet taken the FinalDecision for the transaction, it aborts it.
-        active.forEach(ctx -> ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT));
+        active.forEach(ctx -> {
+            ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+            TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
+            ctx.getClient().tell(result, getSelf());
+        });
 
         // If the coordinator has already taken the FinalDecision for the transaction, it sends the decision to all
         // the participants.
