@@ -125,7 +125,7 @@ public class CoordinatorRequestContext extends RequestContext {
      * crashed.
      */
     public void startTimer(Coordinator coordinator) {
-        super.startTimer(coordinator, TIMEOUT_DURATION_S);
+        super.startVoteResponseTimeout(coordinator, TIMEOUT_DURATION_S);
     }
 
     @Override

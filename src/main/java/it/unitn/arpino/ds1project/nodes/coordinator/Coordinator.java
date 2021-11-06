@@ -126,7 +126,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 ctx.get().addYesVoter(getSender());
 
                 if (ctx.get().allVotedYes()) {
-                    ctx.get().cancelTimer();
+                    ctx.get().cancelTimer(TimeoutExpired.TIMEOUT_TYPE.VOTE_RESPONSE_MISSING);
                     ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     logger.info("All voted YES. Sending the FinalDecision to the participants");
@@ -143,7 +143,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             case NO: {
                 logger.info("Received a NO vote from " + getSender().path().name());
 
-                ctx.get().cancelTimer();
+                ctx.get().cancelTimer(TimeoutExpired.TIMEOUT_TYPE.VOTE_RESPONSE_MISSING);
                 logger.info("GLOBAL_ABORT");
                 ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 

@@ -11,7 +11,7 @@ import it.unitn.arpino.ds1project.nodes.server.Server;
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         final ActorSystem system = ActorSystem.create("ds1project");
 
         // setup servers and coordinators
@@ -45,8 +45,8 @@ public class Main {
         }
 
         client1.tell(clientMsg, ActorRef.noSender());
-        client2.tell(clientMsg, ActorRef.noSender());
 
+        Thread.sleep(2000);
         system.terminate();
     }
 }

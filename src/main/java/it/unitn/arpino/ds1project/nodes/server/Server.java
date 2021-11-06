@@ -6,11 +6,13 @@ import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.TimeoutExpired;
+import it.unitn.arpino.ds1project.messages.TimeoutExpired.TIMEOUT_TYPE;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
+import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext.TwoPhaseCommitFSM;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +47,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(VoteRequest.class, this::onVoteRequest)
                 .match(FinalDecision.class, this::onFinalDecision)
                 .match(TimeoutExpired.class, this::onTimeoutExpired)
+                .match(DecisionResponse.class, this::onDecisionResponse)
                 .match(DecisionRequest.class, this::onDecisionRequest)
                 .build();
     }
@@ -55,7 +58,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     public ServerRequestContext newContext(UUID uuid) {
         ServerRequestContext ctx = new ServerRequestContext(uuid, controller.beginTransaction());
-        ctx.startTimer(this);
+        ctx.startVoteRequestTimeout(this);
         addContext(ctx);
         return ctx;
     }
@@ -83,7 +86,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        ctx.get().cancelTimer();
+        ctx.get().cancelTimer(TIMEOUT_TYPE.VOTE_REQUEST_MISSING);
 
         ctx.get().prepare();
 
@@ -102,7 +105,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             }
         }
 
-        ctx.get().startTimer(this);
+        ctx.get().startFinalDecisionTimeout(this);
     }
 
     private void onTimeoutExpired(TimeoutExpired timeout) {
@@ -112,21 +115,20 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        switch (ctx.get().getProtocolState()) {
-            case INIT: {
+        switch (timeout.getTimeout_type()) {
+            case VOTE_REQUEST_MISSING: {
+                assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.INIT;
                 logger.info("Timeout expired. Reason: did not receive VoteRequest from Coordinator in time");
                 logger.info("GLOBAL_ABORT");
                 ctx.get().abort();
                 break;
             }
-            case READY: {
+
+            case FINALDECISION_RESPONSE_MISSING: {
+                assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.READY;
                 logger.info("Timeout expired. Reason: did not receive FinalDecision from Coordinator in time. " +
                         "Starting the Termination Protocol.");
                 terminationProtocol(ctx.get());
-                break;
-            }
-            default: {
-                logger.severe("Invalid Two-phase commit protocol state: " + ctx.get().getProtocolState());
                 break;
             }
         }
@@ -139,25 +141,46 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     private void onDecisionRequest(DecisionRequest req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req);
         if (ctx.isEmpty()) {
-            // Todo: Bad request
+
+            // This case can happen because Servers perform termination protocol by multicast
+            // This server might not be part of the same transaction so will send nothing
             return;
         }
 
-        switch (ctx.get().getProtocolState()) {
-            case COMMIT: {
-                FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                getSender().tell(decision, getSelf());
+        DecisionResponse response;
+        UUID uuid = ctx.get().uuid;
+        TwoPhaseCommitFSM status = ctx.get().getProtocolState();
+
+        // Other Server is contacting this one because is part of the same transaction.
+        // INIT means that this server INIT-timeout did not trigger yet but the transaction ended.
+        // At this point this server will stop that timer, ABORT and send INIT to other server.
+        if (status.equals(TwoPhaseCommitFSM.INIT)) {
+            ctx.get().abort();
+        }
+
+        response = new DecisionResponse(uuid, status);
+        getSender().tell(response, getSelf());
+    }
+
+    private void onDecisionResponse(DecisionResponse resp) {
+        Optional<ServerRequestContext> ctx = getRequestContext(resp);
+        if (ctx.isEmpty()) {
+            return;
+        }
+
+        switch (resp.getStatus()) {
+            case INIT:
+            case ABORT:
+                logger.info("Received DecisionResponse, going to ABORT");
+                ctx.get().abort();
                 break;
-            }
-            case ABORT: {
-                FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                getSender().tell(decision, getSelf());
+            case COMMIT:
+                logger.info("Received DecisionResponse, going to COMMIT");
+                ctx.get().commit();
                 break;
-            }
-            default: {
-                logger.severe("Invalid Two-phase commit protocol state: " + ctx.get().getProtocolState());
+            case READY:
+                logger.info("Received DecisionResponse, other server did not know decision");
                 break;
-            }
         }
     }
 
@@ -171,7 +194,29 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
+        // We consider only case in which this server is in READY, so it does not know the transaction outcome.
+        // If not READY, below situation can happen:
+        // We are receiving the FinalDecision from the Coordinator, which has just woken up after a crash, but
+        // we already know the FinalDecision as another participant has already sent it to us
+        if (ctx.get().getProtocolState().equals(TwoPhaseCommitFSM.READY)) {
+            ctx.get().cancelTimer(TIMEOUT_TYPE.FINALDECISION_RESPONSE_MISSING);
+
+            switch (req.decision) {
+                case GLOBAL_COMMIT: {
+                    ctx.get().commit();
+                    break;
+                }
+                case GLOBAL_ABORT: {
+                    ctx.get().abort();
+                    break;
+                }
+            }
+        }
+
+        /*
         switch (ctx.get().getProtocolState()) {
+
+            // is it possible? NO. Coordinator do not send Final decision does not receive all votes!
             case INIT: {
                 ctx.get().cancelTimer();
                 assert req.decision == FinalDecision.Decision.GLOBAL_ABORT;
@@ -200,6 +245,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
         }
+        */
     }
 
     /**

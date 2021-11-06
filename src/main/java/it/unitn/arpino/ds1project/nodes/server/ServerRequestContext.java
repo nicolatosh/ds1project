@@ -2,6 +2,7 @@ package it.unitn.arpino.ds1project.nodes.server;
 
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
+import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
@@ -21,7 +22,8 @@ public class ServerRequestContext extends RequestContext {
     /**
      * Duration (in seconds) within which the {@link Coordinator}'s {@link FinalDecision} should be received.
      */
-    public static final int TIMEOUT_DURATION_DECISION_S = 1;
+    public static final int TIMEOUT_DURATION_DECISION_S = 2;
+    public static final int TIMEOUT_DURATION_VOTEREQUEST_S = 10;
 
     private TwoPhaseCommitFSM protocolState;
 
@@ -105,8 +107,16 @@ public class ServerRequestContext extends RequestContext {
      * Starts a countdown timer, within which the {@link Server} should receive the {@link FinalDecision} from the
      * {@link Coordinator}. If the decision does not arrive in time, the Server assumes the Coordinator to be crashed.
      */
-    public void startTimer(Server server) {
-        super.startTimer(server, TIMEOUT_DURATION_DECISION_S);
+    public void startFinalDecisionTimeout(Server server) {
+        super.startFinalDecisionTimeout(server, TIMEOUT_DURATION_DECISION_S);
+    }
+
+    /**
+     * Starts a countdown timer, within which the {@link Server} should receive the {@link VoteRequest} from the
+     * {@link Coordinator}. If the vote does not arrive in time, the Server assumes the Coordinator to be crashed.
+     */
+    public void startVoteRequestTimeout(Server server) {
+        super.startVoteRequestTimeout(server, TIMEOUT_DURATION_VOTEREQUEST_S);
     }
 
     @Override
