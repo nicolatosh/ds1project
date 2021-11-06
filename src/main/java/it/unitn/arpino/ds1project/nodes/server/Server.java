@@ -136,34 +136,32 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     /**
-     * The server replies with transaction's outcome (i.e., the coordinator's final decision) to
-     * the server requesting it, which is executing the termination protocol.
+     * The Server replies with transaction's outcome to the server requesting it, which must be executing the
+     * termination protocol. If this server is not participating in the transaction for which the decision being
+     * requested, it ignores the request.
      */
     private void onDecisionRequest(DecisionRequest req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req);
         if (ctx.isEmpty()) {
-
-            // This case can happen because Servers perform termination protocol by multicast
-            // This server might not be part of the same transaction so will send nothing
+            // This server is not participating in the same transaction for which the decision is being requested.
             return;
         }
 
-        DecisionResponse response;
-        UUID uuid = ctx.get().uuid;
-        TwoPhaseCommitFSM status = ctx.get().getProtocolState();
 
-        // Other Server is contacting this one because is part of the same transaction.
-        // INIT means that this server INIT-timeout did not trigger yet but the transaction ended.
-        // At this point this server will stop that timer, ABORT and send INIT to other server.
-        if (status.equals(TwoPhaseCommitFSM.INIT)) {
-            ctx.get().cancelVoteRequestTimeout();
+        // It is possible that this Server is being requested the decision, but it has not yet even received the
+        // Coordinator's VoteRequest. Thus, it is safe to abort.
+        if (ctx.get().getProtocolState() == TwoPhaseCommitFSM.INIT) {
             ctx.get().abort();
         }
 
-        response = new DecisionResponse(uuid, status);
+        DecisionResponse response = new DecisionResponse(ctx.get().uuid, ctx.get().getProtocolState());
         getSender().tell(response, getSelf());
     }
 
+    /**
+     * Another participant is sending the final decision to this Server. It is possible that the participant does not
+     * know the final decision either, in which case this Server doesn't do anything.
+     */
     private void onDecisionResponse(DecisionResponse resp) {
         Optional<ServerRequestContext> ctx = getRequestContext(resp);
         if (ctx.isEmpty()) {
@@ -171,23 +169,28 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         }
 
         switch (resp.getStatus()) {
-            case INIT:
-            case ABORT:
-                logger.info("Received DecisionResponse, going to ABORT");
+            case INIT: {
+                logger.info("Received INIT. Aborting");
+            }
+            case ABORT: {
+                logger.info("Received ABORT. Aborting");
                 ctx.get().abort();
                 break;
-            case COMMIT:
-                logger.info("Received DecisionResponse, going to COMMIT");
+            }
+            case COMMIT: {
+                logger.info("Received COMMIT. Committing");
                 ctx.get().commit();
                 break;
-            case READY:
-                logger.info("Received DecisionResponse, other server did not know decision");
+            }
+            case READY: {
+                logger.info("Received READY. Ignoring");
                 break;
+            }
         }
     }
 
     /**
-     * Either the {@link Coordinator} or another participant is sending the {@link FinalDecision} to this Server.
+     * The {@link Coordinator} is sending the {@link FinalDecision} to this Server.
      */
     private void onFinalDecision(FinalDecision req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req);
@@ -196,37 +199,17 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        // We consider only case in which this server is in READY, so it does not know the transaction outcome.
-        // If not READY, below situation can happen:
-        // We are receiving the FinalDecision from the Coordinator, which has just woken up after a crash, but
-        // we already know the FinalDecision as another participant has already sent it to us
-        if (ctx.get().getProtocolState().equals(TwoPhaseCommitFSM.READY)) {
-            ctx.get().cancelFinalDecisionTimeout();
-
-            switch (req.decision) {
-                case GLOBAL_COMMIT: {
-                    ctx.get().commit();
-                    break;
-                }
-                case GLOBAL_ABORT: {
-                    ctx.get().abort();
-                    break;
-                }
-            }
-        }
-
-        /*
         switch (ctx.get().getProtocolState()) {
-
-            // is it possible? NO. Coordinator do not send Final decision does not receive all votes!
             case INIT: {
-                ctx.get().cancelTimer();
-                assert req.decision == FinalDecision.Decision.GLOBAL_ABORT;
-                ctx.get().abort();
+                if (req.clientAbort) {
+                    logger.info("Received while in INIT. Client abort");
+                    ctx.get().abort();
+                }
                 break;
             }
             case READY: {
-                ctx.get().cancelTimer();
+                // This is the normal case: the Coordinator has sent the FinalDecision to this Server in time.
+                ctx.get().cancelFinalDecisionTimeout();
                 switch (req.decision) {
                     case GLOBAL_COMMIT: {
                         ctx.get().commit();
@@ -239,15 +222,16 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 }
                 break;
             }
-            default: {
-                // (1) we are receiving the FinalDecision from the Coordinator, which has just woken up after a crash, but
-                // we already know the FinalDecision as another participant has already sent it to us,
-                // (2) we are receiving the FinalDecision from a participant, but we already know it aas another participant
-                // has already sent it to us.
+            case ABORT: {
+                // This might be a retransmission from the Coordinator
+                logger.info("Received FinalDecision, but I have already completed (ABORT)");
+                break;
+            }
+            case COMMIT: {
+                logger.info("Received FinalDecision, but I have already completed (COMMIT)");
                 break;
             }
         }
-        */
     }
 
     /**
