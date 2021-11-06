@@ -156,6 +156,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         // INIT means that this server INIT-timeout did not trigger yet but the transaction ended.
         // At this point this server will stop that timer, ABORT and send INIT to other server.
         if (status.equals(TwoPhaseCommitFSM.INIT)) {
+            ctx.get().cancelVoteRequestTimeout();
             ctx.get().abort();
         }
 
