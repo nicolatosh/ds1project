@@ -2,7 +2,7 @@ package it.unitn.arpino.ds1project.nodes.context;
 
 import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.messages.TimeoutExpired;
-import it.unitn.arpino.ds1project.messages.TimeoutExpired.TIMEOUT_TYPE;
+import it.unitn.arpino.ds1project.messages.TimeoutExpired.TimeoutType;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 
 import java.time.Duration;
@@ -36,7 +36,7 @@ public abstract class RequestContext {
         finalDecisionTimeout = node.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(timeoutDuration), // delay
                 node.getSelf(), // receiver
-                new TimeoutExpired(uuid, TIMEOUT_TYPE.FINALDECISION_RESPONSE_MISSING), // message
+                new TimeoutExpired(uuid, TimeoutType.FINAL_DECISION), // message
                 node.getContext().dispatcher(), // executor
                 node.getSelf()); // sender
     }
@@ -45,7 +45,7 @@ public abstract class RequestContext {
         voteRequestTimeout = node.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(timeoutDuration), // delay
                 node.getSelf(), // receiver
-                new TimeoutExpired(uuid, TIMEOUT_TYPE.VOTE_REQUEST_MISSING), // message
+                new TimeoutExpired(uuid, TimeoutType.VOTE_REQUEST), // message
                 node.getContext().dispatcher(), // executor
                 node.getSelf()); // sender
     }
@@ -54,7 +54,7 @@ public abstract class RequestContext {
         voteResponseTimeout = node.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(timeoutDuration), // delay
                 node.getSelf(), // receiver
-                new TimeoutExpired(uuid, TIMEOUT_TYPE.VOTE_RESPONSE_MISSING), // message
+                new TimeoutExpired(uuid, TimeoutType.VOTE_RESPONSE), // message
                 node.getContext().dispatcher(), // executor
                 node.getSelf()); // sender
     }
@@ -62,18 +62,18 @@ public abstract class RequestContext {
     /**
      * Cancel timer based on its type.
      *
-     * @param type {@link TIMEOUT_TYPE}
+     * @param type {@link TimeoutType}
      */
-    public void cancelTimer(TIMEOUT_TYPE type) {
+    public void cancelTimer(TimeoutType type) {
 
         switch (type) {
-            case VOTE_REQUEST_MISSING:
+            case VOTE_REQUEST:
                 this.voteRequestTimeout.cancel();
                 break;
-            case FINALDECISION_RESPONSE_MISSING:
+            case FINAL_DECISION:
                 this.finalDecisionTimeout.cancel();
                 break;
-            case VOTE_RESPONSE_MISSING:
+            case VOTE_RESPONSE:
                 this.voteResponseTimeout.cancel();
                 break;
         }

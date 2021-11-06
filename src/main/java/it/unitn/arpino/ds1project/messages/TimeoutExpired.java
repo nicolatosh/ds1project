@@ -10,25 +10,30 @@ import java.util.UUID;
 
 
 public class TimeoutExpired extends Message {
-    public enum TIMEOUT_TYPE {
-        VOTE_REQUEST_MISSING,
-        FINALDECISION_RESPONSE_MISSING,
-        VOTE_RESPONSE_MISSING
+    public enum TimeoutType {
+        /**
+         * The Server did not receive the VoteRequest in time.
+         */
+        VOTE_REQUEST,
+        /**
+         * The Coordinator did not collect all VoteRequests in time.
+         */
+        VOTE_RESPONSE,
+        /**
+         * The Server did not receive the FinalDecision in time.
+         */
+        FINAL_DECISION
     }
 
-    private TIMEOUT_TYPE timeout_type;
+    public final TimeoutType type;
 
-    public TimeoutExpired(UUID uuid, TIMEOUT_TYPE type) {
+    public TimeoutExpired(UUID uuid, TimeoutType type) {
         super(uuid);
-        this.timeout_type = type;
+        this.type = type;
     }
 
     @Override
     public Type getType() {
         return Type.Internal;
-    }
-
-    public TIMEOUT_TYPE getTimeout_type() {
-        return timeout_type;
     }
 }

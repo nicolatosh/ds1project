@@ -6,7 +6,7 @@ import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.TimeoutExpired;
-import it.unitn.arpino.ds1project.messages.TimeoutExpired.TIMEOUT_TYPE;
+import it.unitn.arpino.ds1project.messages.TimeoutExpired.TimeoutType;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -86,7 +86,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        ctx.get().cancelTimer(TIMEOUT_TYPE.VOTE_REQUEST_MISSING);
+        ctx.get().cancelTimer(TimeoutType.VOTE_REQUEST);
 
         ctx.get().prepare();
 
@@ -115,8 +115,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        switch (timeout.getTimeout_type()) {
-            case VOTE_REQUEST_MISSING: {
+        switch (timeout.type) {
+            case VOTE_REQUEST: {
                 assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.INIT;
                 logger.info("Timeout expired. Reason: did not receive VoteRequest from Coordinator in time");
                 logger.info("GLOBAL_ABORT");
@@ -124,7 +124,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
 
-            case FINALDECISION_RESPONSE_MISSING: {
+            case FINAL_DECISION: {
                 assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.READY;
                 logger.info("Timeout expired. Reason: did not receive FinalDecision from Coordinator in time. " +
                         "Starting the Termination Protocol.");
@@ -199,7 +199,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         // We are receiving the FinalDecision from the Coordinator, which has just woken up after a crash, but
         // we already know the FinalDecision as another participant has already sent it to us
         if (ctx.get().getProtocolState().equals(TwoPhaseCommitFSM.READY)) {
-            ctx.get().cancelTimer(TIMEOUT_TYPE.FINALDECISION_RESPONSE_MISSING);
+            ctx.get().cancelTimer(TimeoutType.FINAL_DECISION);
 
             switch (req.decision) {
                 case GLOBAL_COMMIT: {
