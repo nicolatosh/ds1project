@@ -88,19 +88,23 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         if (msg.commit) {
             logger.info(ctx.get().getClient().path().name() + " requested to commit");
 
-            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
+            ctx.get().log(CoordinatorRequestContext.LogState.START_2PC);
 
             logger.info("Asking the VoteRequests to the participants");
             VoteRequest req = new VoteRequest(msg.uuid);
             ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
+
+            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
         } else {
             logger.info(ctx.get().getClient().path().name() + " requested to abort");
 
-            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+            ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
             logger.info("Sending the FinalDecision to the participants");
             FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT, true);
             ctx.get().getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
+
+            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
         }
 
         ctx.get().startVoteResponseTimeout(this);
@@ -126,12 +130,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                 if (ctx.get().allVotedYes()) {
                     ctx.get().cancelVoteResponseTimeout();
-                    ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
+
+                    ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
                     logger.info("All voted YES. Sending the FinalDecision to the participants");
                     FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                     ctx.get().getParticipants().forEach(server -> getContext().system().scheduler().scheduleOnce(
                             Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
+
+                    ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
                     TxnResultMsg result = new TxnResultMsg(resp.uuid, true);
@@ -143,14 +150,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 logger.info("Received a NO vote from " + getSender().path().name());
 
                 ctx.get().cancelVoteResponseTimeout();
-                logger.info("GLOBAL_ABORT");
-                ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
+                ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
                 logger.info("Sending the FinalDecision to the participants");
                 FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                 ctx.get().getParticipants().forEach(server -> getContext().system().scheduler().scheduleOnce(
                         Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
+
+                ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                 logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
                 TxnResultMsg result = new TxnResultMsg(resp.uuid, false);
@@ -169,12 +177,14 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
 
         logger.info("Timeout expired. Reason: did not collect all VoteRequests from the participants in time");
-        logger.info("GLOBAL_ABORT");
-        ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+        ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
         logger.info("Sending the transaction result to the participants");
         FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
         ctx.get().getParticipants().forEach(server -> server.tell(decision, getSelf()));
+
+        ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
         logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
         ctx.get().getClient().tell(new TxnResultMsg(ctx.get().uuid, false), getSelf());

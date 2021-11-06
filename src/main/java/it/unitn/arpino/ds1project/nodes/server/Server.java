@@ -57,6 +57,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     public ServerRequestContext newContext(UUID uuid) {
         ServerRequestContext ctx = new ServerRequestContext(uuid, controller.beginTransaction());
+        ctx.log(ServerRequestContext.LogState.INIT);
         ctx.startVoteRequestTimeout(this);
         addContext(ctx);
         return ctx;
@@ -91,13 +92,15 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         switch (ctx.get().getProtocolState()) {
             case READY: {
-                logger.info("VOTE_COMMIT");
+                ctx.get().log(ServerRequestContext.LogState.VOTE_COMMIT);
 
                 VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.YES);
                 getSender().tell(vote, getSelf());
                 break;
             }
             case ABORT: {
+                ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
+
                 VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
                 getSender().tell(vote, getSelf());
                 break;
@@ -114,10 +117,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.INIT;
-
         logger.info("Timeout expired. Reason: did not receive VoteRequest from Coordinator in time");
-        logger.info("GLOBAL_ABORT");
+
+        ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
         ctx.get().abort();
     }
 
@@ -171,14 +173,18 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         switch (resp.getStatus()) {
             case INIT: {
                 logger.info("Received INIT. Aborting");
+                ctx.get().log(ServerRequestContext.LogState.DECISION);
+                ctx.get().abort();
             }
             case ABORT: {
                 logger.info("Received ABORT. Aborting");
+                ctx.get().log(ServerRequestContext.LogState.DECISION);
                 ctx.get().abort();
                 break;
             }
             case COMMIT: {
                 logger.info("Received COMMIT. Committing");
+                ctx.get().log(ServerRequestContext.LogState.DECISION);
                 ctx.get().commit();
                 break;
             }
@@ -203,6 +209,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             case INIT: {
                 if (req.clientAbort) {
                     logger.info("Received while in INIT. Client abort");
+                    ctx.get().log(ServerRequestContext.LogState.DECISION);
                     ctx.get().abort();
                 }
                 break;
@@ -212,11 +219,15 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 ctx.get().cancelFinalDecisionTimeout();
                 switch (req.decision) {
                     case GLOBAL_COMMIT: {
+                        logger.info("Received COMMIT. Committing");
+                        ctx.get().log(ServerRequestContext.LogState.DECISION);
                         ctx.get().commit();
                         break;
                     }
                     case GLOBAL_ABORT: {
+                        logger.info("Received ABORT. Aborting");
                         ctx.get().abort();
+                        ctx.get().log(ServerRequestContext.LogState.DECISION);
                         break;
                     }
                 }

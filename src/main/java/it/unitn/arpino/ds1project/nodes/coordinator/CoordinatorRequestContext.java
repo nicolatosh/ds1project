@@ -69,7 +69,8 @@ public class CoordinatorRequestContext extends RequestContext {
 
     @Override
     public boolean isDecided() {
-        return protocolState == TwoPhaseCommitFSM.COMMIT || protocolState == TwoPhaseCommitFSM.ABORT;
+        return loggedState().isPresent() &&
+                (loggedState().get() == LogState.GLOBAL_COMMIT || loggedState().get() == LogState.GLOBAL_ABORT);
     }
 
     /**

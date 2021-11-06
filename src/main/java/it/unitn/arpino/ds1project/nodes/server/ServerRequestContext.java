@@ -55,7 +55,8 @@ public class ServerRequestContext extends RequestContext {
 
     @Override
     public boolean isDecided() {
-        return protocolState == TwoPhaseCommitFSM.COMMIT || protocolState == TwoPhaseCommitFSM.ABORT;
+        return loggedState().isPresent() &&
+                (loggedState().get() == LogState.DECISION || loggedState().get() == LogState.GLOBAL_ABORT);
     }
 
     /**
