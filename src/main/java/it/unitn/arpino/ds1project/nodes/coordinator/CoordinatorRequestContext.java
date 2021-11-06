@@ -20,6 +20,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CoordinatorRequestContext extends RequestContext {
+    public enum LogState {
+        START_2PC,
+        GLOBAL_COMMIT,
+        GLOBAL_ABORT
+    }
+
     /**
      * State of the Two-phase commit (2PC) protocol of a transaction.
      */

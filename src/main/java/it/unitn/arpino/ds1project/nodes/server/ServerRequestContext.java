@@ -13,6 +13,13 @@ import java.time.Duration;
 import java.util.UUID;
 
 public class ServerRequestContext extends RequestContext {
+    public enum LogState {
+        INIT,
+        VOTE_COMMIT,
+        GLOBAL_ABORT,
+        DECISION
+    }
+
     /**
      * State of the Two-phase commit (2PC) protocol of a transaction.
      */
