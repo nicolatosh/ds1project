@@ -1,8 +1,10 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
+import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
+import it.unitn.arpino.ds1project.messages.coordinator.VoteResponseTimeout;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
@@ -11,6 +13,7 @@ import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -30,7 +33,7 @@ public class CoordinatorRequestContext extends RequestContext {
     /**
      * Duration (in seconds) within which all the participants' {@link VoteResponse}s should be collected.
      */
-    public static final int TIMEOUT_DURATION_S = 1;
+    public static final int VOTE_RESPONSE_TIMEOUT_S = 1;
 
     /**
      * The initiator of the transaction.
@@ -42,6 +45,8 @@ public class CoordinatorRequestContext extends RequestContext {
     private final Set<ActorRef> yesVoters;
 
     private TwoPhaseCommitFSM protocolState;
+
+    private Cancellable voteResponseTimeout;
 
     public CoordinatorRequestContext(UUID uuid, ActorRef client) {
         super(uuid);
@@ -120,12 +125,21 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * Starts a countdown timer, within which the {@link Coordinator} should receive the participants'
+     * Starts a countdown timer, within which the {@link Coordinator} should collect all participants'
      * {@link VoteResponse}s. If the responses do not arrive in time, the Coordinator assumes one participant has
      * crashed.
      */
-    public void startTimer(Coordinator coordinator) {
-        super.startVoteResponseTimeout(coordinator, TIMEOUT_DURATION_S);
+    public void startVoteResponseTimeout(Coordinator coordinator) {
+        voteResponseTimeout = coordinator.getContext().system().scheduler().scheduleOnce(
+                Duration.ofSeconds(VOTE_RESPONSE_TIMEOUT_S), // delay
+                coordinator.getSelf(), // receiver
+                new VoteResponseTimeout(uuid), // message
+                coordinator.getContext().dispatcher(), // executor
+                coordinator.getSelf()); // sender
+    }
+
+    public void cancelVoteResponseTimeout() {
+        voteResponseTimeout.cancel();
     }
 
     @Override

@@ -4,7 +4,6 @@ import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.ServerInfo;
-import it.unitn.arpino.ds1project.messages.TimeoutExpired;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
@@ -53,7 +52,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .match(ReadResult.class, this::onReadResult)
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
-                .match(TimeoutExpired.class, this::onTimeoutExpired)
+                .match(VoteResponseTimeout.class, this::onVoteResponseTimeout)
                 .build();
     }
 
@@ -104,7 +103,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             ctx.get().getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
         }
 
-        ctx.get().startTimer(this);
+        ctx.get().startVoteResponseTimeout(this);
     }
 
     private void onVoteResponse(VoteResponse resp) {
@@ -126,7 +125,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 ctx.get().addYesVoter(getSender());
 
                 if (ctx.get().allVotedYes()) {
-                    ctx.get().cancelTimer(TimeoutExpired.TimeoutType.VOTE_RESPONSE);
+                    ctx.get().cancelVoteResponseTimeout();
                     ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     logger.info("All voted YES. Sending the FinalDecision to the participants");
@@ -143,7 +142,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             case NO: {
                 logger.info("Received a NO vote from " + getSender().path().name());
 
-                ctx.get().cancelTimer(TimeoutExpired.TimeoutType.VOTE_RESPONSE);
+                ctx.get().cancelVoteResponseTimeout();
                 logger.info("GLOBAL_ABORT");
                 ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
@@ -162,7 +161,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
     }
 
-    private void onTimeoutExpired(TimeoutExpired timeout) {
+    private void onVoteResponseTimeout(VoteResponseTimeout timeout) {
         Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout);
         if (ctx.isEmpty()) {
             // Todo: Bad request

@@ -1,11 +1,15 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
+import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
+import it.unitn.arpino.ds1project.messages.server.FinalDecisionTimeout;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
+import it.unitn.arpino.ds1project.messages.server.VoteRequestTimeout;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
+import java.time.Duration;
 import java.util.UUID;
 
 public class ServerRequestContext extends RequestContext {
@@ -22,12 +26,19 @@ public class ServerRequestContext extends RequestContext {
     /**
      * Duration (in seconds) within which the {@link Coordinator}'s {@link FinalDecision} should be received.
      */
-    public static final int TIMEOUT_DURATION_DECISION_S = 2;
-    public static final int TIMEOUT_DURATION_VOTEREQUEST_S = 10;
+    public static final int FINAL_DECISION_TIMEOUT_S = 2;
+
+    /**
+     * Duration (in seconds) within which the {@link Coordinator}'s {@link VoteRequest} should be received.
+     */
+    public static final int VOTE_REQUEST_TIMEOUT_S = 10;
 
     private TwoPhaseCommitFSM protocolState;
 
     private final IConnection connection;
+
+    private Cancellable voteRequestTimeout;
+    private Cancellable finalDecisionTimeout;
 
     public ServerRequestContext(UUID uuid, IConnection connection) {
         super(uuid);
@@ -104,19 +115,43 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
-     * Starts a countdown timer, within which the {@link Server} should receive the {@link FinalDecision} from the
-     * {@link Coordinator}. If the decision does not arrive in time, the Server assumes the Coordinator to be crashed.
+     * Starts a countdown timer, within which the {@link Server} should receive the {@link Coordinator}'s
+     * {@link VoteRequest}. If the vote does not arrive in time, the Server assumes the Coordinator to be crashed.
      */
-    public void startFinalDecisionTimeout(Server server) {
-        super.startFinalDecisionTimeout(server, TIMEOUT_DURATION_DECISION_S);
+    public void startVoteRequestTimeout(Server server) {
+        voteRequestTimeout = server.getContext().system().scheduler().scheduleOnce(
+                Duration.ofSeconds(VOTE_REQUEST_TIMEOUT_S), // delay
+                server.getSelf(), // receiver
+                new VoteRequestTimeout(uuid), // message
+                server.getContext().dispatcher(), // executor
+                server.getSelf()); // sender
     }
 
     /**
-     * Starts a countdown timer, within which the {@link Server} should receive the {@link VoteRequest} from the
-     * {@link Coordinator}. If the vote does not arrive in time, the Server assumes the Coordinator to be crashed.
+     * Cancels the timer.
      */
-    public void startVoteRequestTimeout(Server server) {
-        super.startVoteRequestTimeout(server, TIMEOUT_DURATION_VOTEREQUEST_S);
+    public void cancelVoteRequestTimeout() {
+        voteRequestTimeout.cancel();
+    }
+
+    /**
+     * Starts a countdown timer, within which the {@link Server} should receive the {@link Coordinator}'s
+     * {@link FinalDecision}. If the decision does not arrive in time, the Server assumes the Coordinator to be crashed.
+     */
+    public void startFinalDecisionTimeout(Server server) {
+        finalDecisionTimeout = server.getContext().system().scheduler().scheduleOnce(
+                Duration.ofSeconds(FINAL_DECISION_TIMEOUT_S), // delay
+                server.getSelf(), // receiver
+                new FinalDecisionTimeout(uuid), // message
+                server.getContext().dispatcher(), // executor
+                server.getSelf()); // sender
+    }
+
+    /**
+     * Cancels the timer.
+     */
+    public void cancelFinalDecisionTimeout() {
+        finalDecisionTimeout.cancel();
     }
 
     @Override

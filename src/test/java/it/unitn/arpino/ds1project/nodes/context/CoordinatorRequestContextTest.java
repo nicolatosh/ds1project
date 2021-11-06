@@ -45,9 +45,9 @@ public class CoordinatorRequestContextTest {
                 ctx.addParticipant(server);
                 coordinator.underlyingActor().addContext(ctx);
 
-                ctx.startTimer(coordinator.underlyingActor());
+                ctx.startVoteResponseTimeout(coordinator.underlyingActor());
                 // must account for the timeout duration to elapse and the message to be processed.
-                FinalDecision decision = expectMsgClass(Duration.create(CoordinatorRequestContext.TIMEOUT_DURATION_S + 1, TimeUnit.SECONDS), FinalDecision.class);
+                FinalDecision decision = expectMsgClass(Duration.create(CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S + 1, TimeUnit.SECONDS), FinalDecision.class);
                 assertEquals(FinalDecision.Decision.GLOBAL_ABORT, decision.decision);
                 assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }

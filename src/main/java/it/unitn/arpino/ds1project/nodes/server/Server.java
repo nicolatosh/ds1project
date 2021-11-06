@@ -5,8 +5,6 @@ import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.ServerInfo;
-import it.unitn.arpino.ds1project.messages.TimeoutExpired;
-import it.unitn.arpino.ds1project.messages.TimeoutExpired.TimeoutType;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -46,7 +44,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(WriteRequest.class, this::onWriteRequest)
                 .match(VoteRequest.class, this::onVoteRequest)
                 .match(FinalDecision.class, this::onFinalDecision)
-                .match(TimeoutExpired.class, this::onTimeoutExpired)
+                .match(VoteRequestTimeout.class, this::onVoteRequestTimeout)
+                .match(FinalDecisionTimeout.class, this::onFinalDecisionTimeout)
                 .match(DecisionResponse.class, this::onDecisionResponse)
                 .match(DecisionRequest.class, this::onDecisionRequest)
                 .build();
@@ -86,7 +85,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        ctx.get().cancelTimer(TimeoutType.VOTE_REQUEST);
+        ctx.get().cancelVoteRequestTimeout();
 
         ctx.get().prepare();
 
@@ -108,30 +107,32 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         ctx.get().startFinalDecisionTimeout(this);
     }
 
-    private void onTimeoutExpired(TimeoutExpired timeout) {
+    private void onVoteRequestTimeout(VoteRequestTimeout timeout) {
         Optional<ServerRequestContext> ctx = getRequestContext(timeout);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
         }
 
-        switch (timeout.type) {
-            case VOTE_REQUEST: {
-                assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.INIT;
-                logger.info("Timeout expired. Reason: did not receive VoteRequest from Coordinator in time");
-                logger.info("GLOBAL_ABORT");
-                ctx.get().abort();
-                break;
-            }
+        assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.INIT;
 
-            case FINAL_DECISION: {
-                assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.READY;
-                logger.info("Timeout expired. Reason: did not receive FinalDecision from Coordinator in time. " +
-                        "Starting the Termination Protocol.");
-                terminationProtocol(ctx.get());
-                break;
-            }
+        logger.info("Timeout expired. Reason: did not receive VoteRequest from Coordinator in time");
+        logger.info("GLOBAL_ABORT");
+        ctx.get().abort();
+    }
+
+    private void onFinalDecisionTimeout(FinalDecisionTimeout timeout) {
+        Optional<ServerRequestContext> ctx = getRequestContext(timeout);
+        if (ctx.isEmpty()) {
+            // Todo: Bad request
+            return;
         }
+
+        assert ctx.get().getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.READY;
+
+        logger.info("Timeout expired. Reason: did not receive FinalDecision from Coordinator in time. " +
+                "Starting the Termination Protocol.");
+        terminationProtocol(ctx.get());
     }
 
     /**
@@ -199,7 +200,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         // We are receiving the FinalDecision from the Coordinator, which has just woken up after a crash, but
         // we already know the FinalDecision as another participant has already sent it to us
         if (ctx.get().getProtocolState().equals(TwoPhaseCommitFSM.READY)) {
-            ctx.get().cancelTimer(TimeoutType.FINAL_DECISION);
+            ctx.get().cancelFinalDecisionTimeout();
 
             switch (req.decision) {
                 case GLOBAL_COMMIT: {
