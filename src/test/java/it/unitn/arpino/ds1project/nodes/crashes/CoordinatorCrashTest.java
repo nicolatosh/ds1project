@@ -9,6 +9,7 @@ import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
+import it.unitn.arpino.ds1project.messages.server.DecisionRequest;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
@@ -21,8 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CoordinatorCrashTest {
 
@@ -52,7 +52,7 @@ public class CoordinatorCrashTest {
      * VOTE_REQUEST then Servers ABORTS. When coordinator resumes its execution, client
      * is sent an ABORT too.
      *
-     * @throws InterruptedException
+     * @throws InterruptedException because of Thread sleep
      */
     @Test
     void testNotDecided() throws InterruptedException {
@@ -103,6 +103,72 @@ public class CoordinatorCrashTest {
                 CoordinatorRequestContext ctx2 = coordinator.underlyingActor().getRequestContext(write).orElseThrow();
                 assertSame(ctx2.getProtocolState(), CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
+            }
+        };
+    }
+
+    @Test
+    void testDecided() throws InterruptedException {
+        new TestKit(system) {
+            {
+                ActorRef client = testActor();
+
+                TestKit testKit2 = new TestKit(system);
+                ActorRef server1 = testKit2.testActor();
+
+                // Update server0's knowledge of the server1
+                ServerInfo info1 = new ServerInfo(server1, 10, 19);
+                server0.tell(info1, ActorRef.noSender());
+
+                // Update coordinator with server1
+                coordinator.tell(info1, ActorRef.noSender());
+
+                UUID uuid;
+
+                // Starting transaction
+                coordinator.tell(new TxnBeginMsg(), client);
+                TxnAcceptMsg accept = expectMsgClass(TxnAcceptMsg.class);
+                uuid = accept.uuid;
+
+                WriteMsg write = new WriteMsg(uuid, 0, 10);
+                coordinator.tell(write, client);
+                expectNoMessage();
+
+                // Make coordinator crash in this method after GLOBAL_COMMIT has been written
+                // into local log
+                TxnEndMsg end = new TxnEndMsg(uuid, true);
+                coordinator.tell(end, client);
+                expectNoMessage();
+
+                CoordinatorRequestContext ctx = coordinator.underlyingActor().getRequestContext(write).orElseThrow();
+                assertSame(ctx.loggedState().get(), CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
+
+                // Coodinator recovers after some time
+                Thread.sleep((ServerRequestContext.FINAL_DECISION_TIMEOUT_S + 1) * 1000);
+
+                // Server0 meanwhile should have started TERMINATION PROTOCOL
+                // Server1 should receive DECISION_REQUEST
+                // Make sure above Thread.sleep() is long enough
+                ServerRequestContext serverCtx = server0.underlyingActor().getRequestContext(write).orElseThrow();
+                assertFalse(serverCtx.isDecided());
+                testKit2.expectMsgClass(DecisionRequest.class);
+
+                CoordinatorRequestContext ctx2 = coordinator.underlyingActor().getRequestContext(write).orElseThrow();
+                assertSame(ctx2.getProtocolState(), CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
+
+
+                // Termination protocol should not be effective since no server knows the outcome
+                // Server0 should be in READY
+                ServerRequestContext serverCtx2 = server0.underlyingActor().getRequestContext(write).orElseThrow();
+                assertEquals(serverCtx2.loggedState().get(), ServerRequestContext.LogState.VOTE_COMMIT);
+                assertEquals(serverCtx2.getProtocolState(), ServerRequestContext.TwoPhaseCommitFSM.READY);
+
+                // Coordinator should send all servers GLOBAL_COMMIT
+                coordinator.underlyingActor().resume();
+
+                // Server0 gets the final outcome
+                ServerRequestContext serverCtx3 = server0.underlyingActor().getRequestContext(write).orElseThrow();
+                assertSame(serverCtx3.getProtocolState(), ServerRequestContext.TwoPhaseCommitFSM.COMMIT);
             }
         };
     }
