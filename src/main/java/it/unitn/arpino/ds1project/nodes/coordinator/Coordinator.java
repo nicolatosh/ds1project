@@ -90,6 +90,10 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             ctx.get().log(CoordinatorRequestContext.LogState.START_2PC);
 
+            if (crash()) {
+                return;
+            }
+
             logger.info("Asking the VoteRequests to the participants");
             VoteRequest req = new VoteRequest(msg.uuid);
             ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
@@ -243,7 +247,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     @Override
-    protected void resume() {
+    public void resume() {
         super.resume();
         List<CoordinatorRequestContext> active = getActive();
         List<CoordinatorRequestContext> decided = getDecided();
@@ -253,7 +257,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
             logger.info("Sending the transaction result to " + ctx.getClient().path().name());
-            TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
+            TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
             ctx.getClient().tell(result, getSelf());
         });
 

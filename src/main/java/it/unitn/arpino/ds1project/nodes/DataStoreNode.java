@@ -38,13 +38,14 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
      * Simulates a crash of the {@link DataStoreNode}. A crashed node will not handle the remaining messages in the
      * message queue and newly received ones.
      */
-    protected void crash() {
+    protected boolean crash() {
         logger.info("Crashing...");
         getContext().become(new ReceiveBuilder()
                 .matchAny(msg -> {
                     // this suppresses Dead Letter warnings.
                 }).build());
         status = DataStoreNode.Status.CRASHED;
+        return true;
     }
 
     /**
