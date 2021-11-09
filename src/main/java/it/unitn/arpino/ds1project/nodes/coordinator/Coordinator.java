@@ -90,10 +90,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             ctx.get().log(CoordinatorRequestContext.LogState.START_2PC);
 
-            if (crash()) {
-                return;
-            }
-
             logger.info("Asking the VoteRequests to the participants");
             VoteRequest req = new VoteRequest(msg.uuid);
             ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
@@ -136,6 +132,10 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.get().cancelVoteResponseTimeout();
 
                     ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
+
+                    if (crash()) {
+                        return;
+                    }
 
                     logger.info("All voted YES. Sending the FinalDecision to the participants");
                     FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
@@ -264,13 +264,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         // If the coordinator has already taken the FinalDecision for the transaction, it sends the decision to all
         // the participants.
         decided.forEach(ctx -> {
-            switch (ctx.getProtocolState()) {
-                case COMMIT: {
+            switch ((CoordinatorRequestContext.LogState) ctx.loggedState().get()) {
+                case GLOBAL_COMMIT: {
                     FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                     ctx.getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
                     break;
                 }
-                case ABORT: {
+                case GLOBAL_ABORT: {
                     FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                     ctx.getParticipants().forEach(participants -> participants.tell(decision, getSelf()));
                     break;
