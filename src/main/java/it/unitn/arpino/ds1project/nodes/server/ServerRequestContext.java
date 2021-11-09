@@ -2,6 +2,7 @@ package it.unitn.arpino.ds1project.nodes.server;
 
 import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
+import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.FinalDecisionTimeout;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
@@ -67,6 +68,13 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
+     * Sets the current state of the Two-phase commit (2PC) protocol of the transaction.
+     */
+    public void setProtocolState(TwoPhaseCommitFSM protocolState) {
+        this.protocolState = protocolState;
+    }
+
+    /**
      * Reads from the database the data item with the specified key.
      *
      * @param key The key of the data item to read.
@@ -87,30 +95,21 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
-     * Attempts to prepare the transaction to be committed, and updates the state of the Two-phase commit (2PC) protocol
-     * accordingly.
+     * Attempts to prepare the transaction to be committed.
      */
-    public void prepare() {
-        switch (connection.prepare()) {
-            case PREPARED:
-                protocolState = TwoPhaseCommitFSM.READY;
-                break;
-            case ABORT:
-                protocolState = TwoPhaseCommitFSM.ABORT;
-                break;
-        }
+    public boolean prepare() {
+        return connection.prepare() == IDatabaseController.Response.PREPARED;
     }
 
     /**
-     * Commits the transaction, and updates the state of the Two-phase commit (2PC) protocol accordingly.
+     * Commits the transaction.
      */
     public void commit() {
         connection.commit();
-        protocolState = TwoPhaseCommitFSM.COMMIT;
     }
 
     /**
-     * Aborts the transaction, and updates the state of the Two-phase commit (2PC) protocol accordingly.
+     * Aborts the transaction.
      */
     public void abort() {
         // case 1: The client asked to abort (a requested to prepare was never generated). Thus, the state is INIT.
@@ -118,7 +117,6 @@ public class ServerRequestContext extends RequestContext {
         // case 3: The Server has attempted to prepare and the outcome was negative. Thus, the state is ABORT.
         if (protocolState == TwoPhaseCommitFSM.INIT || protocolState == TwoPhaseCommitFSM.READY) {
             connection.abort();
-            protocolState = TwoPhaseCommitFSM.ABORT;
         }
     }
 

@@ -88,24 +88,22 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         ctx.get().cancelVoteRequestTimeout();
 
-        ctx.get().prepare();
+        if (ctx.get().prepare()) {
+            ctx.get().log(ServerRequestContext.LogState.VOTE_COMMIT);
 
-        switch (ctx.get().getProtocolState()) {
-            case READY: {
-                ctx.get().log(ServerRequestContext.LogState.VOTE_COMMIT);
+            VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.YES);
+            getSender().tell(vote, getSelf());
 
-                VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.YES);
-                getSender().tell(vote, getSelf());
-                break;
-            }
-            case ABORT: {
-                ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
+            ctx.get().setProtocolState(TwoPhaseCommitFSM.READY);
+        } else {
+            ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
-                VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
-                getSender().tell(vote, getSelf());
-                break;
-            }
+            VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
+            getSender().tell(vote, getSelf());
+
+            ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
         }
+
 
         ctx.get().startFinalDecisionTimeout(this);
     }
@@ -121,6 +119,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
         ctx.get().abort();
+        ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
     }
 
     private void onFinalDecisionTimeout(FinalDecisionTimeout timeout) {
@@ -154,6 +153,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         // Coordinator's VoteRequest. Thus, it is safe to abort.
         if (ctx.get().getProtocolState() == TwoPhaseCommitFSM.INIT) {
             ctx.get().abort();
+            ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
         }
 
         DecisionResponse response = new DecisionResponse(ctx.get().uuid, ctx.get().getProtocolState());
@@ -175,17 +175,20 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 logger.info("Received INIT. Aborting");
                 ctx.get().log(ServerRequestContext.LogState.DECISION);
                 ctx.get().abort();
+                ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
             }
             case ABORT: {
                 logger.info("Received ABORT. Aborting");
                 ctx.get().log(ServerRequestContext.LogState.DECISION);
                 ctx.get().abort();
+                ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
                 break;
             }
             case COMMIT: {
                 logger.info("Received COMMIT. Committing");
                 ctx.get().log(ServerRequestContext.LogState.DECISION);
                 ctx.get().commit();
+                ctx.get().setProtocolState(TwoPhaseCommitFSM.COMMIT);
                 break;
             }
             case READY: {
@@ -211,6 +214,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     logger.info("Received while in INIT. Client abort");
                     ctx.get().log(ServerRequestContext.LogState.DECISION);
                     ctx.get().abort();
+                    ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
                 }
                 break;
             }
@@ -222,12 +226,14 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         logger.info("Received COMMIT. Committing");
                         ctx.get().log(ServerRequestContext.LogState.DECISION);
                         ctx.get().commit();
+                        ctx.get().setProtocolState(TwoPhaseCommitFSM.COMMIT);
                         break;
                     }
                     case GLOBAL_ABORT: {
                         logger.info("Received ABORT. Aborting");
-                        ctx.get().abort();
                         ctx.get().log(ServerRequestContext.LogState.DECISION);
+                        ctx.get().abort();
+                        ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
                         break;
                     }
                 }
@@ -263,15 +269,19 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         super.resume();
 
         List<ServerRequestContext> voteNotCasted = getActive().stream()
-                .filter(ctx -> ctx.getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.INIT)
+                .filter(ctx -> ctx.loggedState().get() == ServerRequestContext.LogState.INIT)
                 .collect(Collectors.toList());
 
         List<ServerRequestContext> voteCasted = getActive().stream()
-                .filter(ctx -> ctx.getProtocolState() == ServerRequestContext.TwoPhaseCommitFSM.READY)
+                .filter(ctx -> ctx.loggedState().get() == ServerRequestContext.LogState.VOTE_COMMIT)
                 .collect(Collectors.toList());
 
         // If the server has not already cast the vote for the transaction, it aborts it.
-        voteNotCasted.forEach(ServerRequestContext::abort);
+        voteNotCasted.forEach(ctx -> {
+            ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
+            ctx.abort();
+            ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
+        });
 
         // If the server has already cast the vote for the transaction, it asks the others about the coordinator's
         // FinalDecision.
