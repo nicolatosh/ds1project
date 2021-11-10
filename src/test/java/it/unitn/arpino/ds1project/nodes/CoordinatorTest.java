@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 public class CoordinatorTest {
     ActorSystem system;
     TestActorRef<Server> server0, server1;
-    TestActorRef<Server> coordinator;
+    TestActorRef<Coordinator> coordinator;
 
     @BeforeEach
     void setUp() {
