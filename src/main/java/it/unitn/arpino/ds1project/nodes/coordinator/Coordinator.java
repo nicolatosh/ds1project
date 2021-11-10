@@ -13,6 +13,8 @@ import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
+import it.unitn.arpino.ds1project.simulation.Multicast;
+import it.unitn.arpino.ds1project.simulation.Simulation;
 
 import java.time.Duration;
 import java.util.List;
@@ -133,14 +135,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                     ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
-                    if (crash()) {
-                        return;
-                    }
-
                     logger.info("All voted YES. Sending the FinalDecision to the participants");
                     FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                    ctx.get().getParticipants().forEach(server -> getContext().system().scheduler().scheduleOnce(
-                            Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
+
+                    Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, Simulation.COORDINATOR_ON_VOTE_RESPONSE_CRASH_PROBABILITY);
+                    if (!multicast.multicast()) {
+                        return;
+                    }
 
                     ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
