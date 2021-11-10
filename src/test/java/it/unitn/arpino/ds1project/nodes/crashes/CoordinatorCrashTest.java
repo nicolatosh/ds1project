@@ -14,6 +14,7 @@ import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext;
+import it.unitn.arpino.ds1project.simulation.Simulation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,11 +41,14 @@ public class CoordinatorCrashTest {
     }
 
     @AfterEach
-    void tearDown() {
-        TestKit.shutdownActorSystem(system, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS), false);
+    void tearDown() throws InterruptedException {
+        TestKit.shutdownActorSystem(system, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS), true);
         system = null;
         server0 = null;
         coordinator = null;
+
+        // This has to be done in order to properly let Akka to turn off actors
+        Thread.sleep(2000);
     }
 
     /**
@@ -82,6 +86,7 @@ public class CoordinatorCrashTest {
                 expectNoMessage();
 
                 // Make coordinator crash in this method before request Votes to servers
+                Simulation.COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY = 100;
                 TxnEndMsg end = new TxnEndMsg(uuid, true);
                 coordinator.tell(end, client);
                 expectNoMessage();
@@ -90,7 +95,7 @@ public class CoordinatorCrashTest {
                 assertSame(ctx.loggedState().get(), CoordinatorRequestContext.LogState.START_2PC);
 
                 // Coodinator recovers after some time
-                Thread.sleep((ServerRequestContext.VOTE_REQUEST_TIMEOUT_S + 1) * 1000);
+                TimeUnit.SECONDS.sleep(ServerRequestContext.VOTE_REQUEST_TIMEOUT_S + 1);
 
                 // Server meanwhile should have aborted since VoteTimeout has already fired
                 // Make sure above Thread.sleep() is long enough
@@ -103,6 +108,8 @@ public class CoordinatorCrashTest {
                 CoordinatorRequestContext ctx2 = coordinator.underlyingActor().getRequestContext(write).orElseThrow();
                 assertSame(ctx2.getProtocolState(), CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
+                // Restoring crash initial probability
+                Simulation.COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY = 0.0;
             }
         };
     }
@@ -136,6 +143,7 @@ public class CoordinatorCrashTest {
 
                 // Make coordinator crash in this method after GLOBAL_COMMIT has been written
                 // into local log
+                Simulation.COORDINATOR_ON_VOTE_RESPONSE_CRASH_PROBABILITY = 100;
                 TxnEndMsg end = new TxnEndMsg(uuid, true);
                 coordinator.tell(end, client);
                 expectNoMessage();
@@ -144,7 +152,7 @@ public class CoordinatorCrashTest {
                 assertSame(ctx.loggedState().get(), CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
                 // Coodinator recovers after some time
-                Thread.sleep((ServerRequestContext.FINAL_DECISION_TIMEOUT_S + 1) * 1000);
+                TimeUnit.SECONDS.sleep(ServerRequestContext.FINAL_DECISION_TIMEOUT_S + 1);
 
                 // Server0 meanwhile should have started TERMINATION PROTOCOL
                 // Server1 should receive DECISION_REQUEST
@@ -169,6 +177,9 @@ public class CoordinatorCrashTest {
                 // Server0 gets the final outcome
                 ServerRequestContext serverCtx3 = server0.underlyingActor().getRequestContext(write).orElseThrow();
                 assertSame(serverCtx3.getProtocolState(), ServerRequestContext.TwoPhaseCommitFSM.COMMIT);
+
+                // Restoring crash initial probability
+                Simulation.COORDINATOR_ON_VOTE_RESPONSE_CRASH_PROBABILITY = 0.0;
             }
         };
     }

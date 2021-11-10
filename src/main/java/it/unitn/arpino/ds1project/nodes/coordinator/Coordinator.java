@@ -94,7 +94,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             logger.info("Asking the VoteRequests to the participants");
             VoteRequest req = new VoteRequest(msg.uuid);
-            ctx.get().getParticipants().forEach(participant -> participant.tell(req, getSelf()));
+
+            Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), req, Simulation.COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY);
+            if (!multicast.multicast()) {
+                return;
+            }
 
             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
         } else {
