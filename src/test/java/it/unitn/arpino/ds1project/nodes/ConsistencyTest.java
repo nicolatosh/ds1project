@@ -62,15 +62,29 @@ public class ConsistencyTest {
                 UUID uuid = accept.uuid;
                 Random random = new Random();
 
+                // A single client peforms Read on server0 and write the same value
                 for (int i = 0; i < 10; i++) {
                     int key = random.nextInt(9);
                     int key2 = random.nextInt(9) + 10;
+
+                    // Read value A
                     ReadMsg readMsg = new ReadMsg(uuid, key);
                     coordinator.tell(readMsg, client1);
                     ReadResultMsg readResultMsg = expectMsgClass(ReadResultMsg.class);
 
-                    WriteMsg writeMsg = new WriteMsg(uuid, key2, readResultMsg.value);
+                    // Replace A with 0 in server0
+                    WriteMsg writeMsg = new WriteMsg(uuid, key, 0);
                     coordinator.tell(writeMsg, client1);
+                    expectNoMessage();
+
+                    // Read value B from server1
+                    ReadMsg readMsg1 = new ReadMsg(uuid, key2);
+                    coordinator.tell(readMsg1, client1);
+                    ReadResultMsg readResultMsg1 = expectMsgClass(ReadResultMsg.class);
+
+                    // Write B + A
+                    WriteMsg writeMsg1 = new WriteMsg(uuid, key2, readResultMsg1.value + readResultMsg.value);
+                    coordinator.tell(writeMsg1, client1);
                     expectNoMessage();
                 }
 
