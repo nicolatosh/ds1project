@@ -45,6 +45,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         return database;
     }
 
+    public IDatabaseController getDatabaseController() {
+        return controller;
+    }
+
     public void addServer(ActorRef server) {
         servers.add(server);
     }
