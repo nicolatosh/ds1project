@@ -1,9 +1,8 @@
 package it.unitn.arpino.ds1project.datastore;
 
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
-import it.unitn.arpino.ds1project.datastore.controller.DatabaseController;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
-import it.unitn.arpino.ds1project.datastore.database.Database;
+import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.database.IDatabase;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,33 +15,21 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 class ConnectionTest {
     IDatabase database;
     IDatabaseController controller;
-
-    private IDatabase preloadedDatabase() {
-        IDatabase database = new Database();
-        IntStream.range(0, 10).forEach(i -> {
-            database.write(i, 100);
-            database.setVersion(i, 1);
-        });
-        return database;
-    }
+    IDatabase copy;
 
     @BeforeEach
     void setUp() {
-        database = preloadedDatabase();
-        controller = new DatabaseController(database);
-
-        // Preload the database with some data
-        IntStream.range(0, 10).forEach(i -> {
-            database.write(i, 100);
-            database.setVersion(i, 1);
-        });
+        DatabaseBuilder builder = DatabaseBuilder.newBuilder().create();
+        database = builder.getDatabase();
+        controller = builder.getController();
+        copy = database.copy();
     }
 
     @Test
     void read() {
         IConnection connection = controller.beginTransaction();
 
-        IntStream.range(0, 10).forEach(i -> Assertions.assertEquals(100, connection.read(i)));
+        IntStream.range(0, 10).forEach(i -> Assertions.assertEquals(DatabaseBuilder.DEFAULT_DATA_VALUE, connection.read(i)));
     }
 
     @Test
@@ -50,9 +37,9 @@ class ConnectionTest {
         IConnection connection = controller.beginTransaction();
 
         connection.write(4, 40);
-        connection.write(7, 70);
-
         Assertions.assertEquals(40, connection.read(4));
+
+        connection.write(7, 70);
         Assertions.assertEquals(70, connection.read(7));
     }
 
@@ -104,14 +91,12 @@ class ConnectionTest {
         connection.prepare();
         connection.commit();
 
+        copy.write(4, 40);
+        copy.setVersion(4, 1);
+        copy.write(7, 70);
+        copy.setVersion(7, 1);
 
-        IDatabase expected = preloadedDatabase();
-        expected.write(4, 40);
-        expected.setVersion(4, 2);
-        expected.write(7, 70);
-        expected.setVersion(7, 2);
-
-        Assertions.assertEquals(expected, database);
+        Assertions.assertEquals(copy, database);
     }
 
     @Test
@@ -125,7 +110,6 @@ class ConnectionTest {
         connection.abort();
 
         // database remains unmodified
-        IDatabase expected = preloadedDatabase();
-        Assertions.assertEquals(expected, database);
+        Assertions.assertEquals(copy, database);
     }
 }
