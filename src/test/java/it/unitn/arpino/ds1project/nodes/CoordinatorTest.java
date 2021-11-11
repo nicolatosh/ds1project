@@ -14,6 +14,7 @@ import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -49,6 +50,29 @@ public class CoordinatorTest {
     }
 
     @Test
+    @Order(0)
+    void testNoDuplicateContexts() {
+        new TestKit(system) {
+            {
+                // Note: right now, coordinators can accept two simultaneous transactions from the same client.
+
+                coordinator.tell(new TxnBeginMsg(), testActor());
+                UUID uuid1 = expectMsgClass(TxnAcceptMsg.class).uuid;
+
+                coordinator.tell(new TxnBeginMsg(), testActor());
+                UUID uuid2 = expectMsgClass(TxnAcceptMsg.class).uuid;
+
+                assertNotEquals(uuid1, uuid2);
+
+                List<CoordinatorRequestContext> contexts = coordinator.underlyingActor().getActive();
+                assertEquals(2, contexts.size());
+                assertNotEquals(contexts.get(0), contexts.get(1));
+            }
+        };
+    }
+
+    @Test
+    @Order(1)
     void testNoDuplicateParticipant() {
         CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), ActorRef.noSender());
         coordinator.underlyingActor().addContext(ctx);
@@ -59,6 +83,7 @@ public class CoordinatorTest {
     }
 
     @Test
+    @Order(2)
     void testConcurrentTxn() {
         new TestKit(system) {
             {
