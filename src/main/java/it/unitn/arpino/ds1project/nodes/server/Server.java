@@ -37,12 +37,16 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         servers = new ArrayList<>();
     }
 
+    public static Props props(int lowerKey, int upperKey) {
+        return Props.create(Server.class, () -> new Server(lowerKey, upperKey));
+    }
+
     public IDatabase getDatabase() {
         return database;
     }
 
-    public static Props props(int lowerKey, int upperKey) {
-        return Props.create(Server.class, () -> new Server(lowerKey, upperKey));
+    public void addServer(ActorRef server) {
+        servers.add(server);
     }
 
     @Override
