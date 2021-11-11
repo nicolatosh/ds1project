@@ -39,7 +39,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     public Receive createReceive() {
         return new ReceiveBuilder()
-                .match(ServerInfo.class, this::onServerInfo)
+                .match(ServerJoin.class, this::onServerJoined)
                 .match(ReadRequest.class, this::onReadRequest)
                 .match(WriteRequest.class, this::onWriteRequest)
                 .match(VoteRequest.class, this::onVoteRequest)
@@ -51,8 +51,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .build();
     }
 
-    private void onServerInfo(ServerInfo server) {
-        servers.add(server);
+    private void onServerJoined(ServerJoin msg) {
+        servers.add(msg.server);
     }
 
     public ServerRequestContext newContext(UUID uuid) {
@@ -259,9 +259,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      */
     private void terminationProtocol(ServerRequestContext ctx) {
         DecisionRequest request = new DecisionRequest(ctx.uuid);
-        servers.stream()
-                .map(serverInfo -> serverInfo.server)
-                .forEach(server -> server.tell(request, getSelf()));
+        servers.forEach(server -> server.tell(request, getSelf()));
     }
 
     @Override

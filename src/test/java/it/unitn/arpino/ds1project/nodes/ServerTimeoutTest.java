@@ -4,7 +4,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
-import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -49,9 +48,7 @@ public class ServerTimeoutTest {
                 ActorRef server2 = testKit2.testActor();
 
                 // Update server1's knowledge of the server2
-
-                ServerInfo info2 = new ServerInfo(server2, 10, 19);
-                server1.tell(info2, ActorRef.noSender());
+                server1.tell(new ServerJoin(server2), ActorRef.noSender());
 
                 // Simulate a transaction by requesting two operations: a WriteRequest and a ReadRequest.
 

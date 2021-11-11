@@ -4,12 +4,12 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
-import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.messages.server.DecisionRequest;
+import it.unitn.arpino.ds1project.messages.server.ServerJoin;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
@@ -36,8 +36,8 @@ public class CoordinatorCrashTest {
         system = ActorSystem.create();
         server0 = TestActorRef.create(system, Server.props(0, 9), "server0");
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
-        List.of(new ServerInfo(server0, 0, 9)
-        ).forEach(server -> coordinator.tell(server, TestActorRef.noSender()));
+        List.of(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server0, 0, 9)
+        ).forEach(msg -> coordinator.tell(msg, TestActorRef.noSender()));
     }
 
     @AfterEach
@@ -68,11 +68,10 @@ public class CoordinatorCrashTest {
                 ActorRef server1 = testKit2.testActor();
 
                 // Update server0's knowledge of the server1
-                ServerInfo info1 = new ServerInfo(server1, 10, 19);
-                server0.tell(info1, ActorRef.noSender());
+                server0.tell(new ServerJoin(server1), ActorRef.noSender());
 
-                // Update coordinator with server1
-                coordinator.tell(info1, ActorRef.noSender());
+                // Update coordinator's knowledge of server1
+                coordinator.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server1, 10, 19), ActorRef.noSender());
 
                 UUID uuid;
 
@@ -124,11 +123,10 @@ public class CoordinatorCrashTest {
                 ActorRef server1 = testKit2.testActor();
 
                 // Update server0's knowledge of the server1
-                ServerInfo info1 = new ServerInfo(server1, 10, 19);
-                server0.tell(info1, ActorRef.noSender());
+                server0.tell(new ServerJoin(server1), ActorRef.noSender());
 
-                // Update coordinator with server1
-                coordinator.tell(info1, ActorRef.noSender());
+                // Update coordinator's knowledge of server1
+                coordinator.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server1, 10, 19), ActorRef.noSender());
 
                 UUID uuid;
 

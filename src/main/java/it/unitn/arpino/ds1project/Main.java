@@ -2,8 +2,8 @@ package it.unitn.arpino.ds1project;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
-import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.client.ClientStartMsg;
+import it.unitn.arpino.ds1project.messages.server.ServerJoin;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
@@ -22,13 +22,13 @@ public class Main {
         final ActorRef coord1 = system.actorOf(Coordinator.props(), "coord1");
         final ActorRef coord2 = system.actorOf(Coordinator.props(), "coord2");
 
-        server0.tell(new ServerInfo(server1, 10, 19), ActorRef.noSender());
-        server1.tell(new ServerInfo(server0, 0, 9), ActorRef.noSender());
+        server0.tell(new ServerJoin(server1), ActorRef.noSender());
+        server1.tell(new ServerJoin(server0), ActorRef.noSender());
 
-        coord1.tell(new ServerInfo(server0, 0, 9), ActorRef.noSender());
-        coord1.tell(new ServerInfo(server1, 10, 19), ActorRef.noSender());
-        coord2.tell(new ServerInfo(server0, 0, 9), ActorRef.noSender());
-        coord2.tell(new ServerInfo(server1, 10, 19), ActorRef.noSender());
+        coord1.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server0, 0, 9), ActorRef.noSender());
+        coord1.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server1, 10, 19), ActorRef.noSender());
+        coord2.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server0, 0, 9), ActorRef.noSender());
+        coord2.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server1, 10, 19), ActorRef.noSender());
 
         // setup client
 
