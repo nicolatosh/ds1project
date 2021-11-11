@@ -206,12 +206,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         ActorRef server = dispatcher.getServer(msg.key);
 
-        if (!ctx.get().isParticipantPresent(server)) {
-            ctx.get().addParticipant(server);
-
-            // log before the tell, to minimize the actors' output interference
-            logger.info("Added " + server.path().name() + " to the transaction's participants");
-        }
+        ctx.get().addParticipant(server);
 
         ReadRequest req = new ReadRequest(msg.uuid, msg.key);
         server.tell(req, getSelf());
@@ -238,12 +233,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         ActorRef server = dispatcher.getServer(msg.key);
 
-        if (!ctx.get().isParticipantPresent(server)) {
-            ctx.get().addParticipant(server);
-
-            // log before the tell, to minimize the actors' output interference
-            logger.info("Added " + server.path().name() + " to the transaction's participants");
-        }
+        ctx.get().addParticipant(server);
 
         WriteRequest req = new WriteRequest(msg.uuid, msg.key, msg.value);
         server.tell(req, getSelf());

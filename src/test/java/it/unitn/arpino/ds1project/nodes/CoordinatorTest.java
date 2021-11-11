@@ -10,6 +10,7 @@ import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
+import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,16 @@ public class CoordinatorTest {
         server0 = null;
         server1 = null;
         coordinator = null;
+    }
+
+    @Test
+    void testNoDuplicateParticipant() {
+        CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), ActorRef.noSender());
+        coordinator.underlyingActor().addContext(ctx);
+
+        coordinator.tell(new ReadMsg(ctx.uuid, 0), ActorRef.noSender());
+        coordinator.tell(new ReadMsg(ctx.uuid, 0), ActorRef.noSender());
+        assertEquals(1, ctx.getParticipants().size());
     }
 
     @Test

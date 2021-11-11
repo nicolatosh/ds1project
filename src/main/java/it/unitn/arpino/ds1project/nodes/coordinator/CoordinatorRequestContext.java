@@ -106,16 +106,6 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * Checks if participant is already part of this transaction.
-     *
-     * @param participant {@link Server}
-     * @return Boolean value, true if participant is present.
-     */
-    public boolean isParticipantPresent(ActorRef participant) {
-        return participants.stream().anyMatch(p -> p.equals(participant));
-    }
-
-    /**
      * Adds a participant to the list of participants which, upon the {@link Coordinator}'s {@link VoteRequest},
      * cast a positive {@link VoteResponse}.
      */
