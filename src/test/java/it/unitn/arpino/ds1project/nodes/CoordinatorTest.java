@@ -101,7 +101,7 @@ public class CoordinatorTest {
                 var testKit2 = new TestKit(system);
                 ActorRef client2 = testKit2.testActor();
 
-                // The clients begin two transactions. They must obtain different UUIDs.
+                // The clients begin two transactions.
 
                 coordinator.tell(new TxnBeginMsg(), client1);
                 TxnAcceptMsg accept1 = expectMsgClass(TxnAcceptMsg.class);
@@ -110,8 +110,6 @@ public class CoordinatorTest {
                 coordinator.tell(new TxnBeginMsg(), client2);
                 TxnAcceptMsg accept2 = testKit2.expectMsgClass(TxnAcceptMsg.class);
                 UUID uuid2 = accept2.uuid;
-
-                assertNotEquals(uuid1, uuid2);
 
                 // The first transaction writes two elements, stored in two different servers,
                 // and subsequently reads them.

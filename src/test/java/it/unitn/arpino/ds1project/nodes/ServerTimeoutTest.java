@@ -63,12 +63,6 @@ public class ServerTimeoutTest {
                 ReadResult result1 = expectMsgClass(ReadResult.class);
                 assertEquals(new ReadResult(uuid, 6, 742), result1);
 
-                // server1 should have placed the two operations in the same ServerRequestContext
-                // (in the future, this test might be put in another class).
-
-                assertSame(server1.underlyingActor().getRequestContext(read).orElseThrow(),
-                        server1.underlyingActor().getRequestContext(write).orElseThrow());
-
                 // Send a VoteRequest to server1. The ServerRequestContext must switch to the READY state.
                 // server1 starts a timer within which to receive the FinalDecision from coord.
 
