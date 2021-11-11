@@ -33,33 +33,23 @@ class DataStoreNodeTest {
     void crashAndResume() {
         new TestKit(system) {
             {
-                ActorRef testActor = testActor();
-                node.tell(new SimpleNode.SimpleMessage(), testActor);
-                expectMsg("Message received!");
+                node.tell("Hello", testActor());
+                expectMsg("World");
 
                 node.underlyingActor().crash();
-                node.tell(new SimpleNode.SimpleMessage(), testActor);
+                node.tell("Hello", testActor());
                 expectNoMessage();
 
                 node.underlyingActor().resume();
-                node.tell(new SimpleNode.SimpleMessage(), testActor);
-                expectMsg("Message received!");
+                node.tell("Hello", testActor());
+                expectMsg("World");
             }
         };
     }
 
+
+    @SuppressWarnings("rawtypes")
     private static class SimpleNode extends DataStoreNode {
-        private static class SimpleMessage extends Message {
-            public SimpleMessage() {
-                super(null);
-            }
-
-            @Override
-            public Type getType() {
-                return Type.Conversational;
-            }
-        }
-
         public static Props props() {
             return Props.create(SimpleNode.class, SimpleNode::new);
         }
@@ -67,7 +57,7 @@ class DataStoreNodeTest {
         @Override
         public Receive createReceive() {
             return ReceiveBuilder.create()
-                    .match(SimpleMessage.class, msg -> getSender().tell("Message received!", getSelf()))
+                    .matchEquals("Hello", msg -> getSender().tell("World", getSelf()))
                     .build();
         }
     }
