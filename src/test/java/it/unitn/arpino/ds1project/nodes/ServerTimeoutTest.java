@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ServerTimeoutTest {
@@ -47,32 +46,28 @@ public class ServerTimeoutTest {
                 TestKit testKit2 = new TestKit(system);
                 ActorRef server2 = testKit2.testActor();
 
-                // Update server1's knowledge of the server2
-                server1.tell(new ServerJoin(server2), ActorRef.noSender());
+                // Update server1's knowledge of server2
+                server1.underlyingActor().addServer(server2);
 
                 // Simulate a transaction by requesting two operations: a WriteRequest and a ReadRequest.
 
                 UUID uuid = UUID.randomUUID();
 
-                WriteRequest write = new WriteRequest(uuid, 6, 742);
-                server1.tell(write, coord);
+                server1.tell(new WriteRequest(uuid, 6, 742), coord);
                 expectNoMessage();
 
-                ReadRequest read = new ReadRequest(uuid, 6);
-                server1.tell(read, coord);
-                ReadResult result1 = expectMsgClass(ReadResult.class);
-                assertEquals(new ReadResult(uuid, 6, 742), result1);
+                server1.tell(new ReadRequest(uuid, 6), coord);
+                expectMsg(new ReadResult(uuid, 6, 742));
 
                 // Send a VoteRequest to server1. The ServerRequestContext must switch to the READY state.
-                // server1 starts a timer within which to receive the FinalDecision from coord.
+                // server1 starts a timer within which to receive the FinalDecision from the coordinator.
 
                 VoteRequest voteRequest = new VoteRequest(uuid);
                 server1.tell(voteRequest, coord);
                 assertSame(ServerRequestContext.TwoPhaseCommitFSM.READY,
                         server1.underlyingActor().getRequestContext(voteRequest).orElseThrow().getProtocolState());
 
-                VoteResponse voteResponse = expectMsgClass(VoteResponse.class);
-                assertEquals(new VoteResponse(uuid, VoteResponse.Vote.YES), voteResponse);
+                expectMsg(new VoteResponse(uuid, VoteResponse.Vote.YES));
 
                 // The timeout expires, and server1 sends a TimeoutExpire message to itself, upon which it asks server2
                 // if it knows about the FinalDecision.
