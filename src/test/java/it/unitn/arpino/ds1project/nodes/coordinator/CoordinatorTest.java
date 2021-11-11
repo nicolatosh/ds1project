@@ -12,19 +12,20 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
+import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import scala.concurrent.duration.Duration;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CoordinatorTest {
     ActorSystem system;
@@ -89,6 +90,27 @@ public class CoordinatorTest {
 
     @Test
     @Order(2)
+    void testFinalDecisionTimeout() {
+        new TestKit(system) {
+            {
+                coordinator.underlyingActor().getDispatcher().map(0, testActor());
+
+                CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
+                coordinator.underlyingActor().addContext(ctx);
+                ctx.addParticipant(testActor());
+
+                ctx.startVoteResponseTimeout(coordinator.underlyingActor());
+                // must account for the timeout duration to elapse and the message to be delivered:
+                // add one second more to the duration
+                expectMsg(Duration.create(CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S + 1, TimeUnit.SECONDS),
+                        new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT));
+                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
+            }
+        };
+    }
+
+    @Test
+    @Order(3)
     void testConcurrentTxn() {
         new TestKit(system) {
             {
