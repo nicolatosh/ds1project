@@ -39,7 +39,7 @@ public class CoordinatorTest {
     }
 
     @Test
-    @Order(0)
+    @Order(1)
     void testNoDuplicateContexts() {
         new TestKit(system) {
             {
@@ -61,7 +61,7 @@ public class CoordinatorTest {
     }
 
     @Test
-    @Order(1)
+    @Order(2)
     void testNoDuplicateParticipant() {
         CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), ActorRef.noSender());
         coordinator.underlyingActor().addContext(ctx);
@@ -72,7 +72,7 @@ public class CoordinatorTest {
     }
 
     @Test
-    @Order(2)
+    @Order(3)
     void testVoteResponseTimeout() {
         new TestKit(system) {
             {
