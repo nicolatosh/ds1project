@@ -61,4 +61,12 @@ public class Database implements IDatabase {
     public int hashCode() {
         return super.hashCode();
     }
+
+    @Override
+    public String toString() {
+        return "Database{" +
+                "versions=" + versions +
+                ", values=" + values +
+                '}';
+    }
 }
