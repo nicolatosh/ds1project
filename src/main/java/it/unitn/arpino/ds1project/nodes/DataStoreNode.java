@@ -30,7 +30,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
         contexts = new ArrayList<>();
     }
 
-    protected final Status getStatus() {
+    public final Status getStatus() {
         return status;
     }
 
