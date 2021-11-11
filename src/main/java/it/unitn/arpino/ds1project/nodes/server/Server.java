@@ -78,7 +78,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
 
     private void onReadRequest(ReadRequest req) {
-        ServerRequestContext ctx = getRequestContext(req).orElse(newContext(req.uuid));
+        ServerRequestContext ctx = getRequestContext(req.uuid).orElse(newContext(req.uuid));
 
         int value = ctx.read(req.key);
 
@@ -87,13 +87,13 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onWriteRequest(WriteRequest req) {
-        ServerRequestContext ctx = getRequestContext(req).orElse(newContext(req.uuid));
+        ServerRequestContext ctx = getRequestContext(req.uuid).orElse(newContext(req.uuid));
 
         ctx.write(req.key, req.value);
     }
 
     private void onVoteRequest(VoteRequest req) {
-        Optional<ServerRequestContext> ctx = getRequestContext(req);
+        Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
@@ -122,7 +122,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onVoteRequestTimeout(VoteRequestTimeout timeout) {
-        Optional<ServerRequestContext> ctx = getRequestContext(timeout);
+        Optional<ServerRequestContext> ctx = getRequestContext(timeout.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
@@ -136,7 +136,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onFinalDecisionTimeout(FinalDecisionTimeout timeout) {
-        Optional<ServerRequestContext> ctx = getRequestContext(timeout);
+        Optional<ServerRequestContext> ctx = getRequestContext(timeout.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
@@ -155,7 +155,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * requested, it ignores the request.
      */
     private void onDecisionRequest(DecisionRequest req) {
-        Optional<ServerRequestContext> ctx = getRequestContext(req);
+        Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
         if (ctx.isEmpty()) {
             // This server is not participating in the same transaction for which the decision is being requested.
             return;
@@ -178,7 +178,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * know the final decision either, in which case this Server doesn't do anything.
      */
     private void onDecisionResponse(DecisionResponse resp) {
-        Optional<ServerRequestContext> ctx = getRequestContext(resp);
+        Optional<ServerRequestContext> ctx = getRequestContext(resp.uuid);
         if (ctx.isEmpty()) {
             return;
         }
@@ -215,7 +215,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * The {@link Coordinator} is sending the {@link FinalDecision} to this Server.
      */
     private void onFinalDecision(FinalDecision req) {
-        Optional<ServerRequestContext> ctx = getRequestContext(req);
+        Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;

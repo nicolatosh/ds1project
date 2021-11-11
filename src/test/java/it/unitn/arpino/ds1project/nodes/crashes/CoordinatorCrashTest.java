@@ -73,15 +73,12 @@ public class CoordinatorCrashTest {
                 // Update coordinator's knowledge of server1
                 coordinator.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server1, 10, 19), ActorRef.noSender());
 
-                UUID uuid;
-
                 // Starting transaction
                 coordinator.tell(new TxnBeginMsg(), client);
                 TxnAcceptMsg accept = expectMsgClass(TxnAcceptMsg.class);
-                uuid = accept.uuid;
+                UUID uuid = accept.uuid;
 
-                WriteMsg write = new WriteMsg(uuid, 0, 10);
-                coordinator.tell(write, client);
+                coordinator.tell(new WriteMsg(uuid, 0, 10), client);
                 expectNoMessage();
 
                 // Make coordinator crash in this method before request Votes to servers
@@ -90,7 +87,7 @@ public class CoordinatorCrashTest {
                 coordinator.tell(end, client);
                 expectNoMessage();
 
-                CoordinatorRequestContext ctx = coordinator.underlyingActor().getRequestContext(write).orElseThrow();
+                CoordinatorRequestContext ctx = coordinator.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertSame(ctx.loggedState().get(), CoordinatorRequestContext.LogState.START_2PC);
 
                 // Coodinator recovers after some time
@@ -98,13 +95,13 @@ public class CoordinatorCrashTest {
 
                 // Server meanwhile should have aborted since VoteTimeout has already fired
                 // Make sure above Thread.sleep() is long enough
-                ServerRequestContext serverCtx = server0.underlyingActor().getRequestContext(write).orElseThrow();
+                ServerRequestContext serverCtx = server0.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertTrue(serverCtx.isDecided());
 
                 // Coordinator should send client ABORT
                 coordinator.underlyingActor().resume();
 
-                CoordinatorRequestContext ctx2 = coordinator.underlyingActor().getRequestContext(write).orElseThrow();
+                CoordinatorRequestContext ctx2 = coordinator.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertSame(ctx2.getProtocolState(), CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                 // Restoring crash initial probability
@@ -128,12 +125,10 @@ public class CoordinatorCrashTest {
                 // Update coordinator's knowledge of server1
                 coordinator.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server1, 10, 19), ActorRef.noSender());
 
-                UUID uuid;
-
                 // Starting transaction
                 coordinator.tell(new TxnBeginMsg(), client);
                 TxnAcceptMsg accept = expectMsgClass(TxnAcceptMsg.class);
-                uuid = accept.uuid;
+                UUID uuid = accept.uuid;
 
                 WriteMsg write = new WriteMsg(uuid, 0, 10);
                 coordinator.tell(write, client);
@@ -146,7 +141,7 @@ public class CoordinatorCrashTest {
                 coordinator.tell(end, client);
                 expectNoMessage();
 
-                CoordinatorRequestContext ctx = coordinator.underlyingActor().getRequestContext(write).orElseThrow();
+                CoordinatorRequestContext ctx = coordinator.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertSame(ctx.loggedState().get(), CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
                 // Coodinator recovers after some time
@@ -155,17 +150,17 @@ public class CoordinatorCrashTest {
                 // Server0 meanwhile should have started TERMINATION PROTOCOL
                 // Server1 should receive DECISION_REQUEST
                 // Make sure above Thread.sleep() is long enough
-                ServerRequestContext serverCtx = server0.underlyingActor().getRequestContext(write).orElseThrow();
+                ServerRequestContext serverCtx = server0.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertFalse(serverCtx.isDecided());
                 testKit2.expectMsgClass(DecisionRequest.class);
 
-                CoordinatorRequestContext ctx2 = coordinator.underlyingActor().getRequestContext(write).orElseThrow();
+                CoordinatorRequestContext ctx2 = coordinator.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertSame(ctx2.getProtocolState(), CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
 
 
                 // Termination protocol should not be effective since no server knows the outcome
                 // Server0 should be in READY
-                ServerRequestContext serverCtx2 = server0.underlyingActor().getRequestContext(write).orElseThrow();
+                ServerRequestContext serverCtx2 = server0.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertEquals(serverCtx2.loggedState().get(), ServerRequestContext.LogState.VOTE_COMMIT);
                 assertEquals(serverCtx2.getProtocolState(), ServerRequestContext.TwoPhaseCommitFSM.READY);
 
@@ -173,7 +168,7 @@ public class CoordinatorCrashTest {
                 coordinator.underlyingActor().resume();
 
                 // Server0 gets the final outcome
-                ServerRequestContext serverCtx3 = server0.underlyingActor().getRequestContext(write).orElseThrow();
+                ServerRequestContext serverCtx3 = server0.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertSame(serverCtx3.getProtocolState(), ServerRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                 // Restoring crash initial probability

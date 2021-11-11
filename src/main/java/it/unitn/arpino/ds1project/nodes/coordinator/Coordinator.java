@@ -79,7 +79,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
      * Effectively starts the Two-phase commit (2PC) protocol
      */
     private void onTxnEndMsg(TxnEndMsg msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg);
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
@@ -115,7 +115,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onVoteResponse(VoteResponse resp) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(resp);
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(resp.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
@@ -177,7 +177,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onVoteResponseTimeout(VoteResponseTimeout timeout) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout);
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
@@ -198,7 +198,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onReadMsg(ReadMsg msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg);
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
@@ -213,7 +213,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onReadResult(ReadResult msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg);
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;
@@ -225,7 +225,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onWriteMsg(WriteMsg msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg);
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
         if (ctx.isEmpty()) {
             // Todo: Bad request
             return;

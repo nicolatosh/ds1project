@@ -65,7 +65,7 @@ public class ServerTimeoutTest {
                 VoteRequest voteRequest = new VoteRequest(uuid);
                 server1.tell(voteRequest, coord);
                 assertSame(ServerRequestContext.TwoPhaseCommitFSM.READY,
-                        server1.underlyingActor().getRequestContext(voteRequest).orElseThrow().getProtocolState());
+                        server1.underlyingActor().getRequestContext(uuid).orElseThrow().getProtocolState());
 
                 expectMsg(new VoteResponse(uuid, VoteResponse.Vote.YES));
 
@@ -82,7 +82,7 @@ public class ServerTimeoutTest {
 
                 // The ServerRequestContext must switch to the COMMIT state.
 
-                ServerRequestContext ctx = server1.underlyingActor().getRequestContext(decision).orElseThrow();
+                ServerRequestContext ctx = server1.underlyingActor().getRequestContext(uuid).orElseThrow();
                 assertSame(ServerRequestContext.TwoPhaseCommitFSM.COMMIT, ctx.getProtocolState());
             }
         };

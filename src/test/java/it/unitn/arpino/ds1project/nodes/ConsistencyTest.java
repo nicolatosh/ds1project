@@ -58,9 +58,8 @@ public class ConsistencyTest {
                 ActorRef client1 = testActor();
 
                 coordinator.tell(new TxnBeginMsg(), client1);
-                TxnAcceptMsg accept = expectMsgClass(TxnAcceptMsg.class);
 
-                UUID uuid = accept.uuid;
+                UUID uuid = expectMsgClass(TxnAcceptMsg.class).uuid;
                 Random random = new Random();
 
                 // A single client peforms Read on server0 and write the same value
@@ -89,8 +88,8 @@ public class ConsistencyTest {
                     expectNoMessage();
                 }
 
-                ServerRequestContext ctx = server0.underlyingActor().getRequestContext(accept).orElseThrow();
-                ServerRequestContext ctx2 = server1.underlyingActor().getRequestContext(accept).orElseThrow();
+                ServerRequestContext ctx = server0.underlyingActor().getRequestContext(uuid).orElseThrow();
+                ServerRequestContext ctx2 = server1.underlyingActor().getRequestContext(uuid).orElseThrow();
                 int total = IntStream.rangeClosed(0, 9).boxed().map(ctx::read).reduce(0, Integer::sum);
                 int total2 = IntStream.rangeClosed(10, 19).boxed().map(ctx2::read).reduce(0, Integer::sum);
                 assertEquals(total + total2, 2000);
