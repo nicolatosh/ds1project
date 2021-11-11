@@ -1,4 +1,4 @@
-package it.unitn.arpino.ds1project.nodes;
+package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -12,8 +12,6 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
-import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
-import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

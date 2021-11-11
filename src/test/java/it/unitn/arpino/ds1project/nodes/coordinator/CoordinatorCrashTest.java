@@ -1,4 +1,4 @@
-package it.unitn.arpino.ds1project.nodes.crashes;
+package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -10,8 +10,6 @@ import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.messages.server.DecisionRequest;
 import it.unitn.arpino.ds1project.messages.server.ServerJoin;
-import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
-import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext;
 import it.unitn.arpino.ds1project.simulation.Simulation;

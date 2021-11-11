@@ -1,12 +1,10 @@
-package it.unitn.arpino.ds1project.nodes.context;
+package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
-import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
-import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
