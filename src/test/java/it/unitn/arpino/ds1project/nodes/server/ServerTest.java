@@ -7,6 +7,7 @@ import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -32,6 +33,7 @@ public class ServerTest {
     }
 
     @Test
+    @Order(1)
     void testVoteRequestTimeout() throws InterruptedException {
         new TestKit(system) {
             {
@@ -46,6 +48,7 @@ public class ServerTest {
     }
 
     @Test
+    @Order(2)
     void testFinalDecisionTimeout() throws InterruptedException {
         new TestKit(system) {
             {
