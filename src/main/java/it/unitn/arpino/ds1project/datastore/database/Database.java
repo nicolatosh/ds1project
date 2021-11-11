@@ -50,6 +50,15 @@ public class Database implements IDatabase {
     }
 
     @Override
+    public IDatabase copy() {
+        IDatabase database = new Database();
+        versions.forEach(database::setVersion);
+        values.forEach(database::write);
+
+        return database;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

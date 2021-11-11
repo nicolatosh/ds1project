@@ -57,4 +57,6 @@ public interface IDatabase {
      * false otherwise.
      */
     boolean validate(IWorkspace workspace);
+
+    IDatabase copy();
 }
