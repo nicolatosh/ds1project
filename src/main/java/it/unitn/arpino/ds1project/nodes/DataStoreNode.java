@@ -67,7 +67,9 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     }
 
     public final void addContext(T ctx) {
-        contexts.add(ctx);
+        if (!contexts.contains(ctx)) {
+            contexts.add(ctx);
+        }
     }
 
     /**

@@ -1,9 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.context;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Base class which is used to encapsulate everything related to a transaction.
@@ -35,5 +32,18 @@ public abstract class RequestContext {
             return Optional.empty();
         }
         return Optional.of(localLog.get(localLog.size() - 1));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RequestContext)) return false;
+        RequestContext that = (RequestContext) o;
+        return uuid.equals(that.uuid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uuid);
     }
 }
