@@ -28,10 +28,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         dispatcher = new Dispatcher();
     }
 
-    public Dispatcher getDispatcher() {
-        return dispatcher;
-    }
-
     public static Props props() {
         return Props.create(Coordinator.class, Coordinator::new);
     }
@@ -55,6 +51,10 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .match(VoteResponse.class, this::onVoteResponse)
                 .match(VoteResponseTimeout.class, this::onVoteResponseTimeout)
                 .build();
+    }
+
+    public Dispatcher getDispatcher() {
+        return dispatcher;
     }
 
     private CoordinatorRequestContext newContext() {
