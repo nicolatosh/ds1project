@@ -45,6 +45,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         return Props.create(Server.class, () -> new Server(lowerKey, upperKey));
     }
 
+    @Override
     public Receive createReceive() {
         return new ReceiveBuilder()
                 .match(ServerJoin.class, this::onServerJoined)
