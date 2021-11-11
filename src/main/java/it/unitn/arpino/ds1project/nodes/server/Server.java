@@ -1,10 +1,11 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
+import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
-import it.unitn.arpino.ds1project.messages.ServerInfo;
+import it.unitn.arpino.ds1project.datastore.database.IDatabase;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -19,18 +20,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class Server extends DataStoreNode<ServerRequestContext> {
+    private final IDatabase database;
     private final IDatabaseController controller;
 
     /**
      * The other servers in the Data Store that this server can contact in a Two-Phase Commit (2PC) recovery
      */
-    private final List<ServerInfo> servers;
+    private final List<ActorRef> servers;
 
     public Server(int lowerKey, int upperKey) {
-        controller = DatabaseBuilder.newBuilder()
+        DatabaseBuilder builder = DatabaseBuilder.newBuilder()
                 .keyRange(lowerKey, upperKey)
                 .create();
+        database = builder.getDatabase();
+        controller = builder.getController();
         servers = new ArrayList<>();
+    }
+
+    public IDatabase getDatabase() {
+        return database;
     }
 
     public static Props props(int lowerKey, int upperKey) {

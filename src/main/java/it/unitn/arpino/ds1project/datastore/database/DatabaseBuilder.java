@@ -17,6 +17,9 @@ public class DatabaseBuilder {
     private int value;
     private final Map<Integer, Integer> keyValues;
 
+    private IDatabase database;
+    private IDatabaseController controller;
+
     private DatabaseBuilder() {
         lowerKey = DEFAULT_LOWER_KEY;
         upperKey = DEFAULT_UPPER_KEY;
@@ -40,11 +43,22 @@ public class DatabaseBuilder {
     }
 
 
-    public IDatabaseController create() {
+    public DatabaseBuilder create() {
         IntStream.rangeClosed(lowerKey, upperKey).forEach(key -> keyValues.put(key, value));
 
-        IDatabase database = new Database();
+        database = new Database();
         database.initialize(keyValues);
-        return new DatabaseController(database);
+
+        controller = new DatabaseController(database);
+
+        return this;
+    }
+
+    public IDatabase getDatabase() {
+        return database;
+    }
+
+    public IDatabaseController getController() {
+        return controller;
     }
 }
