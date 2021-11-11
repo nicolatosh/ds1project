@@ -8,7 +8,10 @@ import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
-import it.unitn.arpino.ds1project.messages.coordinator.*;
+import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
@@ -20,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -32,12 +36,15 @@ public class CoordinatorTest {
     @BeforeEach
     void setUp() {
         system = ActorSystem.create();
+
         server0 = TestActorRef.create(system, Server.props(0, 9), "server0");
         server1 = TestActorRef.create(system, Server.props(10, 19), "server1");
+        server0.underlyingActor().addServer(server1);
+        server1.underlyingActor().addServer(server0);
+
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
-        List.of(new ServerJoin(server0, 0, 9),
-                new ServerJoin(server1, 10, 19)
-        ).forEach(msg -> coordinator.tell(msg, TestActorRef.noSender()));
+        IntStream.rangeClosed(0, 9).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server0));
+        IntStream.rangeClosed(10, 19).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server1));
     }
 
     @AfterEach

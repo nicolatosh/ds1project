@@ -4,7 +4,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
-import it.unitn.arpino.ds1project.messages.ServerInfo;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -33,12 +31,15 @@ public class ConsistencyTest {
     @BeforeEach
     void setUp() {
         system = ActorSystem.create();
+
         server0 = TestActorRef.create(system, Server.props(0, 9), "server0");
         server1 = TestActorRef.create(system, Server.props(10, 19), "server1");
+        server0.underlyingActor().addServer(server1);
+        server1.underlyingActor().addServer(server0);
+
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
-        List.of(new ServerInfo(server0, 0, 9),
-                new ServerInfo(server1, 10, 19)
-        ).forEach(server -> coordinator.tell(server, TestActorRef.noSender()));
+        IntStream.rangeClosed(0, 9).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server0));
+        IntStream.rangeClosed(10, 19).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server1));
     }
 
     @AfterEach
