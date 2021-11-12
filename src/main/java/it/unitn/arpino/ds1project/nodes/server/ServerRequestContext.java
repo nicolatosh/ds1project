@@ -39,7 +39,7 @@ public class ServerRequestContext extends RequestContext {
     /**
      * Duration (in seconds) within which the {@link Coordinator}'s {@link VoteRequest} should be received.
      */
-    public static final int VOTE_REQUEST_TIMEOUT_S = 10;
+    public static final int VOTE_REQUEST_TIMEOUT_S = 2;
 
     private TwoPhaseCommitFSM protocolState;
 
