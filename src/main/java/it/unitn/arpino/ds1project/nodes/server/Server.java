@@ -115,9 +115,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         } else {
             ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
+            ctx.get().abort();
+
             VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
             getSender().tell(vote, getSelf());
-
             ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
         }
 
