@@ -255,11 +255,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 case GLOBAL_COMMIT: {
                     FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                     ctx.getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
+                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
                     break;
                 }
                 case GLOBAL_ABORT: {
                     FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                     ctx.getParticipants().forEach(participants -> participants.tell(decision, getSelf()));
+                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
                     break;
                 }
             }
