@@ -161,8 +161,10 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                 logger.info("Sending the FinalDecision to the participants");
                 FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                ctx.get().getParticipants().forEach(server -> getContext().system().scheduler().scheduleOnce(
-                        Duration.ofSeconds(1), server, decision, getContext().dispatcher(), getSelf()));
+                Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnVoteResponseCrashProbability);
+                if (!multicast.multicast()) {
+                    return;
+                }
 
                 ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
