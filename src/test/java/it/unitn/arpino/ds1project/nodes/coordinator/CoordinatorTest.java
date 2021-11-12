@@ -33,7 +33,7 @@ public class CoordinatorTest {
 
     @AfterEach
     void tearDown() {
-        TestKit.shutdownActorSystem(system, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS), false);
+        TestKit.shutdownActorSystem(system, Duration.create(1, TimeUnit.SECONDS), true);
         system = null;
         coordinator = null;
     }

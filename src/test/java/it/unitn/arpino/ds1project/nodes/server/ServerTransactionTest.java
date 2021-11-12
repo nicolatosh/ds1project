@@ -13,6 +13,7 @@ import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +30,7 @@ public class ServerTransactionTest {
 
     @AfterEach
     void tearDown() {
-        TestKit.shutdownActorSystem(system, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS), false);
+        TestKit.shutdownActorSystem(system, Duration.create(1, TimeUnit.SECONDS), true);
         system = null;
         server = null;
     }

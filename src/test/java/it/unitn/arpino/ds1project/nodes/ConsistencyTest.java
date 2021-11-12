@@ -15,6 +15,7 @@ import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import scala.concurrent.duration.Duration;
 
 import java.util.Random;
 import java.util.UUID;
@@ -44,7 +45,7 @@ public class ConsistencyTest {
 
     @AfterEach
     void tearDown() {
-        TestKit.shutdownActorSystem(system, scala.concurrent.duration.Duration.create(1, TimeUnit.SECONDS), false);
+        TestKit.shutdownActorSystem(system, Duration.create(1, TimeUnit.SECONDS), true);
         system = null;
         coordinator = null;
         server0 = server1 = null;
