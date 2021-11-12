@@ -133,7 +133,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     logger.info("All voted YES. Sending the FinalDecision to the participants");
                     FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
 
-                    Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnVoteResponseCrashProbability);
+                    Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability);
                     if (!multicast.multicast()) {
                         crash();
                         return;
