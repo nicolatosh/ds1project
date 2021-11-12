@@ -1,6 +1,5 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
@@ -8,6 +7,7 @@ import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
+import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -17,18 +17,23 @@ import scala.concurrent.duration.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CoordinatorTest {
     ActorSystem system;
     TestActorRef<Coordinator> coordinator;
+    TestActorRef<Server> server;
 
     @BeforeEach
     void setUp() {
         system = ActorSystem.create();
 
+        server = TestActorRef.create(system, Server.props(0, 9), "server");
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
+
+        IntStream.rangeClosed(0, 9).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server));
     }
 
     @AfterEach
@@ -36,6 +41,7 @@ public class CoordinatorTest {
         TestKit.shutdownActorSystem(system, Duration.create(1, TimeUnit.SECONDS), true);
         system = null;
         coordinator = null;
+        server = null;
     }
 
     @Test
@@ -63,12 +69,16 @@ public class CoordinatorTest {
     @Test
     @Order(2)
     void testNoDuplicateParticipant() {
-        CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), ActorRef.noSender());
-        coordinator.underlyingActor().addContext(ctx);
+        new TestKit(system) {
+            {
+                CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
+                coordinator.underlyingActor().addContext(ctx);
 
-        coordinator.tell(new ReadMsg(ctx.uuid, 0), ActorRef.noSender());
-        coordinator.tell(new ReadMsg(ctx.uuid, 0), ActorRef.noSender());
-        assertEquals(1, ctx.getParticipants().size());
+                coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
+                coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
+                assertEquals(1, ctx.getParticipants().size());
+            }
+        };
     }
 
     @Test
@@ -76,8 +86,6 @@ public class CoordinatorTest {
     void testVoteResponseTimeout() {
         new TestKit(system) {
             {
-                coordinator.underlyingActor().getDispatcher().map(0, testActor());
-
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 coordinator.underlyingActor().addContext(ctx);
                 ctx.addParticipant(testActor());
