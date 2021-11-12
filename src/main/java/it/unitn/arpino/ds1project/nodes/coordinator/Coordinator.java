@@ -87,6 +87,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), req, getParameters().coordinatorOnVoteRequestCrashProbability);
             if (!multicast.multicast()) {
+                crash();
                 return;
             }
 
@@ -134,6 +135,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                     Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnVoteResponseCrashProbability);
                     if (!multicast.multicast()) {
+                        crash();
                         return;
                     }
 
@@ -156,6 +158,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                 Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnVoteResponseCrashProbability);
                 if (!multicast.multicast()) {
+                    crash();
                     return;
                 }
 
