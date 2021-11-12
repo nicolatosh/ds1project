@@ -102,7 +102,7 @@ public class CoordinatorRequestContext extends RequestContext {
      * fulfill the client's {@link ReadMsg} or {@link WriteMsg}.
      */
     public void addParticipant(ActorRef participant) {
-        if (participants.contains(participant)) {
+        if (!participants.contains(participant)) {
             participants.add(participant);
         }
     }

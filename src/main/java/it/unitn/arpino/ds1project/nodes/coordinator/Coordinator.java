@@ -31,13 +31,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         return Props.create(Coordinator.class, Coordinator::new);
     }
 
-
-    @Override
-    public void aroundPreStart() {
-        super.aroundPreStart();
-        getContext().setReceiveTimeout(Duration.ofSeconds(10000));
-    }
-
     @Override
     public Receive createReceive() {
         return new ReceiveBuilder()
