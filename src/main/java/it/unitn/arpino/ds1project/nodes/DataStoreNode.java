@@ -5,6 +5,7 @@ import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
+import it.unitn.arpino.ds1project.simulation.Simulation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,17 +22,24 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
         CRASHED
     }
 
+    private Simulation parameters;
+
     private Status status;
 
     private final List<T> contexts;
 
     public DataStoreNode() {
+        parameters = new Simulation();
         status = DataStoreNode.Status.ALIVE;
         contexts = new ArrayList<>();
     }
 
     public final Status getStatus() {
         return status;
+    }
+
+    public Simulation getParameters() {
+        return parameters;
     }
 
     /**

@@ -13,7 +13,6 @@ import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.simulation.Multicast;
-import it.unitn.arpino.ds1project.simulation.Simulation;
 
 import java.time.Duration;
 import java.util.List;
@@ -93,7 +92,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             logger.info("Asking the VoteRequests to the participants");
             VoteRequest req = new VoteRequest(msg.uuid);
 
-            Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), req, Simulation.COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY);
+            Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), req, getParameters().coordinatorOnVoteRequestCrashProbability);
             if (!multicast.multicast()) {
                 return;
             }
@@ -140,7 +139,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     logger.info("All voted YES. Sending the FinalDecision to the participants");
                     FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
 
-                    Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, Simulation.COORDINATOR_ON_VOTE_RESPONSE_CRASH_PROBABILITY);
+                    Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnVoteResponseCrashProbability);
                     if (!multicast.multicast()) {
                         return;
                     }

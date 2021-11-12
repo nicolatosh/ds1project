@@ -11,7 +11,6 @@ import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.messages.server.DecisionRequest;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext;
-import it.unitn.arpino.ds1project.simulation.Simulation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +65,7 @@ public class CoordinatorCrashTest {
                 expectNoMessage();
 
                 // Set this parameter before requesting the coordinator to end the transaction
-                Simulation.COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY = 1.;
+                coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 1.;
 
                 coordinator.tell(new TxnEndMsg(uuid, true), testActor());
 
@@ -112,7 +111,7 @@ public class CoordinatorCrashTest {
                 expectNoMessage();
 
                 // Set this parameter before requesting the coordinator to end the transaction
-                Simulation.COORDINATOR_ON_VOTE_RESPONSE_CRASH_PROBABILITY = 1.;
+                coordinator.underlyingActor().getParameters().coordinatorOnVoteResponseCrashProbability = 1.;
                 coordinator.tell(new TxnEndMsg(uuid, true), testActor());
                 expectNoMessage();
 
