@@ -103,6 +103,15 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
+        // Checking if server is in INIT. If not in INIT then VoteRequest must be ignored.
+        // Remember that VoteRequest is meaningful only if server is in INIT.
+        // Below situation can happen when transaction is very long and server VoteRequest timeout fired.
+        // This cannot happen when coordinator crashes. It won't resend in any case this request.
+        if (!ctx.get().getProtocolState().equals(TwoPhaseCommitFSM.INIT)) {
+            logger.info("Received VoteRequest, ignored because arrived late. My status: " + ctx.get().getProtocolState());
+            return;
+        }
+
         ctx.get().cancelVoteRequestTimeout();
 
         if (ctx.get().prepare()) {
