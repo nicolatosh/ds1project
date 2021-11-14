@@ -2,10 +2,7 @@ package it.unitn.arpino.ds1project.datastore.transaction;
 
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class TransactionRepository implements ITransactionRepository {
     private final List<ITransaction> committed;
@@ -13,47 +10,47 @@ public class TransactionRepository implements ITransactionRepository {
     private final Map<ITransaction, IConnection> pending;
 
     public TransactionRepository() {
-        committed = new ArrayList<>();
-        aborted = new ArrayList<>();
-        pending = new HashMap<>();
+        committed = Collections.synchronizedList(new ArrayList<>());
+        aborted = Collections.synchronizedList(new ArrayList<>());
+        pending = Collections.synchronizedMap(new HashMap<>());
     }
 
     @Override
-    public void setCommitted(ITransaction transaction) {
+    public synchronized void setCommitted(ITransaction transaction) {
         pending.remove(transaction);
         committed.add(transaction);
     }
 
     @Override
-    public void setPending(ITransaction transaction, IConnection connection) {
+    public synchronized void setPending(ITransaction transaction, IConnection connection) {
         pending.put(transaction, connection);
     }
 
     @Override
-    public void setAborted(ITransaction transaction) {
+    public synchronized void setAborted(ITransaction transaction) {
         pending.remove(transaction);
         aborted.add(transaction);
     }
 
     @Override
-    public List<ITransaction> getCommitted() {
+    public synchronized List<ITransaction> getCommitted() {
         return committed;
     }
 
     @Override
-    public List<ITransaction> getAborted() {
+    public synchronized List<ITransaction> getAborted() {
         return aborted;
     }
 
     @Override
-    public Map<ITransaction, IConnection> getPending() {
+    public synchronized Map<ITransaction, IConnection> getPending() {
         return pending;
     }
 
     @Override
-    public ITransaction getPending(IConnection connection) {
+    public synchronized ITransaction getPending(IConnection connection) {
         return pending.entrySet().stream()
-                .filter(entry -> entry.getValue() == connection)
+                .filter(entry -> entry.getValue().equals(connection))
                 .map(Map.Entry::getKey).findFirst()
                 .get();
     }
