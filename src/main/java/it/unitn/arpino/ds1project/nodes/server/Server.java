@@ -82,7 +82,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
 
     private void onReadRequest(ReadRequest req) {
-        ServerRequestContext ctx = getRequestContext(req.uuid).orElse(newContext(req.uuid));
+        Optional<ServerRequestContext> opt = getRequestContext(req.uuid);
+        ServerRequestContext ctx = opt.orElseGet(() -> newContext(req.uuid));
 
         int value = ctx.read(req.key);
 
@@ -91,7 +92,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onWriteRequest(WriteRequest req) {
-        ServerRequestContext ctx = getRequestContext(req.uuid).orElse(newContext(req.uuid));
+        Optional<ServerRequestContext> opt = getRequestContext(req.uuid);
+        ServerRequestContext ctx = opt.orElseGet(() -> newContext(req.uuid));
 
         ctx.write(req.key, req.value);
     }
@@ -123,8 +125,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             ctx.get().setProtocolState(TwoPhaseCommitFSM.READY);
         } else {
             ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
-
-            ctx.get().abort();
 
             VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
             getSender().tell(vote, getSelf());
@@ -236,6 +236,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         }
 
         switch (ctx.get().getProtocolState()) {
+
+            // Should not happen because coordinator asks for all server votes
+            // before sending a FinalDecision. If such decision arrives in INIT means
+            // that this server lost the VoteRequest (or is still on the fly)
             case INIT: {
                 if (req.clientAbort) {
                     logger.info("Received while in INIT. Client abort");
