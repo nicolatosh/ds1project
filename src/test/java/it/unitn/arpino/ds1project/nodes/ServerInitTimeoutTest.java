@@ -3,6 +3,7 @@ package it.unitn.arpino.ds1project.nodes;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
+import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
@@ -44,14 +45,13 @@ public class ServerInitTimeoutTest {
             {
                 UUID uuid = UUID.randomUUID();
                 server.tell(new ReadRequest(uuid, 0), testActor());
-                expectMsgClass(ReadResult.class);
+                expectMsg(new ReadResult(uuid, 0, DatabaseBuilder.DEFAULT_DATA_VALUE));
 
                 TimeUnit.SECONDS.sleep(ServerRequestContext.VOTE_REQUEST_TIMEOUT_S + 1);
 
                 server.tell(new VoteRequest(uuid), testActor());
-                assertSame(server.underlyingActor().getStatus(), DataStoreNode.Status.ALIVE);
-                assertSame(server.underlyingActor().getRequestContext(uuid).get().getProtocolState(), ServerRequestContext.TwoPhaseCommitFSM.ABORT);
-
+                assertSame(DataStoreNode.Status.ALIVE, server.underlyingActor().getStatus());
+                assertSame(ServerRequestContext.TwoPhaseCommitFSM.ABORT, server.underlyingActor().getRequestContext(uuid).get().getProtocolState());
             }
         };
     }
