@@ -1,5 +1,6 @@
 package it.unitn.arpino.ds1project.messages;
 
+import akka.dispatch.ControlMessage;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 
 import java.util.UUID;
@@ -7,7 +8,7 @@ import java.util.UUID;
 /**
  * A message that a {@link DataStoreNode} can send to itself to signal the expiration of a timer.
  */
-public abstract class TimeoutExpired extends Message {
+public abstract class TimeoutExpired extends Message implements ControlMessage {
     public TimeoutExpired(UUID uuid) {
         super(uuid);
     }
