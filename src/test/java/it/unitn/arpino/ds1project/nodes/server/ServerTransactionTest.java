@@ -10,13 +10,17 @@ import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
+import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ServerTransactionTest {
     ActorSystem system;
@@ -36,6 +40,25 @@ public class ServerTransactionTest {
     }
 
     @Test
+    @Order(1)
+    void testVoteRequestTimeout() throws InterruptedException {
+        new TestKit(system) {
+            {
+                UUID uuid = UUID.randomUUID();
+                server.tell(new ReadRequest(uuid, 0), testActor());
+                expectMsg(new ReadResult(uuid, 0, DatabaseBuilder.DEFAULT_DATA_VALUE));
+
+                TimeUnit.SECONDS.sleep(ServerRequestContext.VOTE_REQUEST_TIMEOUT_S + 1);
+
+                server.tell(new VoteRequest(uuid), testActor());
+                assertSame(DataStoreNode.Status.ALIVE, server.underlyingActor().getStatus());
+                assertSame(ServerRequestContext.TwoPhaseCommitFSM.ABORT, server.underlyingActor().getRequestContext(uuid).get().getProtocolState());
+            }
+        };
+    }
+
+    @Test
+    @Order(2)
     void testConcurrentTxn() {
         new TestKit(system) {
             {
