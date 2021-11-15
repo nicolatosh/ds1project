@@ -22,13 +22,13 @@ public class Main {
         final ActorRef coord1 = system.actorOf(Coordinator.props(), "coord1");
         final ActorRef coord2 = system.actorOf(Coordinator.props(), "coord2");
 
-        server0.tell(new ServerJoin(server1), ActorRef.noSender());
-        server1.tell(new ServerJoin(server0), ActorRef.noSender());
+        server0.tell(new ServerJoin(), server1);
+        server1.tell(new ServerJoin(), server0);
 
-        coord1.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server0, 0, 9), ActorRef.noSender());
-        coord1.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server1, 10, 19), ActorRef.noSender());
-        coord2.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server0, 0, 9), ActorRef.noSender());
-        coord2.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(server1, 10, 19), ActorRef.noSender());
+        coord1.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(0, 9), server0);
+        coord1.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(10, 19), server1);
+        coord2.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(0, 9), server0);
+        coord2.tell(new it.unitn.arpino.ds1project.messages.coordinator.ServerJoin(10, 19), server1);
 
         // setup client
 

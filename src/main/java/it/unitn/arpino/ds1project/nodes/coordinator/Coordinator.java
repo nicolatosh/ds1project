@@ -59,7 +59,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onServerJoined(ServerJoin msg) {
-        IntStream.rangeClosed(msg.lowerKey, msg.upperKey).forEach(key -> dispatcher.map(key, msg.server));
+        IntStream.rangeClosed(msg.lowerKey, msg.upperKey).forEach(key -> dispatcher.map(key, getSender()));
     }
 
     private void onTxnBeginMsg(TxnBeginMsg msg) {

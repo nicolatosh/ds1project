@@ -1,6 +1,5 @@
 package it.unitn.arpino.ds1project.messages.coordinator;
 
-import akka.actor.ActorRef;
 import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
@@ -10,12 +9,10 @@ import it.unitn.arpino.ds1project.nodes.server.Server;
  * containing the keys of the data items of the server.
  */
 public class ServerJoin extends Message {
-    public final ActorRef server;
     public final int lowerKey, upperKey;
 
-    public ServerJoin(ActorRef server, int lowerKey, int upperKey) {
+    public ServerJoin(int lowerKey, int upperKey) {
         super(null);
-        this.server = server;
         this.lowerKey = lowerKey;
         this.upperKey = upperKey;
     }

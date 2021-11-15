@@ -72,7 +72,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onServerJoined(ServerJoin msg) {
-        servers.add(msg.server);
+        servers.add(getSender());
     }
 
     public ServerRequestContext newContext(UUID uuid) {
