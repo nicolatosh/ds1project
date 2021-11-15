@@ -252,6 +252,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Override
     public void resume() {
         super.resume();

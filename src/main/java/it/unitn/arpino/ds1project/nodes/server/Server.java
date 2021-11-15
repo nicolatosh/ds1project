@@ -310,6 +310,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         }
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Override
     protected void resume() {
         super.resume();
