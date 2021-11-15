@@ -3,6 +3,7 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
+import it.unitn.arpino.ds1project.messages.Resume;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
@@ -42,6 +43,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
                 .match(VoteResponseTimeout.class, this::onVoteResponseTimeout)
+                .match(Resume.class, ignored -> resume())
                 .build();
     }
 
@@ -234,6 +236,20 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         WriteRequest req = new WriteRequest(msg.uuid, msg.key, msg.value);
         server.tell(req, getSelf());
+    }
+
+    @Override
+    protected void crash() {
+        super.crash();
+
+        if (getParameters().coordinatorRecoveryTimeS >= 0) {
+            getContext().system().scheduler().scheduleOnce(
+                    Duration.ofSeconds(getParameters().coordinatorRecoveryTimeS), // delay
+                    getSelf(), // receiver
+                    new Resume(), // message
+                    getContext().dispatcher(), // executor
+                    ActorRef.noSender()); // sender
+        }
     }
 
     @Override

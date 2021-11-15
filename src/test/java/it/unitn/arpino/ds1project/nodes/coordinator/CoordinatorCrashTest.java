@@ -65,6 +65,8 @@ public class CoordinatorCrashTest {
                 // We want the coordinator to crash before asking the participants to vote.
                 // To do so, we first have to set the following probability to 1.
                 coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 1.;
+                coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeS = -1;
+
                 coordinator.tell(new TxnEndMsg(ctx.uuid, true), testActor());
 
                 assertSame(CoordinatorRequestContext.LogState.START_2PC,
@@ -99,6 +101,7 @@ public class CoordinatorCrashTest {
                 // We want the coordinator to collect all votes from the participants, but to crash before sending the
                 // final decision. To do so, we first have to set the following probability to 1.
                 coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1.;
+                coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeS = -1;
                 coordinator.tell(new TxnEndMsg(ctx.uuid, true), testActor());
 
                 // The coordinator has now collected the vote from the participants, which are all positive, and thus

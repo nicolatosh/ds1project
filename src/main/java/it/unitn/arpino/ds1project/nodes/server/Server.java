@@ -6,6 +6,7 @@ import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.database.IDatabase;
+import it.unitn.arpino.ds1project.messages.Resume;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -13,6 +14,7 @@ import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext.TwoPhaseCommitFSM;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -65,6 +67,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(FinalDecisionTimeout.class, this::onFinalDecisionTimeout)
                 .match(DecisionResponse.class, this::onDecisionResponse)
                 .match(DecisionRequest.class, this::onDecisionRequest)
+                .match(Resume.class, ignored -> resume())
                 .build();
     }
 
@@ -291,6 +294,20 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     private void terminationProtocol(ServerRequestContext ctx) {
         DecisionRequest request = new DecisionRequest(ctx.uuid);
         servers.forEach(server -> server.tell(request, getSelf()));
+    }
+
+    @Override
+    protected void crash() {
+        super.crash();
+
+        if (getParameters().serverRecoveryTimeS >= 0) {
+            getContext().system().scheduler().scheduleOnce(
+                    Duration.ofSeconds(getParameters().serverRecoveryTimeS), // delay
+                    getSelf(), // receiver
+                    new Resume(), // message
+                    getContext().dispatcher(), // executor
+                    ActorRef.noSender()); // sender
+        }
     }
 
     @Override
