@@ -2,7 +2,13 @@ package it.unitn.arpino.ds1project.messages;
 
 import akka.dispatch.ControlMessage;
 
-import java.io.Serializable;
+public class Resume extends Message implements ControlMessage {
+    public Resume() {
+        super(null);
+    }
 
-public class Resume implements ControlMessage, Serializable {
+    @Override
+    public Type getType() {
+        return Type.Setup;
+    }
 }

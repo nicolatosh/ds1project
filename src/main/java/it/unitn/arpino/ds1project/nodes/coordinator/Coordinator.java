@@ -13,7 +13,7 @@ import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
-import it.unitn.arpino.ds1project.simulation.Multicast;
+import it.unitn.arpino.ds1project.simulation.Communication;
 
 import java.time.Duration;
 import java.util.List;
@@ -51,7 +51,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         return dispatcher;
     }
 
-    private CoordinatorRequestContext newContext() {
+    /**
+     * Creates a new context and adds it to the list of contexts so that it can be later retrieved.
+     *
+     * @return The newly created context.
+     */
+    private CoordinatorRequestContext createNewContext() {
         CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), getSender());
 
         addContext(ctx);
@@ -63,19 +68,20 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onTxnBeginMsg(TxnBeginMsg msg) {
-        CoordinatorRequestContext ctx = this.newContext();
+        CoordinatorRequestContext ctx = this.createNewContext();
+
+        ctx.log(CoordinatorRequestContext.LogState.NONE);
 
         TxnAcceptMsg response = new TxnAcceptMsg(ctx.uuid);
         getSender().tell(response, getSelf());
+
+        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
     }
 
-    /**
-     * Effectively starts the Two-phase commit (2PC) protocol
-     */
     private void onTxnEndMsg(TxnEndMsg msg) {
         Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
         if (ctx.isEmpty()) {
-            // Todo: Bad request
+            logger.severe("Bad request");
             return;
         }
 
@@ -84,14 +90,14 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             ctx.get().log(CoordinatorRequestContext.LogState.START_2PC);
 
-            logger.info("Asking the VoteRequests to the participants");
+            logger.info("Asking the vote requests to the participants");
             VoteRequest req = new VoteRequest(msg.uuid);
-
-            Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), req, getParameters().coordinatorOnVoteRequestCrashProbability);
-            if (!multicast.multicast()) {
+            if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), req, getParameters().coordinatorOnVoteRequestCrashProbability)) {
                 crash();
                 return;
             }
+
+            ctx.get().startVoteResponseTimer(this);
 
             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
         } else {
@@ -99,78 +105,93 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
-            logger.info("Sending the FinalDecision to the participants");
-            FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT, true);
-            ctx.get().getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
+            logger.info("Sending the final decision to the participants");
+            FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
+            if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, 0.)) {
+                crash();
+                return;
+            }
 
             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-        }
 
-        ctx.get().startVoteResponseTimeout(this);
+            ctx.get().getClient().tell(new TxnResultMsg(ctx.get().uuid, false), getSelf());
+
+            // if we received a client abort, we do not have to start the Two-phase commit (2PC) protocol,
+            // thus we must not start the vote response timer.
+        }
     }
 
     private void onVoteResponse(VoteResponse resp) {
         Optional<CoordinatorRequestContext> ctx = getRequestContext(resp.uuid);
         if (ctx.isEmpty()) {
-            // Todo: Bad request
+            logger.severe("Bad request");
             return;
         }
 
-        if (CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT == ctx.get().getProtocolState()) {
-            logger.info("Received a VoteResponse, ignored as it arrived too late");
-            return;
-        }
+        switch (ctx.get().loggedState()) {
+            case NONE: {
+                logger.severe("Invalid logged state (NONE)");
+                return;
+            }
+            case START_2PC: {
+                switch (resp.vote) {
+                    case YES: {
+                        logger.info("Received a YES vote from " + getSender().path().name());
 
-        switch (resp.vote) {
-            case YES: {
-                logger.info("Received a YES vote from " + getSender().path().name());
+                        ctx.get().addYesVoter(getSender());
 
-                ctx.get().addYesVoter(getSender());
+                        if (ctx.get().allVotedYes()) {
+                            ctx.get().cancelVoteResponseTimeout();
 
-                if (ctx.get().allVotedYes()) {
-                    ctx.get().cancelVoteResponseTimeout();
+                            ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
-                    ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
+                            logger.info("All voted YES. Sending the final decision to the participants");
+                            FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
+                            if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
+                                crash();
+                                return;
+                            }
 
-                    logger.info("All voted YES. Sending the FinalDecision to the participants");
-                    FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
+                            ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
-                    Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability);
-                    if (!multicast.multicast()) {
-                        crash();
-                        return;
+                            logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
+                            TxnResultMsg result = new TxnResultMsg(resp.uuid, true);
+                            ctx.get().getClient().tell(result, getSelf());
+                        }
+                        break;
                     }
+                    case NO: {
+                        logger.info("Received a NO vote from " + getSender().path().name());
 
-                    ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
+                        ctx.get().cancelVoteResponseTimeout();
 
-                    logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
-                    TxnResultMsg result = new TxnResultMsg(resp.uuid, true);
-                    ctx.get().getClient().tell(result, getSelf());
+                        ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
+
+                        logger.info("Sending the final decision to the participants");
+                        FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                        if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnVoteResponseCrashProbability)) {
+                            crash();
+                            return;
+                        }
+
+                        ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+                        logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
+                        TxnResultMsg result = new TxnResultMsg(resp.uuid, false);
+                        ctx.get().getClient().tell(result, getSelf());
+
+                        break;
+                    }
                 }
                 break;
             }
-            case NO: {
-                logger.info("Received a NO vote from " + getSender().path().name());
-
-                ctx.get().cancelVoteResponseTimeout();
-
-                ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
-
-                logger.info("Sending the FinalDecision to the participants");
-                FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                Multicast multicast = new Multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnVoteResponseCrashProbability);
-                if (!multicast.multicast()) {
-                    crash();
-                    return;
-                }
-
-                ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-                logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
-                TxnResultMsg result = new TxnResultMsg(resp.uuid, false);
-                ctx.get().getClient().tell(result, getSelf());
-
-                break;
+            case GLOBAL_COMMIT: {
+                logger.severe("Invalid logged state (GLOBAL_COMMIT)");
+                return;
+            }
+            case GLOBAL_ABORT: {
+                logger.info("Received a VoteResponse, ignored as it arrived too late");
+                return;
             }
         }
     }
@@ -178,28 +199,37 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     private void onVoteResponseTimeout(VoteResponseTimeout timeout) {
         Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout.uuid);
         if (ctx.isEmpty()) {
-            // Todo: Bad request
+            logger.severe("Bad request");
             return;
         }
 
-        logger.info("Timeout expired. Reason: did not collect all VoteRequests from the participants in time");
+        if (ctx.get().loggedState() != CoordinatorRequestContext.LogState.START_2PC) {
+            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be START_2PC)");
+            return;
+        }
+
+        logger.info("Aborting the transaction");
 
         ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
-        logger.info("Sending the transaction result to the participants");
+        logger.info("Sending the final decision to the participants");
         FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
-        ctx.get().getParticipants().forEach(server -> server.tell(decision, getSelf()));
+        if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, 0.)) {
+            crash();
+            return;
+        }
 
         ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
         logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
-        ctx.get().getClient().tell(new TxnResultMsg(ctx.get().uuid, false), getSelf());
+        TxnResultMsg result = new TxnResultMsg(ctx.get().uuid, false);
+        ctx.get().getClient().tell(result, getSelf());
     }
 
     private void onReadMsg(ReadMsg msg) {
         Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
         if (ctx.isEmpty()) {
-            // Todo: Bad request
+            logger.severe("Bad request");
             return;
         }
 
@@ -214,7 +244,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     private void onReadResult(ReadResult msg) {
         Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
         if (ctx.isEmpty()) {
-            // Todo: Bad request
+            logger.severe("Bad request");
+            return;
+        }
+
+        if (ctx.get().loggedState() != CoordinatorRequestContext.LogState.NONE) {
+            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be NONE)");
             return;
         }
 
@@ -226,7 +261,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     private void onWriteMsg(WriteMsg msg) {
         Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
         if (ctx.isEmpty()) {
-            // Todo: Bad request
+            logger.severe("Bad request");
+            return;
+        }
+
+        if (ctx.get().loggedState() != CoordinatorRequestContext.LogState.NONE) {
+            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be NONE)");
             return;
         }
 
@@ -252,15 +292,18 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Override
     public void resume() {
         super.resume();
+
         List<CoordinatorRequestContext> active = getActive();
         List<CoordinatorRequestContext> decided = getDecided();
 
-        // If the Coordinator has not yet taken the FinalDecision for the transaction, it aborts it.
+        // If we have not yet taken the final decision for the transaction, we abort it,
+        // and send the transaction result to the client.
         active.forEach(ctx -> {
+            logger.info("Aborting the transaction");
+            ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
             ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
             logger.info("Sending the transaction result to " + ctx.getClient().path().name());
@@ -268,20 +311,38 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             ctx.getClient().tell(result, getSelf());
         });
 
-        // If the coordinator has already taken the FinalDecision for the transaction, it sends the decision to all
-        // the participants.
+        // If we have already taken the final decision for the transaction, we send it to all the participants
+        // and send the transaction result to the client.
         decided.forEach(ctx -> {
-            switch ((CoordinatorRequestContext.LogState) ctx.loggedState().get()) {
+            switch (ctx.loggedState()) {
                 case GLOBAL_COMMIT: {
+                    logger.info("Sending the final decision to the participants");
                     FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                    ctx.getParticipants().forEach(participant -> participant.tell(decision, getSelf()));
+                    if (!Communication.multicast(getSelf(), ctx.getParticipants(), decision, 0.)) {
+                        crash();
+                        return;
+                    }
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
+
+                    logger.info("Sending the transaction result to " + ctx.getClient().path().name());
+                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
+                    ctx.getClient().tell(result, getSelf());
+
                     break;
                 }
                 case GLOBAL_ABORT: {
+                    logger.info("Sending the final decision to the participants");
                     FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                    ctx.getParticipants().forEach(participants -> participants.tell(decision, getSelf()));
+                    if (!Communication.multicast(getSelf(), ctx.getParticipants(), decision, 0.)) {
+                        crash();
+                        return;
+                    }
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+                    logger.info("Sending the transaction result to " + ctx.getClient().path().name());
+                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+                    ctx.getClient().tell(result, getSelf());
+
                     break;
                 }
             }

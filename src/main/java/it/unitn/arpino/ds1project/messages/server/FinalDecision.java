@@ -8,9 +8,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * A message that a {@link Coordinator} sends to a {@link Server} (or a Server to another Server, if executing the
- * termination protocol), representing the decision that the Coordinator has taken about whether to commit or abort the
- * transaction.
+ * A message that a {@link Coordinator} sends to a {@link Server},
+ * representing the decision that the Coordinator has taken on committing or aborting the transaction.
  */
 public class FinalDecision extends Message {
     public enum Decision {
@@ -19,16 +18,10 @@ public class FinalDecision extends Message {
     }
 
     public final Decision decision;
-    public boolean clientAbort;
 
     public FinalDecision(UUID uuid, Decision decision) {
         super(uuid);
         this.decision = decision;
-    }
-
-    public FinalDecision(UUID uuid, Decision decision, boolean clientAbort) {
-        this(uuid, decision);
-        this.clientAbort = clientAbort;
     }
 
     @Override
@@ -42,11 +35,11 @@ public class FinalDecision extends Message {
         if (!(o instanceof FinalDecision)) return false;
         if (!super.equals(o)) return false;
         FinalDecision decision1 = (FinalDecision) o;
-        return clientAbort == decision1.clientAbort && decision == decision1.decision;
+        return decision == decision1.decision;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), decision, clientAbort);
+        return Objects.hash(super.hashCode(), decision);
     }
 }

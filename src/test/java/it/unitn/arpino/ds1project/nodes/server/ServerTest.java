@@ -14,6 +14,7 @@ import scala.concurrent.duration.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ServerTest {
@@ -38,11 +39,13 @@ public class ServerTest {
     void testVoteRequestTimeout() throws InterruptedException {
         new TestKit(system) {
             {
-                ServerRequestContext ctx = server.underlyingActor().newContext(UUID.randomUUID());
+                ServerRequestContext ctx = server.underlyingActor().createNewContext(UUID.randomUUID());
+                ctx.log(ServerRequestContext.LogState.INIT);
+                ctx.startVoteRequestTimer(server.underlyingActor());
 
                 TimeUnit.SECONDS.sleep(ServerRequestContext.VOTE_REQUEST_TIMEOUT_S + 1);
 
-                assertSame(ServerRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState().orElseThrow());
+                assertSame(ServerRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
                 assertSame(ServerRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
@@ -53,12 +56,15 @@ public class ServerTest {
     void testFinalDecisionTimeout() throws InterruptedException {
         new TestKit(system) {
             {
-                ServerRequestContext ctx = server.underlyingActor().newContext(UUID.randomUUID());
+                ServerRequestContext ctx = server.underlyingActor().createNewContext(UUID.randomUUID());
+                ctx.log(ServerRequestContext.LogState.INIT);
+                ctx.startVoteRequestTimer(server.underlyingActor());
+
                 server.tell(new VoteRequest(ctx.uuid), ActorRef.noSender());
 
                 TimeUnit.SECONDS.sleep(ServerRequestContext.FINAL_DECISION_TIMEOUT_S + 1);
 
-                // Todo: assert that the logged state is GLOBAL_ABORT and the protocol state is ABORT.
+                assertFalse(ctx.isDecided());
             }
         };
     }

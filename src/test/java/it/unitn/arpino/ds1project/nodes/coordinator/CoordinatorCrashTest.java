@@ -60,6 +60,8 @@ public class CoordinatorCrashTest {
                 // Simulate a transaction, in which only server0 is involved.
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 coordinator.underlyingActor().addContext(ctx);
+                ctx.log(CoordinatorRequestContext.LogState.NONE);
+                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
                 coordinator.tell(new WriteMsg(ctx.uuid, 0, 10), testActor());
 
                 // We want the coordinator to crash before asking the participants to vote.
@@ -70,14 +72,14 @@ public class CoordinatorCrashTest {
                 coordinator.tell(new TxnEndMsg(ctx.uuid, true), testActor());
 
                 assertSame(CoordinatorRequestContext.LogState.START_2PC,
-                        coordinator.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState().orElseThrow());
+                        coordinator.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState());
 
                 // Let time elapse to make the participants of the transactions abort, as they do not receive the vote
                 // request from the coordinator in time.
                 TimeUnit.SECONDS.sleep(ServerRequestContext.VOTE_REQUEST_TIMEOUT_S + 1);
 
                 assertSame(ServerRequestContext.LogState.GLOBAL_ABORT,
-                        server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState().orElseThrow());
+                        server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState());
 
                 coordinator.underlyingActor().resume();
 
@@ -95,6 +97,8 @@ public class CoordinatorCrashTest {
                 // Simulate a transaction, in which both servers are involved.
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 coordinator.underlyingActor().addContext(ctx);
+                ctx.log(CoordinatorRequestContext.LogState.NONE);
+                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
                 coordinator.tell(new WriteMsg(ctx.uuid, 6, 60), testActor());
                 coordinator.tell(new WriteMsg(ctx.uuid, 12, 120), testActor());
 
@@ -106,14 +110,14 @@ public class CoordinatorCrashTest {
 
                 // The coordinator has now collected the vote from the participants, which are all positive, and thus
                 // has written GLOBAL_COMMIT to the local log.
-                assertSame(CoordinatorRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState().get());
+                assertSame(CoordinatorRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
                 // However, it crashed before sending the final decision, thus did not transition to the COMMIT state.
                 assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT,
                         coordinator.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().getProtocolState());
 
                 // The state of the participants must be as follows.
                 assertSame(ServerRequestContext.LogState.VOTE_COMMIT,
-                        server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState().orElseThrow());
+                        server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState());
                 assertSame(ServerRequestContext.TwoPhaseCommitFSM.READY,
                         server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().getProtocolState());
 
@@ -127,7 +131,7 @@ public class CoordinatorCrashTest {
                 assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT, ctx.getProtocolState());
                 // ...and sends the final decision to the participants, which were blocked.
                 assertSame(ServerRequestContext.LogState.DECISION,
-                        server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState().orElseThrow());
+                        server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState());
                 assertSame(ServerRequestContext.TwoPhaseCommitFSM.COMMIT,
                         server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().getProtocolState());
             }

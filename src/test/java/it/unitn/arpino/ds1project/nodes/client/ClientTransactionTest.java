@@ -144,7 +144,7 @@ public class ClientTransactionTest {
                 expectMsg(new TxnResultMsg(uuid1, true));
 
                 coordinator.tell(new TxnEndMsg(uuid2, false), testActor());
-                expectMsg(new TxnResultMsg(uuid2, true));
+                expectMsg(new TxnResultMsg(uuid2, false));
             }
         };
     }

@@ -14,13 +14,12 @@ import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CoordinatorRequestContext extends RequestContext {
     public enum LogState {
+        NONE,
         START_2PC,
         GLOBAL_COMMIT,
         GLOBAL_ABORT
@@ -50,17 +49,19 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private final Set<ActorRef> yesVoters;
 
+    protected final List<LogState> localLog;
+
     private TwoPhaseCommitFSM protocolState;
 
-    private Cancellable voteResponseTimeout;
+    private Cancellable voteResponseTimer;
 
     public CoordinatorRequestContext(UUID uuid, ActorRef client) {
         super(uuid);
         this.client = client;
 
-        protocolState = TwoPhaseCommitFSM.INIT;
         participants = new HashSet<>();
         yesVoters = new HashSet<>();
+        localLog = new ArrayList<>();
     }
 
     public ActorRef getClient() {
@@ -69,8 +70,7 @@ public class CoordinatorRequestContext extends RequestContext {
 
     @Override
     public boolean isDecided() {
-        return loggedState().isPresent() &&
-                (loggedState().get() == LogState.GLOBAL_COMMIT || loggedState().get() == LogState.GLOBAL_ABORT);
+        return loggedState() == LogState.GLOBAL_COMMIT || loggedState() == LogState.GLOBAL_ABORT;
     }
 
     /**
@@ -123,13 +123,21 @@ public class CoordinatorRequestContext extends RequestContext {
         return yesVoters.size() == participants.size();
     }
 
+    public void log(LogState state) {
+        localLog.add(state);
+    }
+
+    public LogState loggedState() {
+        return localLog.get(localLog.size() - 1);
+    }
+
     /**
      * Starts a countdown timer, within which the {@link Coordinator} should collect all participants'
      * {@link VoteResponse}s. If the responses do not arrive in time, the Coordinator assumes one participant has
      * crashed.
      */
-    public void startVoteResponseTimeout(Coordinator coordinator) {
-        voteResponseTimeout = coordinator.getContext().system().scheduler().scheduleOnce(
+    public void startVoteResponseTimer(Coordinator coordinator) {
+        voteResponseTimer = coordinator.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(VOTE_RESPONSE_TIMEOUT_S), // delay
                 coordinator.getSelf(), // receiver
                 new VoteResponseTimeout(uuid), // message
@@ -138,7 +146,7 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     public void cancelVoteResponseTimeout() {
-        voteResponseTimeout.cancel();
+        voteResponseTimer.cancel();
     }
 
     @Override

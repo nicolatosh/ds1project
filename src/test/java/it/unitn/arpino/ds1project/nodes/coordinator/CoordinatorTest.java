@@ -73,6 +73,8 @@ public class CoordinatorTest {
             {
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 coordinator.underlyingActor().addContext(ctx);
+                ctx.log(CoordinatorRequestContext.LogState.NONE);
+                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
 
                 coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
                 coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
@@ -88,9 +90,11 @@ public class CoordinatorTest {
             {
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 coordinator.underlyingActor().addContext(ctx);
+                ctx.log(CoordinatorRequestContext.LogState.START_2PC);
+                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
                 ctx.addParticipant(testActor());
 
-                ctx.startVoteResponseTimeout(coordinator.underlyingActor());
+                ctx.startVoteResponseTimer(coordinator.underlyingActor());
                 // must account for the timeout duration to elapse and the message to be delivered:
                 // add one second more to the duration
                 expectMsg(Duration.create(CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S + 1, TimeUnit.SECONDS),
