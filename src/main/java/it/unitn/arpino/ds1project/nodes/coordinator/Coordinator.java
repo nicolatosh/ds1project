@@ -43,7 +43,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
                 .match(VoteResponseTimeout.class, this::onVoteResponseTimeout)
-                .match(Resume.class, ignored -> resume())
                 .build();
     }
 

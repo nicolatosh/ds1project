@@ -2,6 +2,7 @@ package it.unitn.arpino.ds1project.nodes;
 
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.Message;
+import it.unitn.arpino.ds1project.messages.Resume;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
@@ -60,6 +61,10 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
                     break;
                 }
                 case CRASHED: {
+                    if (msg instanceof Resume) {
+                        super.aroundReceive(receive, obj);
+                        break;
+                    }
                     logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + (msg.uuid != null ? " with UUID " + msg.uuid : ""));
                     break;
                 }
@@ -75,6 +80,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     protected void crash() {
         logger.info("Crashing...");
         getContext().become(new ReceiveBuilder()
+                .match(Resume.class, msg -> resume())
                 .matchAny(msg -> {
                     // this suppresses Dead Letter warnings.
                 }).build());

@@ -64,7 +64,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(FinalDecisionTimeout.class, this::onFinalDecisionTimeout)
                 .match(DecisionResponse.class, this::onDecisionResponse)
                 .match(DecisionRequest.class, this::onDecisionRequest)
-                .match(Resume.class, ignored -> resume())
                 .build();
     }
 
