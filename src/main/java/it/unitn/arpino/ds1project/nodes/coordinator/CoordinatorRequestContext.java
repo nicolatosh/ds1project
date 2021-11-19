@@ -95,7 +95,7 @@ public class CoordinatorRequestContext extends RequestContext {
      * to fulfill a client's {@link ReadMsg} or {@link WriteMsg}.
      */
     public Collection<ActorRef> getParticipants() {
-        return participants;
+        return new HashSet<>(participants);
     }
 
     /**
