@@ -14,7 +14,10 @@ import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class CoordinatorRequestContext extends RequestContext {
@@ -55,8 +58,7 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private Cancellable voteResponseTimer;
 
-    public CoordinatorRequestContext(UUID uuid, ActorRef client) {
-        super(uuid);
+    public CoordinatorRequestContext(ActorRef client) {
         this.client = client;
 
         participants = new HashSet<>();

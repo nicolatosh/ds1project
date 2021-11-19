@@ -10,10 +10,19 @@ public abstract class RequestContext {
     public final UUID uuid;
 
     /**
+     * Creates a new context with the specified identifier.
+     *
      * @param uuid Unique identifier for this context.
      */
     public RequestContext(UUID uuid) {
         this.uuid = uuid;
+    }
+
+    /**
+     * Creates a new context with a random identifier.
+     */
+    public RequestContext() {
+        this(UUID.randomUUID());
     }
 
     /**

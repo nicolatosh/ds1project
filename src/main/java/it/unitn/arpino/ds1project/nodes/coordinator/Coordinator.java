@@ -18,7 +18,6 @@ import it.unitn.arpino.ds1project.simulation.Communication;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.IntStream;
 
 public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
@@ -56,7 +55,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
      * @return The newly created context.
      */
     private CoordinatorRequestContext createNewContext() {
-        CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), getSender());
+        CoordinatorRequestContext ctx = new CoordinatorRequestContext(getSender());
 
         addContext(ctx);
         return ctx;

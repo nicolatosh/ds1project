@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -58,7 +57,7 @@ public class CoordinatorCrashTest {
         new TestKit(system) {
             {
                 // Simulate a transaction, in which only server0 is involved.
-                CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
+                CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
                 coordinator.underlyingActor().addContext(ctx);
                 ctx.log(CoordinatorRequestContext.LogState.NONE);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
@@ -95,7 +94,7 @@ public class CoordinatorCrashTest {
         new TestKit(system) {
             {
                 // Simulate a transaction, in which both servers are involved.
-                CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
+                CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
                 coordinator.underlyingActor().addContext(ctx);
                 ctx.log(CoordinatorRequestContext.LogState.NONE);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
