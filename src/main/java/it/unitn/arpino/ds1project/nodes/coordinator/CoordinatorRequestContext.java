@@ -45,9 +45,9 @@ public class CoordinatorRequestContext extends RequestContext {
      */
     private final ActorRef client;
 
-    private final Set<ActorRef> participants;
+    private final Collection<ActorRef> participants;
 
-    private final Set<ActorRef> yesVoters;
+    private final Collection<ActorRef> yesVoters;
 
     protected final List<LogState> localLog;
 
@@ -92,7 +92,7 @@ public class CoordinatorRequestContext extends RequestContext {
      * the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}s to fulfill the client's
      * {@link ReadMsg} or {@link WriteMsg}.
      */
-    public Set<ActorRef> getParticipants() {
+    public Collection<ActorRef> getParticipants() {
         return participants;
     }
 

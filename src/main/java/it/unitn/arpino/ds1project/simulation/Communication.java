@@ -3,7 +3,7 @@ package it.unitn.arpino.ds1project.simulation;
 import akka.actor.ActorRef;
 import it.unitn.arpino.ds1project.messages.Message;
 
-import java.util.Set;
+import java.util.Collection;
 
 public class Communication {
     /**
@@ -17,7 +17,7 @@ public class Communication {
      * @return Whether the multicast completed successfully (the message has been sent to all the intended receivers),
      * or it has not due to a crash that has been simulated.
      */
-    public static boolean multicast(ActorRef sender, Set<ActorRef> receivers, Message message, double crashP) {
+    public static boolean multicast(ActorRef sender, Collection<ActorRef> receivers, Message message, double crashP) {
         return receivers.stream().allMatch(receiver -> unicast(sender, receiver, message, crashP));
     }
 
