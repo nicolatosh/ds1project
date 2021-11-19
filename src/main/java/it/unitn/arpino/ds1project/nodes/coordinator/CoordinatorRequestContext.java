@@ -153,8 +153,9 @@ public class CoordinatorRequestContext extends RequestContext {
     public String toString() {
         return "uuid: " + uuid +
                 "\nclient: " + client.path().name() +
-                "\ntwo-phase commit protocol state: " + protocolState +
+                "\nlogged state: " + loggedState() +
+                "\nprotocol state: " + protocolState +
                 "\nparticipants: " + participants.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", ")) +
-                "\nyesVoters: " + yesVoters.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", "));
+                "\nyes voters: " + yesVoters.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", "));
     }
 }

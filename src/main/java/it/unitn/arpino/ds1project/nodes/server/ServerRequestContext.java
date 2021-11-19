@@ -174,7 +174,8 @@ public class ServerRequestContext extends RequestContext {
     @Override
     public String toString() {
         return "uuid: " + uuid +
-                "\ntwo-phase commit protocol state: " + protocolState +
+                "\nlogged state: " + loggedState() +
+                "\nprotocol state: " + protocolState +
                 "\ntransaction:\n" + connection;
     }
 }
