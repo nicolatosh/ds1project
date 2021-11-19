@@ -39,13 +39,10 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * Duration (in seconds) within which all the participants' {@link VoteResponse}s should be collected.
+     * Duration (in seconds) within which the {@link Coordinator} should collect all the participants' {@link VoteResponse}s.
      */
     public static final int VOTE_RESPONSE_TIMEOUT_S = 1;
 
-    /**
-     * The initiator of the transaction.
-     */
     private final ActorRef client;
 
     private final Collection<ActorRef> participants;
@@ -66,6 +63,9 @@ public class CoordinatorRequestContext extends RequestContext {
         localLog = new ArrayList<>();
     }
 
+    /**
+     * The initiator of the transaction.
+     */
     public ActorRef getClient() {
         return client;
     }
@@ -90,18 +90,18 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * @return The participants involved in this transaction. A participant is a {@link Server} to which
-     * the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}s to fulfill the client's
-     * {@link ReadMsg} or {@link WriteMsg}.
+     * @return The participants involved in this transaction.
+     * A participant is a {@link Server} to which the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}
+     * to fulfill a client's {@link ReadMsg} or {@link WriteMsg}.
      */
     public Collection<ActorRef> getParticipants() {
         return participants;
     }
 
     /**
-     * Adds a participant to the list of participants of this transaction, if not already present. A participant is a
-     * {@link Server} to which the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}s to
-     * fulfill the client's {@link ReadMsg} or {@link WriteMsg}.
+     * Adds a participant to the list of participants of this transaction, if not already present.
+     * A participant is a {@link Server} to which the {@link Coordinator} has sent a {@link ReadRequest} or {@link WriteRequest}
+     * to fulfill the client's {@link ReadMsg} or {@link WriteMsg}.
      */
     public void addParticipant(ActorRef participant) {
         if (!participants.contains(participant)) {
@@ -110,33 +110,41 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * Adds a participant to the list of participants which, upon the {@link Coordinator}'s {@link VoteRequest},
-     * cast a positive {@link VoteResponse}.
+     * Adds a participant to the list of those which have cast a positive {@link VoteResponse}
+     * upon receiving the {@link Coordinator}'s {@link VoteRequest},
      */
     public void addYesVoter(ActorRef yesVoter) {
         yesVoters.add(yesVoter);
     }
 
     /**
-     * @return Whether all participants have cast a positive {@link VoteResponse}. If true, the {@link Coordinator}
-     * can request to commit the transaction, sending them the {@link FinalDecision}.
+     * @return Whether all participants have cast a positive {@link VoteResponse}.
+     * If true, the {@link Coordinator} can commit the transaction, sending them the {@link FinalDecision}.
      */
     boolean allVotedYes() {
         return yesVoters.size() == participants.size();
     }
 
+    /**
+     * Writes something to the local log.
+     *
+     * @param state The state to log.
+     */
     public void log(LogState state) {
         localLog.add(state);
     }
 
+    /**
+     * @return The logged state in the local log.
+     */
     public LogState loggedState() {
         return localLog.get(localLog.size() - 1);
     }
 
     /**
-     * Starts a countdown timer, within which the {@link Coordinator} should collect all participants'
-     * {@link VoteResponse}s. If the responses do not arrive in time, the Coordinator assumes one participant has
-     * crashed.
+     * Starts a countdown timer, within which the {@link Coordinator} should collect all the participants' {@link VoteResponse}s.
+     * If the responses do not arrive in time, the Coordinator assumes one participant has crashed, and sends to itself
+     * a {@link VoteResponseTimeout}.
      */
     public void startVoteResponseTimer(Coordinator coordinator) {
         voteResponseTimer = coordinator.getContext().system().scheduler().scheduleOnce(

@@ -3,10 +3,7 @@ package it.unitn.arpino.ds1project.nodes.server;
 import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
-import it.unitn.arpino.ds1project.messages.server.FinalDecision;
-import it.unitn.arpino.ds1project.messages.server.FinalDecisionTimeout;
-import it.unitn.arpino.ds1project.messages.server.VoteRequest;
-import it.unitn.arpino.ds1project.messages.server.VoteRequestTimeout;
+import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
@@ -34,14 +31,16 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
-     * Duration (in seconds) within which the {@link Coordinator}'s {@link FinalDecision} should be received.
-     */
-    public static final int FINAL_DECISION_TIMEOUT_S = 2;
-
-    /**
-     * Duration (in seconds) within which the {@link Coordinator}'s {@link VoteRequest} should be received.
+     * Duration (in seconds) within which the {@link Server} expects to receive the {@link Coordinator}'s {@link VoteRequest},
+     * after having received the first {@link ReadRequest} or {@link WriteRequest}.
      */
     public static final int VOTE_REQUEST_TIMEOUT_S = 2;
+
+    /**
+     * Duration (in seconds) within which the {@link Server} expects to receive the {@link Coordinator}'s {@link FinalDecision},
+     * after having received the {@link VoteRequest}.
+     */
+    public static final int FINAL_DECISION_TIMEOUT_S = 2;
 
     private final List<LogState> localLog;
 
