@@ -49,7 +49,7 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private final Collection<ActorRef> yesVoters;
 
-    protected final List<LogState> localLog;
+    private final List<LogState> localLog;
 
     private TwoPhaseCommitFSM protocolState;
 

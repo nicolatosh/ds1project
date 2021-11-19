@@ -43,7 +43,7 @@ public class ServerRequestContext extends RequestContext {
      */
     public static final int VOTE_REQUEST_TIMEOUT_S = 2;
 
-    protected final List<LogState> localLog;
+    private final List<LogState> localLog;
 
     private TwoPhaseCommitFSM protocolState;
 
