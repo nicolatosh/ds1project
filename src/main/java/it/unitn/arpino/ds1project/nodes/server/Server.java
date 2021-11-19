@@ -353,7 +353,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      */
     private void terminationProtocol(ServerRequestContext ctx) {
         DecisionRequest request = new DecisionRequest(ctx.uuid);
-        servers.forEach(server -> server.tell(request, getSelf()));
+        Communication.multicast(getSelf(), servers, request, 0.);
     }
 
     @Override
