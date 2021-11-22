@@ -141,7 +141,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             ctx.get().log(ServerRequestContext.LogState.VOTE_COMMIT);
 
             VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.YES);
-            if (!Communication.unicast(getSelf(), getSender(), vote, 0.)) {
+            if (!Communication.unicast(getSelf(), getSender(), vote, getParameters().serverOnVoteResponseCrashProbability)) {
                 crash();
                 return;
             }
@@ -153,7 +153,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
             VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
-            if (!Communication.unicast(getSelf(), getSender(), vote, 0.)) {
+            if (!Communication.unicast(getSelf(), getSender(), vote, getParameters().serverOnVoteResponseCrashProbability)) {
                 crash();
                 return;
             }
@@ -241,7 +241,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             }
         }
 
-        getSender().tell(response, getSelf());
+        if (!Communication.unicast(getSelf(), getSender(), response, getParameters().serverOnVoteResponseCrashProbability)) {
+            crash();
+        }
     }
 
     private void onDecisionResponse(DecisionResponse resp) {
@@ -354,7 +356,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      */
     private void terminationProtocol(ServerRequestContext ctx) {
         DecisionRequest request = new DecisionRequest(ctx.uuid);
-        Communication.multicast(getSelf(), servers, request, 0.);
+        if (!Communication.multicast(getSelf(), servers, request, getParameters().serverOnDecisionRequestCrashProbability)) {
+            crash();
+        }
     }
 
     @Override
