@@ -3,6 +3,7 @@ package it.unitn.arpino.ds1project.nodes;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.Message;
 import it.unitn.arpino.ds1project.messages.Resume;
+import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
@@ -56,20 +57,27 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
 
             switch (getStatus()) {
                 case ALIVE: {
-                    logger.info("Received " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + (msg.uuid != null ? " with UUID " + msg.uuid : ""));
-                    super.aroundReceive(receive, obj);
+                    if (msg instanceof TxnBeginMsg) {
+                        logger.info("Received " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
+                    } else {
+                        logger.info("Received " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + " with UUID " + msg.uuid);
+                    }
                     break;
                 }
                 case CRASHED: {
                     if (msg instanceof Resume) {
                         resume();
-                        return;
+                    } else if (msg instanceof TxnBeginMsg) {
+                        logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
+                    } else {
+                        logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + " with UUID " + msg.uuid);
                     }
-                    logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + (msg.uuid != null ? " with UUID " + msg.uuid : ""));
-                    break;
+                    return;
                 }
             }
         }
+
+        super.aroundReceive(receive, obj);
     }
 
     /**
