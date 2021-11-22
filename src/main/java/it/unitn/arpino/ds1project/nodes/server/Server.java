@@ -295,7 +295,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     private void onFinalDecision(FinalDecision req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
         if (ctx.isEmpty()) {
-            logger.severe("Bad request");
+            logger.info("Context is empty: a read or write request was received while the server was crashed");
             return;
         }
 
