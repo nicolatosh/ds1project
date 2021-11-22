@@ -62,8 +62,8 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
                 }
                 case CRASHED: {
                     if (msg instanceof Resume) {
-                        super.aroundReceive(receive, obj);
-                        break;
+                        resume();
+                        return;
                     }
                     logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + (msg.uuid != null ? " with UUID " + msg.uuid : ""));
                     break;
@@ -80,7 +80,6 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     protected void crash() {
         logger.info("Crashing...");
         getContext().become(new ReceiveBuilder()
-                .match(Resume.class, msg -> resume())
                 .matchAny(msg -> {
                     // this suppresses Dead Letter warnings.
                 }).build());
