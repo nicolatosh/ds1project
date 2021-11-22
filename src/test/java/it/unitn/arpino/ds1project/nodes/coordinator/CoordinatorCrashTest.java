@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CoordinatorCrashTest {
 
@@ -80,11 +81,12 @@ public class CoordinatorCrashTest {
                 assertSame(ServerRequestContext.LogState.GLOBAL_ABORT,
                         server0.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().loggedState());
 
+                coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0.;
+
                 coordinator.underlyingActor().resume();
 
-                // after resuming, the coordinator transitions to the abort state...
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT,
-                        coordinator.underlyingActor().getRequestContext(ctx.uuid).orElseThrow().getProtocolState());
+                // the (now old) context must have been removed
+                assertTrue(coordinator.underlyingActor().getRequestContext(ctx.uuid).isEmpty());
             }
         };
     }
@@ -123,6 +125,9 @@ public class CoordinatorCrashTest {
                 // We don't resume the coordinator immediately, so that the participants time out and perform the
                 // termination protocol. Since that none of them knows the final decision, they remain blocked.
                 TimeUnit.SECONDS.sleep(ServerRequestContext.FINAL_DECISION_TIMEOUT_S + 1);
+
+                // restore the old probability, otherwise resume(), which is later used, uses the same "spurious" value
+                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0.;
 
                 coordinator.underlyingActor().resume();
 
