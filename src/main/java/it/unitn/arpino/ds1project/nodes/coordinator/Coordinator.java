@@ -105,7 +105,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             logger.info("Sending the final decision to the participants");
             FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
-            if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, 0.)) {
+            if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
                 crash();
                 return;
             }
@@ -222,7 +222,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         logger.info("Sending the final decision to the participants");
         FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
-        if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, 0.)) {
+        if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
             crash();
             return;
         }
@@ -329,7 +329,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 case GLOBAL_COMMIT: {
                     logger.info("Sending the final decision to the participants");
                     FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                    if (!Communication.multicast(getSelf(), ctx.getParticipants(), decision, 0.)) {
+                    if (!Communication.multicast(getSelf(), ctx.getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
                         crash();
                         return;
                     }
@@ -347,7 +347,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 case GLOBAL_ABORT: {
                     logger.info("Sending the final decision to the participants");
                     FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                    if (!Communication.multicast(getSelf(), ctx.getParticipants(), decision, 0.)) {
+                    if (!Communication.multicast(getSelf(), ctx.getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
                         crash();
                         return;
                     }
