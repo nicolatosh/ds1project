@@ -112,6 +112,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
+            logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
             ctx.get().getClient().tell(new TxnResultMsg(ctx.get().uuid, false), getSelf());
 
             // if we received a client abort, we do not have to start the Two-phase commit (2PC) protocol,

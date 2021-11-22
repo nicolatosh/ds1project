@@ -336,6 +336,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     logger.severe("Received GLOBAL_COMMIT but the logged state is GLOBAL_ABORT");
                     return;
                 }
+                logger.info("This should be a retransmission");
                 break;
             }
             case DECISION: {
