@@ -120,6 +120,15 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     }
 
     /**
+     * Remove a {@link RequestContext} to the list of contexts.
+     *
+     * @param ctx RequestContext to remove from the list.
+     */
+    public final void removeContext(T ctx) {
+        contexts.remove(ctx);
+    }
+
+    /**
      * @return The {@link RequestContext}s for which the {@link FinalDecision} is known.
      */
     public final List<T> getDecided() {
