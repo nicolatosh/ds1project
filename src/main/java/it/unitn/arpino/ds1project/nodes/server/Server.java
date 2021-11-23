@@ -53,9 +53,15 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     @Override
-    public Receive createReceive() {
-        return new ReceiveBuilder()
+    protected Receive getSetupReceive() {
+        return receiveBuilder()
                 .match(ServerJoin.class, this::onServerJoined)
+                .build();
+    }
+
+    @Override
+    protected Receive getAliveReceive() {
+        return new ReceiveBuilder()
                 .match(ReadRequest.class, this::onReadRequest)
                 .match(WriteRequest.class, this::onWriteRequest)
                 .match(VoteRequest.class, this::onVoteRequest)

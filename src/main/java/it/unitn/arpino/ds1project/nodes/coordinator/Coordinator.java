@@ -2,7 +2,6 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.Resume;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
@@ -32,9 +31,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     @Override
-    public Receive createReceive() {
-        return new ReceiveBuilder()
+    protected Receive getSetupReceive() {
+        return receiveBuilder()
                 .match(ServerJoin.class, this::onServerJoined)
+                .build();
+    }
+
+    @Override
+    protected Receive getAliveReceive() {
+        return receiveBuilder()
                 .match(TxnBeginMsg.class, this::onTxnBeginMsg)
                 .match(TxnEndMsg.class, this::onTxnEndMsg)
                 .match(ReadMsg.class, this::onReadMsg)

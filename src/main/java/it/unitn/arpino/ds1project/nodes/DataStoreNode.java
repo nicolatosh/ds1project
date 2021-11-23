@@ -27,6 +27,10 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
         CRASHED
     }
 
+    private final Receive setupReceive;
+    private final Receive aliveReceive;
+    private final Receive crashedReceive;
+
     private final Simulation parameters;
 
     private Status status;
@@ -40,6 +44,22 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
         parameters = new Simulation();
         status = DataStoreNode.Status.ALIVE;
         contexts = new ArrayList<>();
+
+        setupReceive = getSetupReceive();
+        aliveReceive = getAliveReceive();
+        crashedReceive = getCrashedReceive();
+    }
+
+    protected abstract Receive getSetupReceive();
+
+    protected abstract Receive getAliveReceive();
+
+    protected final Receive getCrashedReceive() {
+        return receiveBuilder()
+                .matchAny(msg -> {
+                    // this suppresses Dead Letter warnings.
+                })
+                .build();
     }
 
     public final Status getStatus() {
@@ -48,6 +68,20 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
 
     public Simulation getParameters() {
         return parameters;
+    }
+
+    @Override
+    public Receive createReceive() {
+        return new ReceiveBuilder()
+                .matchEquals("start", start -> {
+                    unstashAll();
+                    getContext().become(aliveReceive);
+                })
+                .matchAny(msg -> {
+                    logger.info("Stashed " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
+                    stash();
+                })
+                .build();
     }
 
     @Override
@@ -87,10 +121,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
      */
     protected void crash() {
         logger.info("Crashing...");
-        getContext().become(new ReceiveBuilder()
-                .matchAny(msg -> {
-                    // this suppresses Dead Letter warnings.
-                }).build());
+        getContext().become(crashedReceive);
         status = DataStoreNode.Status.CRASHED;
     }
 
@@ -101,7 +132,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
      */
     protected void resume() {
         logger.info("Resuming...");
-        getContext().become(createReceive());
+        getContext().become(aliveReceive);
         status = DataStoreNode.Status.ALIVE;
     }
 

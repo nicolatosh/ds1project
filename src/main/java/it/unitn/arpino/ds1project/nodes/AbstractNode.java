@@ -1,6 +1,6 @@
 package it.unitn.arpino.ds1project.nodes;
 
-import akka.actor.AbstractActor;
+import akka.actor.AbstractActorWithStash;
 import it.unitn.arpino.ds1project.messages.Message;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 /**
  * Base class for all nodes. Logs all received {@link Message}s.
  */
-public abstract class AbstractNode extends AbstractActor {
+public abstract class AbstractNode extends AbstractActorWithStash {
     protected final Logger logger;
 
     public AbstractNode() {
