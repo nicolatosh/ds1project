@@ -1,5 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
+import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
@@ -46,14 +47,17 @@ public class ServerRequestContext extends RequestContext {
 
     private TwoPhaseCommitFSM protocolState;
 
+    public final ActorRef coordinator;
+
     private final IConnection connection;
 
     private Cancellable voteRequestTimer;
     private Cancellable finalDecisionTimer;
 
-    public ServerRequestContext(UUID uuid, IConnection connection) {
+    public ServerRequestContext(UUID uuid, ActorRef coordinator, IConnection connection) {
         super(uuid);
         localLog = new ArrayList<>();
+        this.coordinator = coordinator;
         this.connection = connection;
     }
 

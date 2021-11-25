@@ -49,6 +49,8 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private final Collection<ActorRef> yesVoters;
 
+    private final Collection<ActorRef> doneParticipants;
+
     private final List<LogState> localLog;
 
     private TwoPhaseCommitFSM protocolState;
@@ -60,6 +62,7 @@ public class CoordinatorRequestContext extends RequestContext {
 
         participants = new HashSet<>();
         yesVoters = new HashSet<>();
+        doneParticipants = new HashSet<>();
         localLog = new ArrayList<>();
     }
 
@@ -123,6 +126,16 @@ public class CoordinatorRequestContext extends RequestContext {
      */
     boolean allVotedYes() {
         return yesVoters.size() == participants.size();
+    }
+
+    public void addDoneParticipant(ActorRef participant) {
+        if (!doneParticipants.contains(participant)) {
+            doneParticipants.add(participant);
+        }
+    }
+
+    boolean allParticipantsDone() {
+        return doneParticipants.size() == participants.size();
     }
 
     /**

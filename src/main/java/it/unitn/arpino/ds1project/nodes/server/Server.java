@@ -8,6 +8,7 @@ import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.database.IDatabase;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
+import it.unitn.arpino.ds1project.messages.coordinator.Done;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -79,8 +80,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * @param uuid Identifier to assign to the new context.
      * @return The newly created context.
      */
-    public ServerRequestContext createNewContext(UUID uuid) {
-        ServerRequestContext ctx = new ServerRequestContext(uuid, controller.beginTransaction());
+    public ServerRequestContext createNewContext(UUID uuid, ActorRef coordinator) {
+        ServerRequestContext ctx = new ServerRequestContext(uuid, coordinator, controller.beginTransaction());
         addContext(ctx);
         return ctx;
     }
@@ -89,7 +90,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     private void onReadRequest(ReadRequest req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
         if (ctx.isEmpty()) {
-            ctx = Optional.of(createNewContext(req.uuid));
+            ctx = Optional.of(createNewContext(req.uuid, getSender()));
 
             ctx.get().log(ServerRequestContext.LogState.INIT);
             ctx.get().setProtocolState(TwoPhaseCommitFSM.INIT);
@@ -110,7 +111,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     private void onWriteRequest(WriteRequest req) {
         Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
         if (ctx.isEmpty()) {
-            ctx = Optional.of(createNewContext(req.uuid));
+            ctx = Optional.of(createNewContext(req.uuid, getSender()));
 
             ctx.get().log(ServerRequestContext.LogState.INIT);
             ctx.get().setProtocolState(TwoPhaseCommitFSM.INIT);
@@ -271,6 +272,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         ctx.get().log(ServerRequestContext.LogState.DECISION);
                         ctx.get().commit();
                         ctx.get().setProtocolState(TwoPhaseCommitFSM.COMMIT);
+
+                        ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
                         break;
                     }
                     case GLOBAL_ABORT: {
@@ -278,6 +281,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         ctx.get().log(ServerRequestContext.LogState.DECISION);
                         ctx.get().abort();
                         ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
+
+                        ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
                         break;
                     }
                 }
@@ -311,6 +316,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 ctx.get().abort();
                 ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
 
+                getSender().tell(new Done(ctx.get().uuid), getSelf());
+
                 break;
             }
             case VOTE_COMMIT: {
@@ -337,6 +344,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     }
                 }
 
+                getSender().tell(new Done(ctx.get().uuid), getSelf());
+
                 break;
             }
             case GLOBAL_ABORT: {
@@ -345,10 +354,14 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     return;
                 }
                 logger.info("This should be a retransmission");
+
+                ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
                 break;
             }
             case DECISION: {
                 logger.info("This should be a retransmission");
+
+                ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
                 break;
             }
         }

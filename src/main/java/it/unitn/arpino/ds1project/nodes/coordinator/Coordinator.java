@@ -41,6 +41,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
                 .match(VoteResponseTimeout.class, this::onVoteResponseTimeout)
+                .match(Done.class, this::onDone)
                 .build();
     }
 
@@ -116,9 +117,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
             ctx.get().getClient().tell(new TxnResultMsg(ctx.get().uuid, false), getSelf());
 
-            logger.info("Removing the context");
-            removeContext(ctx.get());
-
             // if we received a client abort, we do not have to start the Two-phase commit (2PC) protocol,
             // thus we must not start the vote response timer.
         }
@@ -156,13 +154,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             }
 
                             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
-
-                            logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
-                            TxnResultMsg result = new TxnResultMsg(resp.uuid, true);
-                            ctx.get().getClient().tell(result, getSelf());
-
-                            logger.info("Removing the context");
-                            removeContext(ctx.get());
                         }
                         break;
                     }
@@ -181,13 +172,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         }
 
                         ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-                        logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
-                        TxnResultMsg result = new TxnResultMsg(resp.uuid, false);
-                        ctx.get().getClient().tell(result, getSelf());
-
-                        logger.info("Removing the context");
-                        removeContext(ctx.get());
 
                         break;
                     }
@@ -287,6 +271,41 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         server.tell(req, getSelf());
     }
 
+    private void onDone(Done msg) {
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
+        if (ctx.isEmpty()) {
+            logger.severe("Bad request");
+            return;
+        }
+
+        if (!ctx.get().isDecided()) {
+            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be GLOBAL_COMMIT or GLOBAL_ABORT)");
+            return;
+        }
+
+        ctx.get().addDoneParticipant(getSender());
+
+        if (ctx.get().allParticipantsDone()) {
+            logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
+
+            switch (ctx.get().loggedState()) {
+                case GLOBAL_COMMIT: {
+                    TxnResultMsg result = new TxnResultMsg(msg.uuid, true);
+                    ctx.get().getClient().tell(result, getSelf());
+                    break;
+                }
+                case GLOBAL_ABORT: {
+                    TxnResultMsg result = new TxnResultMsg(msg.uuid, false);
+                    ctx.get().getClient().tell(result, getSelf());
+                    break;
+                }
+            }
+
+            logger.info("Removing the context");
+            removeContext(ctx.get());
+        }
+    }
+
     @Override
     protected void crash() {
         super.crash();
@@ -314,13 +333,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             logger.info("Aborting the transaction");
             ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
             ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-            logger.info("Sending the transaction result to " + ctx.getClient().path().name());
-            TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
-            ctx.getClient().tell(result, getSelf());
-
-            logger.info("Removing the context");
-            removeContext(ctx);
         });
 
         // If we have already taken the final decision for the transaction, we send it to all the participants
@@ -336,13 +348,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     }
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
-                    logger.info("Sending the transaction result to " + ctx.getClient().path().name());
-                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
-                    ctx.getClient().tell(result, getSelf());
-
-                    logger.info("Removing the context");
-                    removeContext(ctx);
-
                     break;
                 }
                 case GLOBAL_ABORT: {
@@ -353,13 +358,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         return;
                     }
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-                    logger.info("Sending the transaction result to " + ctx.getClient().path().name());
-                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
-                    ctx.getClient().tell(result, getSelf());
-
-                    logger.info("Removing the context");
-                    removeContext(ctx);
 
                     break;
                 }

@@ -40,7 +40,7 @@ public class ServerTest {
     void testVoteRequestTimeout() throws InterruptedException {
         new TestKit(system) {
             {
-                ServerRequestContext ctx = server.underlyingActor().createNewContext(UUID.randomUUID());
+                ServerRequestContext ctx = server.underlyingActor().createNewContext(UUID.randomUUID(), testActor());
                 ctx.log(ServerRequestContext.LogState.INIT);
                 ctx.startVoteRequestTimer(server.underlyingActor());
 
@@ -57,7 +57,7 @@ public class ServerTest {
     void testFinalDecisionTimeout() throws InterruptedException {
         new TestKit(system) {
             {
-                ServerRequestContext ctx = server.underlyingActor().createNewContext(UUID.randomUUID());
+                ServerRequestContext ctx = server.underlyingActor().createNewContext(UUID.randomUUID(), testActor());
                 ctx.log(ServerRequestContext.LogState.INIT);
                 ctx.startVoteRequestTimer(server.underlyingActor());
 
