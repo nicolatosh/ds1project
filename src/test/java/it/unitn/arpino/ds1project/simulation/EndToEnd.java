@@ -198,11 +198,8 @@ public class EndToEnd {
                     coordinator.tell(new TxnBeginMsg(), testActor());
                     UUID uuid = expectMsgClass(TxnAcceptMsg.class).uuid;
 
-                    int keyFrom = rand.nextInt(20);
-                    int keyTo = rand.nextInt(20);
-                    while (keyTo == keyFrom) {
-                        keyTo = rand.nextInt(20);
-                    }
+                    int keyFrom = rand.nextInt(10);
+                    int keyTo = 10 + rand.nextInt(10);
 
                     try {
                         ReadMsg read1 = new ReadMsg(uuid, keyFrom);
@@ -230,6 +227,12 @@ public class EndToEnd {
                         coordinator.tell(end, testActor());
                         expectMsg(Duration.create(15, TimeUnit.SECONDS), new TxnResultMsg(uuid, false));
                     } finally {
+                        awaitCond(() -> server0.underlyingActor().getRequestContext(uuid).orElseThrow().isDecided()
+                                        && server1.underlyingActor().getRequestContext(uuid).orElseThrow().isDecided(),
+                                Duration.create(15, TimeUnit.SECONDS),
+                                Duration.create(1, TimeUnit.SECONDS), null);
+
+                        expectMsgClass(Duration.create(15, TimeUnit.SECONDS), TxnResultMsg.class);
                         // regardless of commit or abort, the sum must be consistent
                         Assertions.assertEquals(initialSum, calculateSum());
                     }

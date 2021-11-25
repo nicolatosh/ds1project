@@ -65,6 +65,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(FinalDecisionTimeout.class, this::onFinalDecisionTimeout)
                 .match(DecisionResponse.class, this::onDecisionResponse)
                 .match(DecisionRequest.class, this::onDecisionRequest)
+                .match(Solicit.class, this::onSolicit)
                 .build();
     }
 
@@ -367,8 +368,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 }
                 logger.info("This should be a retransmission");
 
-                ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
-
                 break;
             }
             case DECISION: {
@@ -398,6 +397,19 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     .map(participant -> participant.path().name())
                     .collect(Collectors.joining(", ")));
             crash();
+        }
+    }
+
+    private void onSolicit(Solicit solicit) {
+        Optional<ServerRequestContext> ctx = getRequestContext(solicit.uuid);
+        if (ctx.isEmpty()) {
+            logger.severe("Bad request");
+            return;
+        }
+
+        if (ctx.get().isDecided()) {
+            Done done = new Done(ctx.get().uuid);
+            getSender().tell(done, getSelf());
         }
     }
 
