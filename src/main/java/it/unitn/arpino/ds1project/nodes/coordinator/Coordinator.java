@@ -2,7 +2,8 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import it.unitn.arpino.ds1project.messages.Resume;
+import it.unitn.arpino.ds1project.messages.JoinMessage;
+import it.unitn.arpino.ds1project.messages.ResumeMessage;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
@@ -31,14 +32,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     @Override
-    protected Receive getSetupReceive() {
-        return receiveBuilder()
-                .match(ServerJoin.class, this::onServerJoined)
-                .build();
-    }
-
-    @Override
-    protected Receive getAliveReceive() {
+    protected Receive createAliveReceive() {
         return receiveBuilder()
                 .match(TxnBeginMsg.class, this::onTxnBeginMsg)
                 .match(TxnEndMsg.class, this::onTxnEndMsg)
@@ -66,7 +60,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         return ctx;
     }
 
-    private void onServerJoined(ServerJoin msg) {
+    @Override
+    protected void onJoinMessage(JoinMessage msg) {
+        logger.info(getSender().path().name() + " joined");
         IntStream.rangeClosed(msg.lowerKey, msg.upperKey).forEach(key -> dispatcher.map(key, getSender()));
     }
 
@@ -299,7 +295,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             getContext().system().scheduler().scheduleOnce(
                     Duration.ofSeconds(getParameters().coordinatorRecoveryTimeS), // delay
                     getSelf(), // receiver
-                    new Resume(), // message
+                    new ResumeMessage(), // message
                     getContext().dispatcher(), // executor
                     ActorRef.noSender()); // sender
         }

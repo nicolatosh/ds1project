@@ -4,7 +4,7 @@ package it.unitn.arpino.ds1project.nodes.client;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Props;
-import it.unitn.arpino.ds1project.messages.Message;
+import it.unitn.arpino.ds1project.messages.TxnMessage;
 import it.unitn.arpino.ds1project.messages.client.*;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
@@ -63,8 +63,8 @@ public class TxnClient extends AbstractNode {
 
     @Override
     public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object obj) {
-        if (obj instanceof Message) {
-            Message msg = (Message) obj;
+        if (obj instanceof TxnMessage) {
+            TxnMessage msg = (TxnMessage) obj;
 
             logger.info("Received " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
             super.aroundReceive(receive, obj);

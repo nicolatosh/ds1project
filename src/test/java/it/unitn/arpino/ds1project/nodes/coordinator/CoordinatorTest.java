@@ -1,26 +1,26 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
+import it.unitn.arpino.ds1project.messages.JoinMessage;
+import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.server.Server;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import scala.concurrent.duration.Duration;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CoordinatorTest {
     ActorSystem system;
     TestActorRef<Coordinator> coordinator;
@@ -31,9 +31,11 @@ public class CoordinatorTest {
         system = ActorSystem.create();
 
         server = TestActorRef.create(system, Server.props(0, 9), "server");
-        coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
 
-        IntStream.rangeClosed(0, 9).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server));
+        coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
+        coordinator.tell(new JoinMessage(0, 9), server);
+
+        List.of(server, coordinator).forEach(node -> node.tell(new StartMessage(), ActorRef.noSender()));
     }
 
     @AfterEach

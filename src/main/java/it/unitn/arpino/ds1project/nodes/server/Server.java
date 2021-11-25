@@ -6,7 +6,8 @@ import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.database.IDatabase;
-import it.unitn.arpino.ds1project.messages.Resume;
+import it.unitn.arpino.ds1project.messages.JoinMessage;
+import it.unitn.arpino.ds1project.messages.ResumeMessage;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -53,14 +54,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     @Override
-    protected Receive getSetupReceive() {
-        return receiveBuilder()
-                .match(ServerJoin.class, this::onServerJoined)
-                .build();
-    }
-
-    @Override
-    protected Receive getAliveReceive() {
+    protected Receive createAliveReceive() {
         return new ReceiveBuilder()
                 .match(ReadRequest.class, this::onReadRequest)
                 .match(WriteRequest.class, this::onWriteRequest)
@@ -73,7 +67,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .build();
     }
 
-    private void onServerJoined(ServerJoin msg) {
+    @Override
+    protected void onJoinMessage(JoinMessage msg) {
+        logger.info(getSender().path().name() + " joined");
         servers.add(getSender());
     }
 
@@ -375,7 +371,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             getContext().system().scheduler().scheduleOnce(
                     Duration.ofSeconds(getParameters().serverRecoveryTimeS), // delay
                     getSelf(), // receiver
-                    new Resume(), // message
+                    new ResumeMessage(), // message
                     getContext().dispatcher(), // executor
                     ActorRef.noSender()); // sender
         }

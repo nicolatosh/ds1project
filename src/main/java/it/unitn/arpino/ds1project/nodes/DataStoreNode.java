@@ -1,8 +1,10 @@
 package it.unitn.arpino.ds1project.nodes;
 
 import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.messages.Message;
-import it.unitn.arpino.ds1project.messages.Resume;
+import it.unitn.arpino.ds1project.messages.JoinMessage;
+import it.unitn.arpino.ds1project.messages.ResumeMessage;
+import it.unitn.arpino.ds1project.messages.StartMessage;
+import it.unitn.arpino.ds1project.messages.TxnMessage;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
@@ -27,7 +29,6 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
         CRASHED
     }
 
-    private final Receive setupReceive;
     private final Receive aliveReceive;
     private final Receive crashedReceive;
 
@@ -45,17 +46,15 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
         status = DataStoreNode.Status.ALIVE;
         contexts = new ArrayList<>();
 
-        setupReceive = getSetupReceive();
-        aliveReceive = getAliveReceive();
-        crashedReceive = getCrashedReceive();
+        aliveReceive = createAliveReceive();
+        crashedReceive = createCrashedReceive();
     }
 
-    protected abstract Receive getSetupReceive();
+    protected abstract Receive createAliveReceive();
 
-    protected abstract Receive getAliveReceive();
-
-    protected final Receive getCrashedReceive() {
+    private Receive createCrashedReceive() {
         return receiveBuilder()
+                .match(ResumeMessage.class, msg -> resume())
                 .matchAny(msg -> {
                     // this suppresses Dead Letter warnings.
                 })
@@ -73,10 +72,8 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     @Override
     public Receive createReceive() {
         return new ReceiveBuilder()
-                .matchEquals("start", start -> {
-                    unstashAll();
-                    getContext().become(aliveReceive);
-                })
+                .match(JoinMessage.class, this::onJoinMessage)
+                .match(StartMessage.class, this::onStartMsg)
                 .matchAny(msg -> {
                     logger.info("Stashed " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
                     stash();
@@ -86,8 +83,8 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
 
     @Override
     public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object obj) {
-        if (obj instanceof Message) {
-            Message msg = (Message) obj;
+        if (obj instanceof TxnMessage) {
+            TxnMessage msg = (TxnMessage) obj;
 
             switch (getStatus()) {
                 case ALIVE: {
@@ -99,9 +96,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
                     break;
                 }
                 case CRASHED: {
-                    if (msg instanceof Resume) {
-                        resume();
-                    } else if (msg instanceof TxnBeginMsg) {
+                    if (msg instanceof TxnBeginMsg) {
                         logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
                     } else {
                         logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + " with UUID " + msg.uuid);
@@ -112,6 +107,14 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
         }
 
         super.aroundReceive(receive, obj);
+    }
+
+    protected abstract void onJoinMessage(JoinMessage msg);
+
+    private void onStartMsg(StartMessage msg) {
+        logger.info("Starting");
+        unstashAll();
+        getContext().become(aliveReceive);
     }
 
     /**

@@ -1,8 +1,11 @@
 package it.unitn.arpino.ds1project.nodes.client;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
+import it.unitn.arpino.ds1project.messages.JoinMessage;
+import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
@@ -20,7 +23,6 @@ import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 public class ClientTransactionTest {
     ActorSystem system;
@@ -33,12 +35,16 @@ public class ClientTransactionTest {
 
         server0 = TestActorRef.create(system, Server.props(0, 9), "server0");
         server1 = TestActorRef.create(system, Server.props(10, 19), "server1");
-        server0.underlyingActor().addServer(server1);
-        server1.underlyingActor().addServer(server0);
+        server0.tell(new JoinMessage(10, 19), server1);
+        server1.tell(new JoinMessage(0, 9), server0);
 
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
-        IntStream.rangeClosed(0, 9).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server0));
-        IntStream.rangeClosed(10, 19).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server1));
+        coordinator.tell(new JoinMessage(0, 9), server0);
+        coordinator.tell(new JoinMessage(10, 19), server1);
+
+        server0.tell(new StartMessage(), ActorRef.noSender());
+        server0.tell(new StartMessage(), ActorRef.noSender());
+        coordinator.tell(new StartMessage(), ActorRef.noSender());
     }
 
     @AfterEach

@@ -4,11 +4,9 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
+import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
@@ -17,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ServerTest {
     ActorSystem system;
     TestActorRef<Server> server;
@@ -25,6 +24,8 @@ public class ServerTest {
     void setUp() {
         system = ActorSystem.create();
         server = TestActorRef.create(system, Server.props(0, 9), "server");
+
+        server.tell(new StartMessage(), ActorRef.noSender());
     }
 
     @AfterEach

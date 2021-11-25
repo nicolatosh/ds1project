@@ -1,8 +1,11 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
+import it.unitn.arpino.ds1project.messages.JoinMessage;
+import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.nodes.server.Server;
@@ -12,8 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,12 +33,14 @@ public class CoordinatorCrashTest {
 
         server0 = TestActorRef.create(system, Server.props(0, 9), "server0");
         server1 = TestActorRef.create(system, Server.props(10, 19), "server1");
-        server0.underlyingActor().addServer(server1);
-        server1.underlyingActor().addServer(server0);
+        server0.tell(new JoinMessage(10, 19), server1);
+        server1.tell(new JoinMessage(0, 9), server0);
 
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
-        IntStream.rangeClosed(0, 9).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server0));
-        IntStream.rangeClosed(10, 19).forEach(key -> coordinator.underlyingActor().getDispatcher().map(key, server1));
+        coordinator.tell(new JoinMessage(0, 9), server0);
+        coordinator.tell(new JoinMessage(10, 19), server1);
+
+        List.of(server0, server1, coordinator).forEach(node -> node.tell(new StartMessage(), ActorRef.noSender()));
     }
 
     @AfterEach
