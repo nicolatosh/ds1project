@@ -316,8 +316,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 ctx.get().abort();
                 ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
 
-                getSender().tell(new Done(ctx.get().uuid), getSelf());
-
                 break;
             }
             case VOTE_COMMIT: {
@@ -344,8 +342,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     }
                 }
 
-                getSender().tell(new Done(ctx.get().uuid), getSelf());
-
                 break;
             }
             case GLOBAL_ABORT: {
@@ -356,15 +352,17 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 logger.info("This should be a retransmission");
 
                 ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
+
                 break;
             }
             case DECISION: {
                 logger.info("This should be a retransmission");
-
-                ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
                 break;
             }
         }
+
+        // always send the Done message, regardless of logged state
+        ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
     }
 
     /**
