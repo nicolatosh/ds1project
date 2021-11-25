@@ -175,4 +175,68 @@ public class EndToEnd {
             }
         };
     }
+
+    @Test
+    void sequentialTransactionsWithCoordinatorAndServerCrashes() {
+        coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0.25;
+        coordinator.underlyingActor().getParameters().coordinatorOnVoteResponseCrashProbability = 0.25;
+        coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0.25;
+
+        List.of(server0, server1).forEach(server -> {
+            server.underlyingActor().getParameters().serverOnVoteResponseCrashProbability = 0.25;
+            server.underlyingActor().getParameters().serverOnDecisionRequestCrashProbability = 0.25;
+            server.underlyingActor().getParameters().serverOnDecisionResponseCrashProbability = 0.25;
+        });
+
+        Random rand = new Random();
+
+        new TestKit(system) {
+            {
+                for (int txnN = 0; txnN < 20; txnN++) {
+                    // begin transaction loop iteration
+
+                    coordinator.tell(new TxnBeginMsg(), testActor());
+                    UUID uuid = expectMsgClass(TxnAcceptMsg.class).uuid;
+
+                    int keyFrom = rand.nextInt(20);
+                    int keyTo = rand.nextInt(20);
+                    while (keyTo == keyFrom) {
+                        keyTo = rand.nextInt(20);
+                    }
+
+                    try {
+                        ReadMsg read1 = new ReadMsg(uuid, keyFrom);
+                        coordinator.tell(read1, testActor());
+                        int value1 = expectMsgClass(Duration.create(15, TimeUnit.SECONDS), ReadResultMsg.class).value;
+
+                        ReadMsg read2 = new ReadMsg(uuid, keyTo);
+                        coordinator.tell(read2, testActor());
+                        int value2 = expectMsgClass(Duration.create(15, TimeUnit.SECONDS), ReadResultMsg.class).value;
+
+                        WriteMsg write1 = new WriteMsg(uuid, keyFrom, value1 - 1);
+                        coordinator.tell(write1, testActor());
+                        expectNoMessage();
+
+                        WriteMsg write2 = new WriteMsg(uuid, keyTo, value2 + 1);
+                        coordinator.tell(write2, testActor());
+                        expectNoMessage();
+
+                        TxnEndMsg end = new TxnEndMsg(uuid, true);
+                        coordinator.tell(end, testActor());
+                        expectMsg(Duration.create(15, TimeUnit.SECONDS), new TxnResultMsg(uuid, true));
+
+                    } catch (AssertionError err) {
+                        TxnEndMsg end = new TxnEndMsg(uuid, false);
+                        coordinator.tell(end, testActor());
+                        expectMsg(Duration.create(15, TimeUnit.SECONDS), new TxnResultMsg(uuid, false));
+                    } finally {
+                        // regardless of commit or abort, the sum must be consistent
+                        Assertions.assertEquals(initialSum, calculateSum());
+                    }
+
+                    // end transaction loop iteration
+                }
+            }
+        };
+    }
 }
