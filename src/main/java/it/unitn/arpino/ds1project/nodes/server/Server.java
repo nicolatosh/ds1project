@@ -143,8 +143,13 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         if (ctx.get().prepare()) {
             ctx.get().log(ServerRequestContext.LogState.VOTE_COMMIT);
 
-            VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.YES);
-            if (!Communication.unicast(getSelf(), getSender(), vote, getParameters().serverOnVoteResponseCrashProbability)) {
+            Communication unicast = Communication.builder()
+                    .ofSender(getSelf())
+                    .ofReceiver(getSender())
+                    .ofMessage(new VoteResponse(req.uuid, VoteResponse.Vote.YES))
+                    .ofCrashProbability(getParameters().serverOnVoteResponseCrashProbability);
+            if (!unicast.run()) {
+                logger.info("Did not send the message to " + getSender().path().name());
                 crash();
                 return;
             }
@@ -155,8 +160,13 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         } else {
             ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
-            VoteResponse vote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
-            if (!Communication.unicast(getSelf(), getSender(), vote, getParameters().serverOnVoteResponseCrashProbability)) {
+            Communication unicast = Communication.builder()
+                    .ofSender(getSelf())
+                    .ofReceiver(getSender())
+                    .ofMessage(new VoteResponse(req.uuid, VoteResponse.Vote.NO))
+                    .ofCrashProbability(getParameters().serverOnVoteResponseCrashProbability);
+            if (!unicast.run()) {
+                logger.info("Did not send the message to " + getSender().path().name());
                 crash();
                 return;
             }
@@ -244,7 +254,13 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             }
         }
 
-        if (!Communication.unicast(getSelf(), getSender(), response, getParameters().serverOnVoteResponseCrashProbability)) {
+        Communication unicast = Communication.builder()
+                .ofSender(getSelf())
+                .ofReceiver(getSender())
+                .ofMessage(response)
+                .ofCrashProbability(getParameters().serverOnVoteResponseCrashProbability);
+        if (!unicast.run()) {
+            logger.info("Did not send the message to " + getSender().path().name());
             crash();
         }
     }
@@ -372,8 +388,15 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * @param ctx Context for which to start the termination protocol
      */
     private void terminationProtocol(ServerRequestContext ctx) {
-        DecisionRequest request = new DecisionRequest(ctx.uuid);
-        if (!Communication.multicast(getSelf(), servers, request, getParameters().serverOnDecisionRequestCrashProbability)) {
+        Communication multicast = Communication.builder()
+                .ofSender(getSelf())
+                .ofReceivers(servers)
+                .ofMessage(new DecisionRequest(ctx.uuid))
+                .ofCrashProbability(getParameters().serverOnDecisionRequestCrashProbability);
+        if (!multicast.run()) {
+            logger.info("Did not send the message to " + multicast.getMissing().stream()
+                    .map(participant -> participant.path().name())
+                    .collect(Collectors.joining(", ")));
             crash();
         }
     }

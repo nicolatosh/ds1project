@@ -18,6 +18,7 @@ import it.unitn.arpino.ds1project.simulation.Communication;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
@@ -91,8 +92,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             ctx.get().log(CoordinatorRequestContext.LogState.START_2PC);
 
             logger.info("Asking the vote requests to the participants");
-            VoteRequest req = new VoteRequest(msg.uuid);
-            if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), req, getParameters().coordinatorOnVoteRequestCrashProbability)) {
+            Communication multicast = Communication.builder()
+                    .ofSender(getSelf())
+                    .ofReceivers(ctx.get().getParticipants())
+                    .ofMessage(new VoteRequest(msg.uuid))
+                    .ofCrashProbability(getParameters().coordinatorOnVoteRequestCrashProbability);
+            if (!multicast.run()) {
+                logger.info("Did not send the message to " + multicast.getMissing().stream()
+                        .map(participant -> participant.path().name())
+                        .collect(Collectors.joining(", ")));
                 crash();
                 return;
             }
@@ -106,8 +114,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
             logger.info("Sending the final decision to the participants");
-            FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
-            if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
+            Communication multicast = Communication.builder()
+                    .ofSender(getSelf())
+                    .ofReceivers(ctx.get().getParticipants())
+                    .ofMessage(new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                    .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+            if (!multicast.run()) {
+                logger.info("Did not send the message to " + multicast.getMissing().stream()
+                        .map(participant -> participant.path().name())
+                        .collect(Collectors.joining(", ")));
                 crash();
                 return;
             }
@@ -147,8 +162,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
                             logger.info("All voted YES. Sending the final decision to the participants");
-                            FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                            if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
+                            Communication multicast = Communication.builder()
+                                    .ofSender(getSelf())
+                                    .ofReceivers(ctx.get().getParticipants())
+                                    .ofMessage(new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT))
+                                    .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                            if (!multicast.run()) {
+                                logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                        .map(participant -> participant.path().name())
+                                        .collect(Collectors.joining(", ")));
                                 crash();
                                 return;
                             }
@@ -165,8 +187,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
                         logger.info("Sending the final decision to the participants");
-                        FinalDecision decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                        if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnVoteResponseCrashProbability)) {
+                        Communication multicast = Communication.builder()
+                                .ofSender(getSelf())
+                                .ofReceivers(ctx.get().getParticipants())
+                                .ofMessage(new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                                .ofCrashProbability(getParameters().coordinatorOnVoteResponseCrashProbability);
+                        if (!multicast.run()) {
+                            logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                    .map(participant -> participant.path().name())
+                                    .collect(Collectors.joining(", ")));
                             crash();
                             return;
                         }
@@ -206,8 +235,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.get().log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
         logger.info("Sending the final decision to the participants");
-        FinalDecision decision = new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT);
-        if (!Communication.multicast(getSelf(), ctx.get().getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
+        Communication multicast = Communication.builder()
+                .ofSender(getSelf())
+                .ofReceivers(ctx.get().getParticipants())
+                .ofMessage(new FinalDecision(ctx.get().uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+        if (!multicast.run()) {
+            logger.info("Did not send the message to " + multicast.getMissing().stream()
+                    .map(participant -> participant.path().name())
+                    .collect(Collectors.joining(", ")));
             crash();
             return;
         }
@@ -341,8 +377,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             switch (ctx.loggedState()) {
                 case GLOBAL_COMMIT: {
                     logger.info("Sending the final decision to the participants");
-                    FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                    if (!Communication.multicast(getSelf(), ctx.getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
+                    Communication multicast = Communication.builder()
+                            .ofSender(getSelf())
+                            .ofReceivers(ctx.getParticipants())
+                            .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT))
+                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                    if (!multicast.run()) {
+                        logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                .map(participant -> participant.path().name())
+                                .collect(Collectors.joining(", ")));
                         crash();
                         return;
                     }
@@ -352,8 +395,15 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 }
                 case GLOBAL_ABORT: {
                     logger.info("Sending the final decision to the participants");
-                    FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                    if (!Communication.multicast(getSelf(), ctx.getParticipants(), decision, getParameters().coordinatorOnFinalDecisionCrashProbability)) {
+                    Communication multicast = Communication.builder()
+                            .ofSender(getSelf())
+                            .ofReceivers(ctx.getParticipants())
+                            .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                    if (!multicast.run()) {
+                        logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                .map(participant -> participant.path().name())
+                                .collect(Collectors.joining(", ")));
                         crash();
                         return;
                     }

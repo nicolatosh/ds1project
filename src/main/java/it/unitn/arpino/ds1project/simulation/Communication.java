@@ -3,40 +3,84 @@ package it.unitn.arpino.ds1project.simulation;
 import akka.actor.ActorRef;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class Communication {
-    /**
-     * Multicasts a message to a set of receivers.
-     *
-     * @param sender    Sender of this multicast
-     * @param receivers Intended receivers of this multicast
-     * @param message   Message of this multicast
-     * @param crashP    Probability that a crash happens when sending the message to a receiver.
-     *                  If a crash happens, all the remaining receivers are not contacted.
-     * @return Whether the multicast completed successfully (the message has been sent to all the intended receivers),
-     * or it has not due to a crash that has been simulated.
-     */
-    public static boolean multicast(ActorRef sender, Collection<ActorRef> receivers, TxnMessage message, double crashP) {
-        return receivers.stream().allMatch(receiver -> unicast(sender, receiver, message, crashP));
+    private ActorRef sender;
+    private final List<ActorRef> receivers;
+    private TxnMessage message;
+    private double crashP;
+
+    private Communication() {
+        receivers = new ArrayList<>();
+    }
+
+    public static Communication builder() {
+        return new Communication();
     }
 
     /**
-     * Unicasts a message to a receiver.
-     *
-     * @param sender   Sender of this unicast
+     * @param sender Sender of the communication.
+     */
+    public Communication ofSender(ActorRef sender) {
+        this.sender = sender;
+        return this;
+    }
+
+    /**
      * @param receiver Intended receiver of this unicast
-     * @param message  Message of this unicast
-     * @param crashP   Probability that a crash happens when sending the message to the receiver.
-     *                 If the crash happens, the receiver is not contacted.
-     * @return Whether the unicast completed successfully (the message has been sent to the intended receiver),
+     */
+    public Communication ofReceiver(ActorRef receiver) {
+        receivers.add(receiver);
+        return this;
+    }
+
+    /**
+     * @param receivers Intended receivers of this multicast
+     */
+    public Communication ofReceivers(Collection<ActorRef> receivers) {
+        this.receivers.addAll(receivers);
+        return this;
+    }
+
+    public Communication ofMessage(TxnMessage message) {
+        this.message = message;
+        return this;
+    }
+
+    /**
+     * @param crashP Probability that a crash happens when sending the message to a receiver.
+     *               If a crash happens, all the remaining receivers are not contacted.
+     */
+    public Communication ofCrashProbability(double crashP) {
+        this.crashP = crashP;
+        return this;
+    }
+
+    /* @return Whether the multicast (or unicast) completed successfully (the message has been sent to all the intended receivers),
      * or it has not due to a crash that has been simulated.
      */
-    public static boolean unicast(ActorRef sender, ActorRef receiver, TxnMessage message, double crashP) {
-        if (Math.random() < crashP) {
-            return false;
+    public boolean run() {
+        Iterator<ActorRef> iterator = receivers.iterator();
+        while (iterator.hasNext()) {
+            if (Math.random() < crashP) {
+                return false;
+            }
+            ActorRef receiver = iterator.next();
+            receiver.tell(message, sender);
+
+            iterator.remove();
         }
-        receiver.tell(message, sender);
         return true;
+    }
+
+    /**
+     * @return The receivers to which the message has not been sent, due to the simulation of a crash.
+     */
+    public Collection<ActorRef> getMissing() {
+        return receivers;
     }
 }
