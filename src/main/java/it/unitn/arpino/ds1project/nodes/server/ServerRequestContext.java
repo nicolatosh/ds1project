@@ -164,10 +164,12 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
-     * Cancels the timer.
+     * Cancels the timer. If the timer was not started, it does nothing.
      */
     public void cancelFinalDecisionTimer() {
-        finalDecisionTimer.cancel();
+        if (finalDecisionTimer != null) {
+            finalDecisionTimer.cancel();
+        }
     }
 
     @Override

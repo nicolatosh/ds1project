@@ -314,6 +314,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
             case VOTE_COMMIT: {
+                // This line used to cause a null pointer exception:
+                // There is a case in which the final decision timer was never started.
+                // It happens when, in the function onVoteRequest, in the true branch of branch ctx.get().prepare(),
+                // the server crashes and thus does not reach the line with ctx.get().startFinalDecisionTimer(this).
                 ctx.get().cancelFinalDecisionTimer();
 
                 switch (req.decision) {
