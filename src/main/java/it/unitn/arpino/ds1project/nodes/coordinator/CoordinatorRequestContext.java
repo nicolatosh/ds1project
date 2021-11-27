@@ -170,6 +170,7 @@ public class CoordinatorRequestContext extends RequestContext {
      * a {@link VoteResponseTimeout}.
      */
     public void startVoteResponseTimer(Coordinator coordinator) {
+        cancelVoteResponseTimeout();
         voteResponseTimer = coordinator.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(VOTE_RESPONSE_TIMEOUT_S), // delay
                 coordinator.getSelf(), // receiver
@@ -179,10 +180,13 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     public void cancelVoteResponseTimeout() {
-        voteResponseTimer.cancel();
+        if (voteResponseTimer != null) {
+            voteResponseTimer.cancel();
+        }
     }
 
     public void startDoneRequestTimer(Coordinator coordinator) {
+        cancelDoneRequestTimer();
         doneRequestTimer = coordinator.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(DONE_TIMEOUT_S), // delay
                 coordinator.getSelf(), // receiver
