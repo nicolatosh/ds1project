@@ -286,7 +286,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         ctx.get().commit();
                         ctx.get().setProtocolState(TwoPhaseCommitFSM.COMMIT);
 
-                        ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
+                        // Whenever the server transitions to a state of certainty,
+                        // it informs the coordinator that it is done.
+                        Done done = new Done(ctx.get().uuid);
+                        ctx.get().coordinator.tell(done, getSelf());
                         break;
                     }
                     case GLOBAL_ABORT: {
@@ -295,7 +298,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         ctx.get().abort();
                         ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
 
-                        ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
+                        // Whenever the server transitions to a state of certainty,
+                        // it informs the coordinator that it is done.
+                        Done done = new Done(ctx.get().uuid);
+                        ctx.get().coordinator.tell(done, getSelf());
                         break;
                     }
                 }
@@ -373,7 +379,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         }
 
         // always send the Done message, regardless of logged state
-        ctx.get().coordinator.tell(new Done(ctx.get().uuid), getSelf());
+        Done done = new Done(ctx.get().uuid);
+        ctx.get().coordinator.tell(done, getSelf());
     }
 
     /**
