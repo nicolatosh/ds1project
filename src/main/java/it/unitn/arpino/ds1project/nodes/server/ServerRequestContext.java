@@ -49,7 +49,7 @@ public class ServerRequestContext extends RequestContext {
 
     public final ActorRef coordinator;
 
-    private final IConnection connection;
+    private IConnection connection;
 
     private Cancellable voteRequestTimer;
     private Cancellable finalDecisionTimer;
@@ -131,6 +131,7 @@ public class ServerRequestContext extends RequestContext {
         // case 3: The Server has attempted to prepare and the outcome was negative. Thus, the state is ABORT.
         if (protocolState == TwoPhaseCommitFSM.INIT || protocolState == TwoPhaseCommitFSM.READY) {
             connection.abort();
+            connection = null;
         }
     }
 
