@@ -13,6 +13,7 @@ import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.simulation.Communication;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -191,6 +192,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             }
 
                             ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
+
+                            TxnResultMsg result = new TxnResultMsg(ctx.get().uuid, true);
+                            ctx.get().getClient().tell(result, getSelf());
                         }
                         break;
                     }
@@ -348,8 +352,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         if (ctx.get().allParticipantsDone()) {
             ctx.get().cancelDoneRequestTimer();
 
-            logger.info("Removing the context");
+            logger.info("All Done messages arrived. Removing the context");
             removeContext(ctx.get());
+        } else {
+            Collection<ActorRef> missing = ctx.get().getMissingDoneParticipants();
+            logger.info(missing.size() + " Done messages required left, from " + missing.stream()
+                    .map(participant -> participant.path().name())
+                    .collect(Collectors.joining(", ")));
         }
     }
 
@@ -401,6 +410,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
             ctx.startDoneRequestTimer(this);
+
+            TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+            ctx.getClient().tell(result, getSelf());
         });
 
         // If we have already taken the final decision for the transaction, we send it to all the participants.
@@ -421,6 +433,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         return;
                     }
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
+
+                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
+                    ctx.getClient().tell(result, getSelf());
 
                     ctx.startDoneRequestTimer(this);
 
@@ -443,6 +458,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     ctx.startDoneRequestTimer(this);
+
+                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
+                    ctx.getClient().tell(result, getSelf());
 
                     break;
                 }
