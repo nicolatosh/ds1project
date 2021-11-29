@@ -65,7 +65,7 @@ public class CoordinatorCrashTest {
                 // Simulate a transaction, in which only server0 is involved.
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
                 coordinator.underlyingActor().addContext(ctx);
-                ctx.log(CoordinatorRequestContext.LogState.NONE);
+                ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
                 coordinator.tell(new WriteMsg(ctx.uuid, 0, 10), testActor());
 
@@ -103,7 +103,7 @@ public class CoordinatorCrashTest {
                 // Simulate a transaction, in which both servers are involved.
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
                 coordinator.underlyingActor().addContext(ctx);
-                ctx.log(CoordinatorRequestContext.LogState.NONE);
+                ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
                 coordinator.tell(new WriteMsg(ctx.uuid, 6, 60), testActor());
                 coordinator.tell(new WriteMsg(ctx.uuid, 12, 120), testActor());

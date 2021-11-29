@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class CoordinatorRequestContext extends RequestContext {
     public enum LogState {
-        NONE,
+        CONVERSATIONAL,
         START_2PC,
         GLOBAL_COMMIT,
         GLOBAL_ABORT

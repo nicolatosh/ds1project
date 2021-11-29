@@ -68,8 +68,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
     private void onTxnBeginMsg(TxnBeginMsg msg) {
         CoordinatorRequestContext ctx = this.createNewContext();
-
-        ctx.log(CoordinatorRequestContext.LogState.NONE);
+        ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
 
         TxnAcceptMsg response = new TxnAcceptMsg(ctx.uuid);
         getSender().tell(response, getSelf());
@@ -85,7 +84,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
 
         switch (ctx.get().loggedState()) {
-            case NONE: {
+            case CONVERSATIONAL: {
                 if (msg.commit) {
                     logger.info(ctx.get().getClient().path().name() + " requested to commit");
 
@@ -165,7 +164,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
 
         switch (ctx.get().loggedState()) {
-            case NONE: {
+            case CONVERSATIONAL: {
                 logger.severe("Invalid logged state (CONVERSATIONAL)");
                 return;
             }
@@ -307,7 +306,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        if (ctx.get().loggedState() != CoordinatorRequestContext.LogState.NONE) {
+        if (ctx.get().loggedState() != CoordinatorRequestContext.LogState.CONVERSATIONAL) {
             logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be CONVERSATIONAL)");
             return;
         }
@@ -324,7 +323,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        if (ctx.get().loggedState() != CoordinatorRequestContext.LogState.NONE) {
+        if (ctx.get().loggedState() != CoordinatorRequestContext.LogState.CONVERSATIONAL) {
             logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be CONVERSATIONAL)");
             return;
         }

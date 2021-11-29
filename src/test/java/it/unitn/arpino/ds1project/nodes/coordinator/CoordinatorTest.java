@@ -75,7 +75,7 @@ public class CoordinatorTest {
             {
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
                 coordinator.underlyingActor().addContext(ctx);
-                ctx.log(CoordinatorRequestContext.LogState.NONE);
+                ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
 
                 coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
