@@ -44,10 +44,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .build();
     }
 
-    public Dispatcher getDispatcher() {
-        return dispatcher;
-    }
-
     /**
      * Creates a new context and adds it to the list of contexts so that it can be later retrieved.
      *
@@ -239,7 +235,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             }
             case GLOBAL_ABORT: {
                 logger.info("Received a VoteResponse, ignored as it arrived too late");
-                return;
             }
         }
     }

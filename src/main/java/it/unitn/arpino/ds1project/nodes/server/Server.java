@@ -50,10 +50,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         return database;
     }
 
-    public void addServer(ActorRef server) {
-        servers.add(server);
-    }
-
     @Override
     protected Receive createAliveReceive() {
         return new ReceiveBuilder()
