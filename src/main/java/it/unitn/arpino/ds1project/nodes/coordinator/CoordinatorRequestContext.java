@@ -45,7 +45,7 @@ public class CoordinatorRequestContext extends RequestContext {
     /**
      * Duration (in seconds) which the {@link Coordinator}, cyclically, should solicit the participants to send a {@link Done} message.
      */
-    public static final int DONE_TIMEOUT_S = 2;
+    public static final int DONE_TIMEOUT_S = 4;
 
     private final Collection<ActorRef> participants;
 
