@@ -3,19 +3,20 @@ package it.unitn.arpino.ds1project.simulation;
 import akka.actor.ActorRef;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class Communication {
+    public static final int MINIMUM_NETWORK_DELAY = 5; //ms
+    public static final int MAXIMUM_NETWORK_DELAY = 10; //ms
     private ActorRef sender;
     private final List<ActorRef> receivers;
     private TxnMessage message;
     private double crashP;
+    private final Random random;
 
     private Communication() {
         receivers = new ArrayList<>();
+        this.random = new Random();
     }
 
     public static Communication builder() {
@@ -70,6 +71,11 @@ public class Communication {
                 return false;
             }
             ActorRef receiver = iterator.next();
+            try {
+                Thread.sleep(this.random.nextInt(MAXIMUM_NETWORK_DELAY) + MINIMUM_NETWORK_DELAY);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             receiver.tell(message, sender);
 
             iterator.remove();
