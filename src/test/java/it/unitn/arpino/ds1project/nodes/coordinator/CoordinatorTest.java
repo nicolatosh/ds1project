@@ -9,7 +9,6 @@ import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
-import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.*;
 import scala.concurrent.duration.Duration;
@@ -20,7 +19,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CoordinatorTest {
@@ -83,27 +83,6 @@ public class CoordinatorTest {
                 coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
                 coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
                 assertEquals(1, ctx.getParticipants().size());
-            }
-        };
-    }
-
-    @Test
-    @Order(3)
-    void testVoteResponseTimeout() {
-        new TestKit(system) {
-            {
-                CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
-                coordinator.underlyingActor().getRepository().addRequestContext(ctx);
-                ctx.log(CoordinatorRequestContext.LogState.START_2PC);
-                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
-                ctx.addParticipant(testActor());
-
-                ctx.startVoteResponseTimer(coordinator.underlyingActor());
-                // must account for the timeout duration to elapse and the message to be delivered:
-                // add one second more to the duration
-                expectMsg(Duration.create(CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S + 1, TimeUnit.SECONDS),
-                        new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT));
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
     }
