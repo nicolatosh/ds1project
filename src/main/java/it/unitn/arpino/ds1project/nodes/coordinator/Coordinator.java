@@ -9,10 +9,7 @@ import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
-import it.unitn.arpino.ds1project.messages.server.FinalDecision;
-import it.unitn.arpino.ds1project.messages.server.ReadRequest;
-import it.unitn.arpino.ds1project.messages.server.VoteRequest;
-import it.unitn.arpino.ds1project.messages.server.WriteRequest;
+import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.simulation.Communication;
 import scala.PartialFunction;
@@ -71,6 +68,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
                 .match(VoteResponseTimeout.class, this::onVoteResponseTimeout)
+                .match(Done.class, this::onDone)
+                .match(DoneTimeout.class, this::onDoneTimeout)
                 .build();
     }
 
@@ -161,6 +160,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             crash();
                             return;
                         }
+
+                        // if we received a client abort, we do not have to start the Two-phase commit (2PC) protocol,
+                        // thus we must not start the vote response timer.
+                        // Instead, we should wait for the Done messages to arrive in order to remove the transaction.
+                        ctx.startDoneRequestTimer(this);
                     } else {
                         logger.info("No participant is involved");
                     }
@@ -171,9 +175,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.setCompleted();
 
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-                    // if we received a client abort, we do not have to start the Two-phase commit (2PC) protocol,
-                    // thus we must not start the vote response timer.
                 }
                 break;
             }
@@ -223,6 +224,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
+        ctx.startDoneRequestTimer(this);
+
         // Do not send the transaction result to the client!
         // The client will send a TxnEndMsg later, to which we will immediately respond with a global abort
     }
@@ -264,6 +267,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                             ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
+                            ctx.startDoneRequestTimer(this);
+
                             logger.info("Sending the transaction result to " + ctx.subject.path().name());
                             var result = new TxnResultMsg(ctx.uuid, true);
                             ctx.subject.tell(result, getSelf());
@@ -277,6 +282,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.cancelVoteResponseTimer();
 
                         ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
+
+                        // The NO vote implicitly piggybacks the Done
+                        ctx.addDoneParticipant(getSender());
 
                         logger.info("Sending the final decision to the participants");
                         var decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
@@ -294,6 +302,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         }
 
                         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+                        ctx.startDoneRequestTimer(this);
 
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
                         var result = new TxnResultMsg(ctx.uuid, false);
@@ -344,6 +354,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
 
         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+        ctx.startDoneRequestTimer(this);
 
         logger.info("Sending the transaction result to " + ctx.subject.path().name());
         var result = new TxnResultMsg(ctx.uuid, false);
@@ -396,6 +408,42 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         server.tell(req, getSelf());
     }
 
+    private void onDone(Done msg) {
+        var ctx = getRepository().getRequestContextById(msg.uuid);
+
+        if (!ctx.isDecided()) {
+            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be GLOBAL_COMMIT or GLOBAL_ABORT)");
+            return;
+        }
+
+        ctx.addDoneParticipant(getSender());
+
+        if (ctx.allParticipantsDone()) {
+            ctx.cancelDoneRequestTimer();
+            logger.info("All Done messages arrived");
+        } else {
+            var missing = ctx.getRemainingDoneParticipants();
+            logger.info(missing.size() + " Done messages required left, from " + missing.stream()
+                    .map(participant -> participant.path().name())
+                    .collect(Collectors.joining(", ")));
+        }
+    }
+
+    private void onDoneTimeout(DoneTimeout timeout) {
+        var ctx = getRepository().getRequestContextById(timeout.uuid);
+
+        if (!ctx.isDecided()) {
+            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be GLOBAL_COMMIT or GLOBAL_ABORT)");
+            return;
+        }
+
+        logger.info("Soliciting the remaining participants");
+        var solicit = new Solicit(ctx.uuid);
+        ctx.getRemainingDoneParticipants().forEach(participant -> participant.tell(solicit, getSelf()));
+
+        ctx.startDoneRequestTimer(this);
+    }
+
     @Override
     protected void crash() {
         super.crash();
@@ -431,6 +479,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
+                    ctx.startDoneRequestTimer(this);
+
                     if (!ctx.isCompleted()) {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
                         var result = new TxnResultMsg(ctx.uuid, false);
@@ -461,26 +511,32 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
+                    ctx.startDoneRequestTimer(this);
+
                     break;
                 }
                 case GLOBAL_COMMIT: {
-                    // Bernstein, p. 231, case 3
-                    logger.info("Logged state is GLOBAL_COMMIT: retransmitting the final decision to the participants");
+                    if (!ctx.allParticipantsDone()) {
+                        // Bernstein, p. 231, case 3
+                        logger.info("Logged state is GLOBAL_COMMIT: retransmitting the final decision to the participants");
 
-                    var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                    var multicast = Communication.builder()
-                            .ofSender(getSelf())
-                            .ofReceivers(ctx.getParticipants())
-                            .ofMessage(decision)
-                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
-                    if (!multicast.run()) {
-                        logger.info("Did not send the message to " + multicast.getMissing().stream()
-                                .map(participant -> participant.path().name())
-                                .collect(Collectors.joining(", ")));
-                        crash();
-                        return;
+                        var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
+                        var multicast = Communication.builder()
+                                .ofSender(getSelf())
+                                .ofReceivers(ctx.getParticipants())
+                                .ofMessage(decision)
+                                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                        if (!multicast.run()) {
+                            logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                    .map(participant -> participant.path().name())
+                                    .collect(Collectors.joining(", ")));
+                            crash();
+                            return;
+                        }
+                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
+
+                        ctx.startDoneRequestTimer(this);
                     }
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     if (!ctx.isCompleted()) {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
@@ -492,23 +548,27 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     break;
                 }
                 case GLOBAL_ABORT: {
-                    // Bernstein, p. 231, case 3
-                    logger.info("Logged state is GLOBAL_ABORT: retransmitting the final decision to the participants");
+                    if (!ctx.allParticipantsDone()) {
+                        // Bernstein, p. 231, case 3
+                        logger.info("Logged state is GLOBAL_ABORT: retransmitting the final decision to the participants");
 
-                    var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                    var multicast = Communication.builder()
-                            .ofSender(getSelf())
-                            .ofReceivers(ctx.getParticipants())
-                            .ofMessage(decision)
-                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
-                    if (!multicast.run()) {
-                        logger.info("Did not send the message to " + multicast.getMissing().stream()
-                                .map(participant -> participant.path().name())
-                                .collect(Collectors.joining(", ")));
-                        crash();
-                        return;
+                        var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                        var multicast = Communication.builder()
+                                .ofSender(getSelf())
+                                .ofReceivers(ctx.getParticipants())
+                                .ofMessage(decision)
+                                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                        if (!multicast.run()) {
+                            logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                    .map(participant -> participant.path().name())
+                                    .collect(Collectors.joining(", ")));
+                            crash();
+                            return;
+                        }
+                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+                        ctx.startDoneRequestTimer(this);
                     }
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     if (!ctx.isCompleted()) {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());

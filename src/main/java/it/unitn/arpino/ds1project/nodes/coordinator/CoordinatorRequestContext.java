@@ -42,9 +42,16 @@ public class CoordinatorRequestContext extends RequestContext {
      */
     public static final int TXN_END_TIMEOUT_S = 4;
 
+    /**
+     * Duration (in seconds) which the {@link Coordinator}, cyclically, should solicit the participants to send a {@link Done} message.
+     */
+    public static final int DONE_TIMEOUT_S = 2;
+
     private final Collection<ActorRef> participants;
 
     private final Collection<ActorRef> yesVoters;
+
+    private final Collection<ActorRef> doneParticipants;
 
     private final List<LogState> localLog;
 
@@ -54,6 +61,8 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private Cancellable txnEndTimer;
 
+    private Cancellable doneTimer;
+
     private boolean completed;
 
     public CoordinatorRequestContext(UUID uuid, ActorRef client) {
@@ -61,6 +70,7 @@ public class CoordinatorRequestContext extends RequestContext {
 
         participants = new HashSet<>();
         yesVoters = new HashSet<>();
+        doneParticipants = new HashSet<>();
         localLog = new ArrayList<>();
     }
 
@@ -119,6 +129,22 @@ public class CoordinatorRequestContext extends RequestContext {
         return yesVoters.size() == participants.size();
     }
 
+    public void addDoneParticipant(ActorRef participant) {
+        if (!doneParticipants.contains(participant)) {
+            doneParticipants.add(participant);
+        }
+    }
+
+    boolean allParticipantsDone() {
+        return doneParticipants.size() == participants.size();
+    }
+
+    Collection<ActorRef> getRemainingDoneParticipants() {
+        Collection<ActorRef> missing = new HashSet<>(participants);
+        missing.removeAll(doneParticipants);
+        return missing;
+    }
+
     /**
      * Writes something to the local log.
      *
@@ -173,6 +199,22 @@ public class CoordinatorRequestContext extends RequestContext {
     public void cancelTxnEndTimer() {
         if (txnEndTimer != null) {
             txnEndTimer.cancel();
+        }
+    }
+
+    public void startDoneRequestTimer(Coordinator coordinator) {
+        cancelDoneRequestTimer();
+        doneTimer = coordinator.getContext().system().scheduler().scheduleOnce(
+                Duration.ofSeconds(DONE_TIMEOUT_S), // delay
+                coordinator.getSelf(), // receiver
+                new DoneTimeout(uuid), // message
+                coordinator.getContext().dispatcher(), // executor
+                coordinator.getSelf()); // sender
+    }
+
+    public void cancelDoneRequestTimer() {
+        if (doneTimer != null) {
+            doneTimer.cancel();
         }
     }
 

@@ -6,6 +6,7 @@ import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.StartMessage;
+import it.unitn.arpino.ds1project.messages.coordinator.Done;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
@@ -71,7 +72,7 @@ public class ServerTransactionTest {
 
                 FinalDecision decision1 = new FinalDecision(uuid1, FinalDecision.Decision.GLOBAL_COMMIT);
                 server.tell(decision1, testActor());
-                expectNoMessage();
+                expectMsg(new Done(uuid1));
 
                 // The second transaction must not perceive the change introduced by the commit:
                 // it is still working on its own private workspace.
@@ -93,7 +94,7 @@ public class ServerTransactionTest {
                 expectMsg(new VoteResponse(uuid2, VoteResponse.Vote.NO));
 
                 server.tell(new FinalDecision(uuid2, FinalDecision.Decision.GLOBAL_ABORT), testActor());
-                expectNoMessage();
+                expectMsg(new Done(uuid2));
             }
         };
     }

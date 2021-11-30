@@ -9,6 +9,7 @@ import it.unitn.arpino.ds1project.datastore.database.IDatabase;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
+import it.unitn.arpino.ds1project.messages.coordinator.Done;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -88,6 +89,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(FinalDecisionTimeout.class, this::onFinalDecisionTimeout)
                 .match(DecisionResponse.class, this::onDecisionResponse)
                 .match(DecisionRequest.class, this::onDecisionRequest)
+                .match(Solicit.class, this::onSolicit)
                 .build();
     }
 
@@ -178,6 +180,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
+            // The NO vote implicitly piggybacks the Done
             var noVote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
             var unicast = Communication.builder()
                     .ofSender(getSelf())
@@ -210,6 +213,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
         ctx.abort();
         ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
+
+        logger.info("Sending a Done message");
+        var done = new Done(ctx.uuid);
+        ctx.subject.tell(done, getSelf());
     }
 
     private void onFinalDecisionTimeout(FinalDecisionTimeout timeout) {
@@ -305,6 +312,12 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         ctx.log(ServerRequestContext.LogState.DECISION);
                         ctx.commit();
                         ctx.setProtocolState(TwoPhaseCommitFSM.COMMIT);
+
+                        // Whenever the server transitions to a state of certainty,
+                        // it informs the coordinator that it is done.
+                        logger.info("Sending a Done message");
+                        var done = new Done(ctx.uuid);
+                        ctx.subject.tell(done, getSelf());
                         break;
                     }
                     case GLOBAL_ABORT: {
@@ -312,6 +325,12 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         ctx.log(ServerRequestContext.LogState.DECISION);
                         ctx.abort();
                         ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
+
+                        // Whenever the server transitions to a state of certainty,
+                        // it informs the coordinator that it is done.
+                        logger.info("Sending a Done message");
+                        var done = new Done(ctx.uuid);
+                        ctx.subject.tell(done, getSelf());
                         break;
                     }
                 }
@@ -388,6 +407,11 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
         }
+
+        // always send the Done message, regardless of logged state
+        logger.info("Sending a Done message");
+        var done = new Done(ctx.uuid);
+        ctx.subject.tell(done, getSelf());
     }
 
     /**
@@ -409,6 +433,19 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     .collect(Collectors.joining(", ")));
             crash();
         }
+    }
+
+    private void onSolicit(Solicit solicit) {
+        var ctx = getRepository().getRequestContextById(solicit.uuid);
+
+        if (!ctx.isDecided()) {
+            logger.info("The decision is not known");
+            return;
+        }
+
+        logger.info("Sending a Done message");
+        var done = new Done(ctx.uuid);
+        getSender().tell(done, getSelf());
     }
 
     @Override
@@ -441,6 +478,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                     ctx.abort();
                     ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
+
+                    logger.info("Sending a Done message");
+                    var done = new Done(ctx.uuid);
+                    ctx.subject.tell(done, getSelf());
 
                     break;
                 }
