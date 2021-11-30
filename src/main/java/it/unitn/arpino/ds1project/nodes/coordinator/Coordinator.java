@@ -66,18 +66,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .build();
     }
 
-    /**
-     * Creates a new context and adds it to the list of contexts so that it can be later retrieved.
-     *
-     * @return The newly created context.
-     */
-    private CoordinatorRequestContext createNewContext() {
-        CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), getSender());
-
-        getRepository().addRequestContext(ctx);
-        return ctx;
-    }
-
     @Override
     protected void onJoinMessage(JoinMessage msg) {
         logger.info(getSender().path().name() + " joined");
