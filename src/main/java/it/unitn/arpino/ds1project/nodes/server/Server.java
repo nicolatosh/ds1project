@@ -8,6 +8,7 @@ import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.database.IDatabase;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
+import it.unitn.arpino.ds1project.messages.TxnMessage;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -15,6 +16,8 @@ import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext.TwoPhaseCommitFSM;
 import it.unitn.arpino.ds1project.simulation.Communication;
+import scala.PartialFunction;
+import scala.runtime.BoxedUnit;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -47,6 +50,22 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     public IDatabase getDatabase() {
         return database;
+    }
+
+    @Override
+    public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object obj) {
+        super.aroundReceive(receive, obj);
+
+        if (obj instanceof TxnMessage) {
+            var msg = (TxnMessage) obj;
+
+            if (!getRepository().existsContextWithId(msg.uuid)) {
+                if (!(msg instanceof ReadRequest) && !(msg instanceof WriteRequest)) {
+                    logger.severe("Bad request");
+                    unhandled(msg);
+                }
+            }
+        }
     }
 
     @Override

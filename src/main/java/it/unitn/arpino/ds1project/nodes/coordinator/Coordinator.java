@@ -46,6 +46,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             if (!getRepository().existsContextWithId(msg.uuid)) {
                 if (!(msg instanceof TxnBeginMsg)) {
                     logger.severe("Bad request");
+                    unhandled(msg);
                 }
             }
         }
