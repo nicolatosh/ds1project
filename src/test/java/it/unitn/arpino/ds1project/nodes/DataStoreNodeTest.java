@@ -11,6 +11,7 @@ import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -51,21 +52,21 @@ class DataStoreNodeTest {
     @Order(2)
     void testNoDuplicateContexts() {
         SimpleRequestContext ctx = new SimpleRequestContext(UUID.randomUUID());
-        node.underlyingActor().addContext(ctx);
-        node.underlyingActor().addContext(ctx);
-        assertSame(1, node.underlyingActor().getActive().size());
+        node.underlyingActor().getRepository().addRequestContext(ctx);
+        node.underlyingActor().getRepository().addRequestContext(ctx);
+        assertSame(1, node.underlyingActor().getRepository().getAllRequestContexts().size());
     }
 
     @Test
     @Order(3)
     void testGetContext() {
         SimpleRequestContext ctx = new SimpleRequestContext(UUID.randomUUID());
-        node.underlyingActor().addContext(ctx);
-        assertEquals(1, node.underlyingActor().getActive().size());
-        assertEquals(0, node.underlyingActor().getDecided().size());
+        node.underlyingActor().getRepository().addRequestContext(ctx);
+        assertEquals(1, node.underlyingActor().getRepository().getAllRequestContexts(Predicate.not(SimpleRequestContext::isDecided)).size());
+        assertEquals(0, node.underlyingActor().getRepository().getAllRequestContexts(SimpleRequestContext::isDecided).size());
         ctx.setDecided();
-        assertEquals(0, node.underlyingActor().getActive().size());
-        assertEquals(1, node.underlyingActor().getDecided().size());
+        assertEquals(1, node.underlyingActor().getRepository().getAllRequestContexts(SimpleRequestContext::isDecided).size());
+        assertEquals(0, node.underlyingActor().getRepository().getAllRequestContexts(Predicate.not(SimpleRequestContext::isDecided)).size());
     }
 
     @Test

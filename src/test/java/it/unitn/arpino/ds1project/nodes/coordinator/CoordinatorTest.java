@@ -14,9 +14,11 @@ import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.*;
 import scala.concurrent.duration.Duration;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -61,7 +63,7 @@ public class CoordinatorTest {
 
                 assertNotEquals(uuid1, uuid2);
 
-                List<CoordinatorRequestContext> contexts = coordinator.underlyingActor().getActive();
+                List<CoordinatorRequestContext> contexts = new ArrayList<>(coordinator.underlyingActor().getRepository().getAllRequestContexts(Predicate.not(CoordinatorRequestContext::isDecided)));
                 assertEquals(2, contexts.size());
                 assertNotEquals(contexts.get(0), contexts.get(1));
             }
@@ -74,7 +76,7 @@ public class CoordinatorTest {
         new TestKit(system) {
             {
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
-                coordinator.underlyingActor().addContext(ctx);
+                coordinator.underlyingActor().getRepository().addRequestContext(ctx);
                 ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
 
@@ -91,7 +93,7 @@ public class CoordinatorTest {
         new TestKit(system) {
             {
                 CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
-                coordinator.underlyingActor().addContext(ctx);
+                coordinator.underlyingActor().getRepository().addRequestContext(ctx);
                 ctx.log(CoordinatorRequestContext.LogState.START_2PC);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
                 ctx.addParticipant(testActor());

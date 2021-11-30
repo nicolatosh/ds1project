@@ -17,10 +17,7 @@ import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext.TwoPhaseComm
 import it.unitn.arpino.ds1project.simulation.Communication;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Server extends DataStoreNode<ServerRequestContext> {
@@ -77,13 +74,13 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      */
     public ServerRequestContext createNewContext(UUID uuid, ActorRef coordinator) {
         ServerRequestContext ctx = new ServerRequestContext(uuid, coordinator, controller.beginTransaction());
-        addContext(ctx);
+        getRepository().addRequestContext(ctx);
         return ctx;
     }
 
 
     private void onReadRequest(ReadRequest req) {
-        Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
+        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
         if (ctx.isEmpty()) {
             ctx = Optional.of(createNewContext(req.uuid, getSender()));
 
@@ -104,7 +101,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onWriteRequest(WriteRequest req) {
-        Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
+        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
         if (ctx.isEmpty()) {
             ctx = Optional.of(createNewContext(req.uuid, getSender()));
 
@@ -122,7 +119,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onVoteRequest(VoteRequest req) {
-        Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
+        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -174,7 +171,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onVoteRequestTimeout(VoteRequestTimeout timeout) {
-        Optional<ServerRequestContext> ctx = getRequestContext(timeout.uuid);
+        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(timeout.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -193,7 +190,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onFinalDecisionTimeout(FinalDecisionTimeout timeout) {
-        Optional<ServerRequestContext> ctx = getRequestContext(timeout.uuid);
+        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(timeout.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -213,7 +210,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * If this server is not participating in that transaction, it ignores the request.
      */
     private void onDecisionRequest(DecisionRequest req) {
-        Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
+        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
         if (ctx.isEmpty()) {
             // Ignore the request
             return;
@@ -261,7 +258,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onDecisionResponse(DecisionResponse resp) {
-        Optional<ServerRequestContext> ctx = getRequestContext(resp.uuid);
+        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(resp.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -307,7 +304,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * The {@link Coordinator} is sending the final decision to this participant.
      */
     private void onFinalDecision(FinalDecision req) {
-        Optional<ServerRequestContext> ctx = getRequestContext(req.uuid);
+        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
         if (ctx.isEmpty()) {
             logger.info("Context is empty: a read or write request was received while the server was crashed");
             return;
@@ -410,13 +407,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     protected void resume() {
         super.resume();
 
-        List<ServerRequestContext> voteNotCasted = getActive().stream()
-                .filter(ctx -> ctx.loggedState() == ServerRequestContext.LogState.INIT)
-                .collect(Collectors.toList());
+        Collection<ServerRequestContext> voteNotCasted = getRepository().getAllRequestContexts(ctx -> ctx.loggedState() == ServerRequestContext.LogState.INIT);
 
-        List<ServerRequestContext> voteCasted = getActive().stream()
-                .filter(ctx -> ctx.loggedState() == ServerRequestContext.LogState.VOTE_COMMIT)
-                .collect(Collectors.toList());
+        Collection<ServerRequestContext> voteCasted = getRepository().getAllRequestContexts(ctx -> ctx.loggedState() == ServerRequestContext.LogState.VOTE_COMMIT);
 
         // If the server has not already cast the vote for the transaction, it aborts it.
         voteNotCasted.forEach(ctx -> {

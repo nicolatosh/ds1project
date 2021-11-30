@@ -16,8 +16,9 @@ import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.simulation.Communication;
 
 import java.time.Duration;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -54,7 +55,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     private CoordinatorRequestContext createNewContext() {
         CoordinatorRequestContext ctx = new CoordinatorRequestContext(getSender());
 
-        addContext(ctx);
+        getRepository().addRequestContext(ctx);
         return ctx;
     }
 
@@ -77,7 +78,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onTxnEndMsg(TxnEndMsg msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
+        Optional<CoordinatorRequestContext> ctx = getRepository().getRequestContextById(msg.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -157,7 +158,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onTxnEndTimeout(TxnEndTimeout timeout) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout.uuid);
+        Optional<CoordinatorRequestContext> ctx = getRepository().getRequestContextById(timeout.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -179,7 +180,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onVoteResponse(VoteResponse resp) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(resp.uuid);
+        Optional<CoordinatorRequestContext> ctx = getRepository().getRequestContextById(resp.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -268,7 +269,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onVoteResponseTimeout(VoteResponseTimeout timeout) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout.uuid);
+        Optional<CoordinatorRequestContext> ctx = getRepository().getRequestContextById(timeout.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -305,7 +306,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onReadMsg(ReadMsg msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
+        Optional<CoordinatorRequestContext> ctx = getRepository().getRequestContextById(msg.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -320,7 +321,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onReadResult(ReadResult msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
+        Optional<CoordinatorRequestContext> ctx = getRepository().getRequestContextById(msg.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -337,7 +338,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onWriteMsg(WriteMsg msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
+        Optional<CoordinatorRequestContext> ctx = getRepository().getRequestContextById(msg.uuid);
         if (ctx.isEmpty()) {
             logger.severe("Bad request");
             return;
@@ -360,7 +361,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     protected void crash() {
         super.crash();
 
-        getActive().forEach(CoordinatorRequestContext::cancelVoteResponseTimeout);
+        getRepository().getAllRequestContexts().forEach(CoordinatorRequestContext::cancelVoteResponseTimeout);
 
         if (getParameters().coordinatorRecoveryTimeS >= 0) {
             getContext().system().scheduler().scheduleOnce(
@@ -376,8 +377,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     public void resume() {
         super.resume();
 
-        List<CoordinatorRequestContext> active = getActive();
-        List<CoordinatorRequestContext> decided = getDecided();
+        Collection<CoordinatorRequestContext> active = getRepository().getAllRequestContexts(Predicate.not(CoordinatorRequestContext::isDecided));
+        Collection<CoordinatorRequestContext> decided = getRepository().getAllRequestContexts(CoordinatorRequestContext::isDecided);
 
         // If we have not yet taken the final decision for the transaction, we abort it,
         // and send the transaction result to the client.
