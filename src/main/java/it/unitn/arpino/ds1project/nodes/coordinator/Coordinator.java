@@ -37,6 +37,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         return receiveBuilder()
                 .match(TxnBeginMsg.class, this::onTxnBeginMsg)
                 .match(TxnEndMsg.class, this::onTxnEndMsg)
+                .match(TxnEndTimeout.class, this::onTxnEndTimeout)
                 .match(ReadMsg.class, this::onReadMsg)
                 .match(ReadResult.class, this::onReadResult)
                 .match(WriteMsg.class, this::onWriteMsg)
@@ -71,6 +72,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         getSender().tell(response, getSelf());
 
         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
+
+        ctx.startTxnEndTimer(this);
     }
 
     private void onTxnEndMsg(TxnEndMsg msg) {
@@ -82,6 +85,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         switch (ctx.get().loggedState()) {
             case CONVERSATIONAL: {
+                ctx.get().cancelTxnEndTimer();
                 if (msg.commit) {
                     logger.info(ctx.get().getClient().path().name() + " requested to commit");
 
@@ -152,6 +156,28 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
     }
 
+    private void onTxnEndTimeout(TxnEndTimeout timeout) {
+        Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout.uuid);
+        if (ctx.isEmpty()) {
+            logger.severe("Bad request");
+            return;
+        }
+
+        if (ctx.get().loggedState() != CoordinatorRequestContext.LogState.CONVERSATIONAL) {
+            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be CONVERSATIONAL)");
+            return;
+        }
+
+        logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
+        TxnResultMsg result = new TxnResultMsg(ctx.get().uuid, false);
+        ctx.get().getClient().tell(result, getSelf());
+
+        ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+        // Do not send the transaction result to the client!
+        // The client will send a TxnEndMsg later, to which we will immediately respond with a global abort
+    }
+
     private void onVoteResponse(VoteResponse resp) {
         Optional<CoordinatorRequestContext> ctx = getRequestContext(resp.uuid);
         if (ctx.isEmpty()) {
@@ -210,7 +236,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.get().getParticipants())
                                 .ofMessage(new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT))
-                                .ofCrashProbability(getParameters().coordinatorOnVoteResponseCrashProbability);
+                                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
                                     .map(participant -> participant.path().name())

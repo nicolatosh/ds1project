@@ -315,7 +315,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         switch (ctx.get().loggedState()) {
             case INIT: {
-                logger.info("Received while in INIT: client abort");
+                logger.info("Received while in INIT: client abort or coordinator timeout");
 
                 ctx.get().cancelVoteRequestTimer();
 

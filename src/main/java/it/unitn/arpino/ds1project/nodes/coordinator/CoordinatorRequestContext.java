@@ -2,10 +2,7 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
-import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
-import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
-import it.unitn.arpino.ds1project.messages.coordinator.VoteResponseTimeout;
-import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
@@ -43,6 +40,11 @@ public class CoordinatorRequestContext extends RequestContext {
      */
     public static final int VOTE_RESPONSE_TIMEOUT_S = 1;
 
+    /**
+     * Duration (in seconds) within which the {@link Coordinator} should receive the client's {@link TxnEndMsg}.
+     */
+    public static final int TXN_END_TIMEOUT_S = 2;
+
     private final ActorRef client;
 
     private final Collection<ActorRef> participants;
@@ -54,6 +56,8 @@ public class CoordinatorRequestContext extends RequestContext {
     private TwoPhaseCommitFSM protocolState;
 
     private Cancellable voteResponseTimer;
+
+    private Cancellable txnEndTimer;
 
     public CoordinatorRequestContext(ActorRef client) {
         this.client = client;
@@ -159,6 +163,26 @@ public class CoordinatorRequestContext extends RequestContext {
     public void cancelVoteResponseTimeout() {
         if (voteResponseTimer != null) {
             voteResponseTimer.cancel();
+        }
+    }
+
+    /**
+     * Starts a countdown timer, within which the {@link Coordinator} should receive the client's {@link TxnEndMsg}.
+     * If the message does not arrive in time, the Coordinator sends to itself a {@link TxnEndTimeout}.
+     */
+    public void startTxnEndTimer(Coordinator coordinator) {
+        cancelTxnEndTimer();
+        txnEndTimer = coordinator.getContext().system().scheduler().scheduleOnce(
+                Duration.ofSeconds(TXN_END_TIMEOUT_S), // delay
+                coordinator.getSelf(), // receiver
+                new TxnEndTimeout(uuid), // message
+                coordinator.getContext().dispatcher(), // executor
+                coordinator.getSelf()); // sender
+    }
+
+    public void cancelTxnEndTimer() {
+        if (txnEndTimer != null) {
+            txnEndTimer.cancel();
         }
     }
 
