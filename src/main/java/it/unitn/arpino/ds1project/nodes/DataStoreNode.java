@@ -98,8 +98,8 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
 
     private void onStartMsg(StartMessage msg) {
         logger.info("Starting");
-        unstashAll();
         getContext().become(aliveReceive);
+        unstashAll();
     }
 
     /**
