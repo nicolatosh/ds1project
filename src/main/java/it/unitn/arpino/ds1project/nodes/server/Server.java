@@ -237,8 +237,17 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         switch (ctx.loggedState()) {
             case INIT: {
-                logger.severe("Invalid logged state (INIT, should be VOTE_COMMIT, DECISION or GLOBAL_ABORT)");
-                return;
+                // Tanenbaum, p. 486,
+                logger.info("Logged state is INIT: abort");
+
+                ctx.cancelVoteRequestTimer();
+
+                ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
+                ctx.abort();
+                ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
+
+                response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.GLOBAL_ABORT);
+                break;
             }
             case VOTE_COMMIT: {
                 response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.UNKNOWN);

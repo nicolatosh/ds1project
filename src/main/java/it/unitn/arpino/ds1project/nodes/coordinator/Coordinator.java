@@ -19,9 +19,6 @@ import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
 import java.time.Duration;
-import java.util.Collection;
-import java.util.UUID;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -73,23 +70,18 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onTxnBeginMsg(TxnBeginMsg msg) {
-        if (getRepository().existsContextWithId(msg.uuid)) {
-            var ctx = getRepository().getRequestContextById(msg.uuid);
-            if (ctx.isDecided()) {
-                logger.severe("Context is already decided");
-                return;
-            }
-            var accept = new TxnAcceptMsg(ctx.uuid);
-            getSender().tell(accept, getSelf());
-        }
-
         var ctx = new CoordinatorRequestContext(msg.uuid, getSender());
         getRepository().addRequestContext(ctx);
 
         ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
 
         var accept = new TxnAcceptMsg(ctx.uuid);
-        getSender().tell(accept, getSelf());
+        Communication.builder()
+                .ofSender(getSelf())
+                .ofReceiver(getSender())
+                .ofMessage(accept)
+                .ofCrashProbability(0)
+                .run();
 
         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
 
@@ -280,7 +272,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 return;
             }
             case GLOBAL_ABORT: {
-                logger.info("Received a VoteResponse, ignored as it arrived too late");
+                logger.info("Received a VoteResponse, and the decision is already known");
             }
         }
     }
@@ -320,6 +312,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
     private void onReadMsg(ReadMsg msg) {
         var ctx = getRepository().getRequestContextById(msg.uuid);
+
+        if (ctx.loggedState() != CoordinatorRequestContext.LogState.CONVERSATIONAL) {
+            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
+            return;
+        }
 
         ActorRef server = dispatcher.getServer(msg.key);
 
@@ -378,30 +375,52 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     public void resume() {
         super.resume();
 
-        Collection<CoordinatorRequestContext> active = getRepository().getAllRequestContexts(Predicate.not(CoordinatorRequestContext::isDecided));
-        Collection<CoordinatorRequestContext> decided = getRepository().getAllRequestContexts(CoordinatorRequestContext::isDecided);
-
-        // If we have not yet taken the final decision for the transaction, we abort it,
-        // and send the transaction result to the client.
-        active.forEach(ctx -> {
-            logger.info("Aborting the transaction");
-            ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
-            ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-            logger.info("Sending the transaction result to " + ctx.subject.path().name());
-            TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
-            ctx.subject.tell(result, getSelf());
-        });
-
-        // If we have already taken the final decision for the transaction, we send it to all the participants.
-        decided.forEach(ctx -> {
+        getRepository().getAllRequestContexts().forEach(ctx -> {
             switch (ctx.loggedState()) {
-                case GLOBAL_COMMIT: {
-                    logger.info("Sending the final decision to the participants");
+                case CONVERSATIONAL: {
+                    // Bernstein, p. 231, case 1
+                    logger.info("Aborting the transaction");
+                    ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
+                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+                    logger.info("Sending the transaction result to " + ctx.subject.path().name());
+                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+                    ctx.subject.tell(result, getSelf());
+
+                    break;
+                }
+                case START_2PC: {
+                    // Bernstein, p. 231, case 2
+                    logger.info("Aborting the transaction");
+                    ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
+
+                    var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                     Communication multicast = Communication.builder()
                             .ofSender(getSelf())
                             .ofReceivers(ctx.getParticipants())
-                            .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT))
+                            .ofMessage(decision)
+                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                    if (!multicast.run()) {
+                        logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                .map(participant -> participant.path().name())
+                                .collect(Collectors.joining(", ")));
+                        crash();
+                        return;
+                    }
+
+                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+                    break;
+                }
+                case GLOBAL_COMMIT: {
+                    // Bernstein, p. 231, case 3
+                    logger.info("Retransmitting the final decision to the participants");
+
+                    var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
+                    Communication multicast = Communication.builder()
+                            .ofSender(getSelf())
+                            .ofReceivers(ctx.getParticipants())
+                            .ofMessage(decision)
                             .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
                     if (!multicast.run()) {
                         logger.info("Did not send the message to " + multicast.getMissing().stream()
@@ -419,11 +438,14 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     break;
                 }
                 case GLOBAL_ABORT: {
-                    logger.info("Sending the final decision to the participants");
+                    // Bernstein, p. 231, case 3
+                    logger.info("Retransmitting the final decision to the participants");
+
+                    var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                     Communication multicast = Communication.builder()
                             .ofSender(getSelf())
                             .ofReceivers(ctx.getParticipants())
-                            .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                            .ofMessage(decision)
                             .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
                     if (!multicast.run()) {
                         logger.info("Did not send the message to " + multicast.getMissing().stream()
