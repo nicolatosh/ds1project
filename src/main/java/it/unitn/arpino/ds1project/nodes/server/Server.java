@@ -17,7 +17,10 @@ import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext.TwoPhaseComm
 import it.unitn.arpino.ds1project.simulation.Communication;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class Server extends DataStoreNode<ServerRequestContext> {
@@ -80,60 +83,62 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
 
     private void onReadRequest(ReadRequest req) {
-        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
-        if (ctx.isEmpty()) {
-            ctx = Optional.of(createNewContext(req.uuid, getSender()));
+        if (getRepository().existsContextWithId(req.uuid)) {
+            var connection = controller.beginTransaction();
+            var ctx = new ServerRequestContext(req.uuid, getSender(), connection);
+            getRepository().addRequestContext(ctx);
 
-            ctx.get().log(ServerRequestContext.LogState.INIT);
-            ctx.get().setProtocolState(TwoPhaseCommitFSM.INIT);
-            ctx.get().startVoteRequestTimer(this);
+            ctx.log(ServerRequestContext.LogState.INIT);
+            ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
+            ctx.startVoteRequestTimer(this);
         }
 
-        if (ctx.get().loggedState() != ServerRequestContext.LogState.INIT) {
-            logger.severe("Invalid protocol state (" + ctx.get().loggedState() + ", should be INIT)");
+        var ctx = getRepository().getRequestContextById(req.uuid);
+
+        if (ctx.loggedState() != ServerRequestContext.LogState.INIT) {
+            logger.severe("Invalid protocol state (" + ctx.loggedState() + ", should be INIT)");
             return;
         }
 
-        int value = ctx.get().read(req.key);
+        int value = ctx.read(req.key);
 
         ReadResult res = new ReadResult(req.uuid, req.key, value);
         getSender().tell(res, getSelf());
     }
 
     private void onWriteRequest(WriteRequest req) {
-        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
-        if (ctx.isEmpty()) {
-            ctx = Optional.of(createNewContext(req.uuid, getSender()));
+        if (getRepository().existsContextWithId(req.uuid)) {
+            var connection = controller.beginTransaction();
+            var ctx = new ServerRequestContext(req.uuid, getSender(), connection);
+            getRepository().addRequestContext(ctx);
 
-            ctx.get().log(ServerRequestContext.LogState.INIT);
-            ctx.get().setProtocolState(TwoPhaseCommitFSM.INIT);
-            ctx.get().startVoteRequestTimer(this);
+            ctx.log(ServerRequestContext.LogState.INIT);
+            ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
+            ctx.startVoteRequestTimer(this);
         }
 
-        if (ctx.get().loggedState() != ServerRequestContext.LogState.INIT) {
-            logger.severe("Invalid protocol state (" + ctx.get().loggedState() + ", should be INIT)");
+        var ctx = getRepository().getRequestContextById(req.uuid);
+
+        if (ctx.loggedState() != ServerRequestContext.LogState.INIT) {
+            logger.severe("Invalid protocol state (" + ctx.loggedState() + ", should be INIT)");
             return;
         }
 
-        ctx.get().write(req.key, req.value);
+        ctx.write(req.key, req.value);
     }
 
     private void onVoteRequest(VoteRequest req) {
-        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
-        if (ctx.isEmpty()) {
-            logger.severe("Bad request");
+        var ctx = getRepository().getRequestContextById(req.uuid);
+
+        if (ctx.loggedState() != ServerRequestContext.LogState.INIT) {
+            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be INIT)");
             return;
         }
 
-        if (ctx.get().loggedState() != ServerRequestContext.LogState.INIT) {
-            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be INIT)");
-            return;
-        }
+        ctx.cancelVoteRequestTimer();
 
-        ctx.get().cancelVoteRequestTimer();
-
-        if (ctx.get().prepare()) {
-            ctx.get().log(ServerRequestContext.LogState.VOTE_COMMIT);
+        if (ctx.prepare()) {
+            ctx.log(ServerRequestContext.LogState.VOTE_COMMIT);
 
             Communication unicast = Communication.builder()
                     .ofSender(getSelf())
@@ -146,11 +151,11 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 return;
             }
 
-            ctx.get().setProtocolState(TwoPhaseCommitFSM.READY);
+            ctx.setProtocolState(TwoPhaseCommitFSM.READY);
 
-            ctx.get().startFinalDecisionTimer(this);
+            ctx.startFinalDecisionTimer(this);
         } else {
-            ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
+            ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
             Communication unicast = Communication.builder()
                     .ofSender(getSelf())
@@ -163,7 +168,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 return;
             }
 
-            ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
+            ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
             // if we could not prepare the transaction and have aborted, we do not have to wait for a final decision,
             // thus we must not start the final decision timer.
@@ -171,38 +176,30 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onVoteRequestTimeout(VoteRequestTimeout timeout) {
-        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(timeout.uuid);
-        if (ctx.isEmpty()) {
-            logger.severe("Bad request");
-            return;
-        }
+        var ctx = getRepository().getRequestContextById(timeout.uuid);
 
-        if (ctx.get().loggedState() != ServerRequestContext.LogState.INIT) {
-            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be INIT)");
+        if (ctx.loggedState() != ServerRequestContext.LogState.INIT) {
+            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be INIT)");
             return;
         }
 
         logger.info("Aborting the transaction");
 
-        ctx.get().log(ServerRequestContext.LogState.GLOBAL_ABORT);
-        ctx.get().abort();
-        ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
+        ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
+        ctx.abort();
+        ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
     }
 
     private void onFinalDecisionTimeout(FinalDecisionTimeout timeout) {
-        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(timeout.uuid);
-        if (ctx.isEmpty()) {
-            logger.severe("Bad request");
-            return;
-        }
+        var ctx = getRepository().getRequestContextById(timeout.uuid);
 
-        if (ctx.get().loggedState() != ServerRequestContext.LogState.VOTE_COMMIT) {
-            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be VOTE_COMMIT)");
+        if (ctx.loggedState() != ServerRequestContext.LogState.VOTE_COMMIT) {
+            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be VOTE_COMMIT)");
             return;
         }
 
         logger.info("Starting the termination protocol");
-        terminationProtocol(ctx.get());
+        terminationProtocol(ctx);
     }
 
     /**
@@ -210,38 +207,39 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * If this server is not participating in that transaction, it ignores the request.
      */
     private void onDecisionRequest(DecisionRequest req) {
-        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
-        if (ctx.isEmpty()) {
+        if (!getRepository().existsContextWithId(req.uuid)) {
             // Ignore the request
             return;
         }
 
+        var ctx = getRepository().getRequestContextById(req.uuid);
+
         DecisionResponse response = null;
 
-        switch (ctx.get().loggedState()) {
+        switch (ctx.loggedState()) {
             case INIT: {
                 logger.severe("Invalid logged state (INIT, should be VOTE_COMMIT, DECISION or GLOBAL_ABORT)");
                 return;
             }
             case VOTE_COMMIT: {
-                response = new DecisionResponse(ctx.get().uuid, DecisionResponse.Decision.UNKNOWN);
+                response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.UNKNOWN);
                 break;
             }
             case DECISION: {
-                switch (ctx.get().getProtocolState()) {
+                switch (ctx.getProtocolState()) {
                     case ABORT: {
-                        response = new DecisionResponse(ctx.get().uuid, DecisionResponse.Decision.GLOBAL_ABORT);
+                        response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.GLOBAL_ABORT);
                         break;
                     }
                     case COMMIT: {
-                        response = new DecisionResponse(ctx.get().uuid, DecisionResponse.Decision.GLOBAL_COMMIT);
+                        response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.GLOBAL_COMMIT);
                         break;
                     }
                 }
                 break;
             }
             case GLOBAL_ABORT: {
-                response = new DecisionResponse(ctx.get().uuid, DecisionResponse.Decision.GLOBAL_ABORT);
+                response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.GLOBAL_ABORT);
                 break;
             }
         }
@@ -258,13 +256,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onDecisionResponse(DecisionResponse resp) {
-        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(resp.uuid);
-        if (ctx.isEmpty()) {
-            logger.severe("Bad request");
-            return;
-        }
+        var ctx = getRepository().getRequestContextById(resp.uuid);
 
-        switch (ctx.get().loggedState()) {
+        switch (ctx.loggedState()) {
             case INIT: {
                 logger.severe("Invalid logged state (INIT, should be VOTE_COMMIT, GLOBAL_ABORT or DECISION)");
                 return;
@@ -277,16 +271,16 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     }
                     case GLOBAL_COMMIT: {
                         logger.info("Received GLOBAL_COMMIT: committing");
-                        ctx.get().log(ServerRequestContext.LogState.DECISION);
-                        ctx.get().commit();
-                        ctx.get().setProtocolState(TwoPhaseCommitFSM.COMMIT);
+                        ctx.log(ServerRequestContext.LogState.DECISION);
+                        ctx.commit();
+                        ctx.setProtocolState(TwoPhaseCommitFSM.COMMIT);
                         break;
                     }
                     case GLOBAL_ABORT: {
                         logger.info("Received GLOBAL_ABORT: aborting");
-                        ctx.get().log(ServerRequestContext.LogState.DECISION);
-                        ctx.get().abort();
-                        ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
+                        ctx.log(ServerRequestContext.LogState.DECISION);
+                        ctx.abort();
+                        ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
                         break;
                     }
                 }
@@ -304,13 +298,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * The {@link Coordinator} is sending the final decision to this participant.
      */
     private void onFinalDecision(FinalDecision req) {
-        Optional<ServerRequestContext> ctx = getRepository().getRequestContextById(req.uuid);
-        if (ctx.isEmpty()) {
-            logger.info("Context is empty: a read or write request was received while the server was crashed");
-            return;
-        }
+        var ctx = getRepository().getRequestContextById(req.uuid);
 
-        switch (ctx.get().loggedState()) {
+        switch (ctx.loggedState()) {
             case INIT: {
                 if (req.decision != FinalDecision.Decision.GLOBAL_ABORT) {
                     logger.severe("Received GLOBAL_COMMIT but the logged state is INIT");
@@ -319,34 +309,34 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
                 logger.info("Received while in INIT: client abort or coordinator timeout");
 
-                ctx.get().cancelVoteRequestTimer();
+                ctx.cancelVoteRequestTimer();
 
-                ctx.get().log(ServerRequestContext.LogState.DECISION);
-                ctx.get().abort();
-                ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
+                ctx.log(ServerRequestContext.LogState.DECISION);
+                ctx.abort();
+                ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
                 break;
             }
             case VOTE_COMMIT: {
                 // This line used to cause a null pointer exception:
                 // There is a case in which the final decision timer was never started.
-                // It happens when, in the function onVoteRequest, in the true branch of branch ctx.get().prepare(),
-                // the server crashes and thus does not reach the line with ctx.get().startFinalDecisionTimer(this).
-                ctx.get().cancelFinalDecisionTimer();
+                // It happens when, in the function onVoteRequest, in the true branch of branch ctx.prepare(),
+                // the server crashes and thus does not reach the line with ctx.startFinalDecisionTimer(this).
+                ctx.cancelFinalDecisionTimer();
 
                 switch (req.decision) {
                     case GLOBAL_COMMIT: {
                         logger.info("Received GLOBAL_COMMIT: committing");
-                        ctx.get().log(ServerRequestContext.LogState.DECISION);
-                        ctx.get().commit();
-                        ctx.get().setProtocolState(TwoPhaseCommitFSM.COMMIT);
+                        ctx.log(ServerRequestContext.LogState.DECISION);
+                        ctx.commit();
+                        ctx.setProtocolState(TwoPhaseCommitFSM.COMMIT);
                         break;
                     }
                     case GLOBAL_ABORT: {
                         logger.info("Received GLOBAL_ABORT: aborting");
-                        ctx.get().log(ServerRequestContext.LogState.DECISION);
-                        ctx.get().abort();
-                        ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
+                        ctx.log(ServerRequestContext.LogState.DECISION);
+                        ctx.abort();
+                        ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
                         break;
                     }
                 }

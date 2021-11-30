@@ -51,7 +51,7 @@ class DataStoreNodeTest {
     @Test
     @Order(2)
     void testNoDuplicateContexts() {
-        SimpleRequestContext ctx = new SimpleRequestContext(UUID.randomUUID());
+        SimpleRequestContext ctx = new SimpleRequestContext(UUID.randomUUID(), null);
         node.underlyingActor().getRepository().addRequestContext(ctx);
         node.underlyingActor().getRepository().addRequestContext(ctx);
         assertSame(1, node.underlyingActor().getRepository().getAllRequestContexts().size());
@@ -60,7 +60,7 @@ class DataStoreNodeTest {
     @Test
     @Order(3)
     void testGetContext() {
-        SimpleRequestContext ctx = new SimpleRequestContext(UUID.randomUUID());
+        SimpleRequestContext ctx = new SimpleRequestContext(UUID.randomUUID(), null);
         node.underlyingActor().getRepository().addRequestContext(ctx);
         assertEquals(1, node.underlyingActor().getRepository().getAllRequestContexts(Predicate.not(SimpleRequestContext::isDecided)).size());
         assertEquals(0, node.underlyingActor().getRepository().getAllRequestContexts(SimpleRequestContext::isDecided).size());

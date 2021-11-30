@@ -1,6 +1,9 @@
 package it.unitn.arpino.ds1project.nodes.context;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -9,6 +12,12 @@ public class RequestContextRepository<T extends RequestContext> {
 
     public RequestContextRepository() {
         contexts = new HashSet<>();
+    }
+
+    public boolean existsContextWithId(UUID uuid) {
+        return contexts.stream()
+                .map(contexts -> contexts.uuid)
+                .anyMatch(uuid::equals);
     }
 
     /**
@@ -20,10 +29,12 @@ public class RequestContextRepository<T extends RequestContext> {
         contexts.add(context);
     }
 
-    public Optional<T> getRequestContextById(UUID uuid) {
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    public T getRequestContextById(UUID uuid) {
         return contexts.stream()
                 .filter(ctx -> ctx.uuid == uuid)
-                .findAny();
+                .findAny()
+                .get();
     }
 
     public Collection<T> getAllRequestContexts() {
@@ -35,4 +46,6 @@ public class RequestContextRepository<T extends RequestContext> {
                 .filter(predicate)
                 .collect(Collectors.toSet());
     }
+
+
 }

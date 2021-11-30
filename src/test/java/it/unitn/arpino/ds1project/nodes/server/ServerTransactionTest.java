@@ -54,7 +54,7 @@ public class ServerTransactionTest {
 
                 server.tell(new VoteRequest(uuid), testActor());
                 assertSame(DataStoreNode.Status.ALIVE, server.underlyingActor().getStatus());
-                assertSame(ServerRequestContext.TwoPhaseCommitFSM.ABORT, server.underlyingActor().getRepository().getRequestContextById(uuid).orElseThrow().getProtocolState());
+                assertSame(ServerRequestContext.TwoPhaseCommitFSM.ABORT, server.underlyingActor().getRepository().getRequestContextById(uuid).getProtocolState());
             }
         };
     }

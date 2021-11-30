@@ -1,5 +1,7 @@
 package it.unitn.arpino.ds1project.nodes.context;
 
+import akka.actor.ActorRef;
+
 import java.util.Objects;
 import java.util.UUID;
 
@@ -8,21 +10,17 @@ import java.util.UUID;
  */
 public abstract class RequestContext {
     public final UUID uuid;
+    public final ActorRef subject;
 
     /**
      * Creates a new context with the specified identifier.
      *
-     * @param uuid Unique identifier for this context.
+     * @param uuid    Unique identifier for this context.
+     * @param subject The subject of this context.
      */
-    public RequestContext(UUID uuid) {
+    public RequestContext(UUID uuid, ActorRef subject) {
         this.uuid = uuid;
-    }
-
-    /**
-     * Creates a new context with a random identifier.
-     */
-    public RequestContext() {
-        this(UUID.randomUUID());
+        this.subject = subject;
     }
 
     /**

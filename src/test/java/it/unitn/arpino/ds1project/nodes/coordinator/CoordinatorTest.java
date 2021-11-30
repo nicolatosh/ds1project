@@ -75,7 +75,7 @@ public class CoordinatorTest {
     void testNoDuplicateParticipant() {
         new TestKit(system) {
             {
-                CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
+                CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 coordinator.underlyingActor().getRepository().addRequestContext(ctx);
                 ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
@@ -92,7 +92,7 @@ public class CoordinatorTest {
     void testVoteResponseTimeout() {
         new TestKit(system) {
             {
-                CoordinatorRequestContext ctx = new CoordinatorRequestContext(testActor());
+                CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
                 coordinator.underlyingActor().getRepository().addRequestContext(ctx);
                 ctx.log(CoordinatorRequestContext.LogState.START_2PC);
                 ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);

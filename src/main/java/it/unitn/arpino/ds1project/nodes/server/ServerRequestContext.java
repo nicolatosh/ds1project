@@ -47,17 +47,14 @@ public class ServerRequestContext extends RequestContext {
 
     private TwoPhaseCommitFSM protocolState;
 
-    public final ActorRef coordinator;
-
     private IConnection connection;
 
     private Cancellable voteRequestTimer;
     private Cancellable finalDecisionTimer;
 
     public ServerRequestContext(UUID uuid, ActorRef coordinator, IConnection connection) {
-        super(uuid);
+        super(uuid, coordinator);
         localLog = new ArrayList<>();
-        this.coordinator = coordinator;
         this.connection = connection;
     }
 

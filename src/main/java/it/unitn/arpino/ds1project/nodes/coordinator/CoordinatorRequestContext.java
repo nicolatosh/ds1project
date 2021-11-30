@@ -11,10 +11,7 @@ import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CoordinatorRequestContext extends RequestContext {
@@ -45,8 +42,6 @@ public class CoordinatorRequestContext extends RequestContext {
      */
     public static final int TXN_END_TIMEOUT_S = 2;
 
-    private final ActorRef client;
-
     private final Collection<ActorRef> participants;
 
     private final Collection<ActorRef> yesVoters;
@@ -59,19 +54,12 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private Cancellable txnEndTimer;
 
-    public CoordinatorRequestContext(ActorRef client) {
-        this.client = client;
+    public CoordinatorRequestContext(UUID uuid, ActorRef client) {
+        super(uuid, client);
 
         participants = new HashSet<>();
         yesVoters = new HashSet<>();
         localLog = new ArrayList<>();
-    }
-
-    /**
-     * The initiator of the transaction.
-     */
-    public ActorRef getClient() {
-        return client;
     }
 
     @Override
@@ -189,7 +177,7 @@ public class CoordinatorRequestContext extends RequestContext {
     @Override
     public String toString() {
         return "uuid: " + uuid +
-                "\nclient: " + client.path().name() +
+                "\nclient: " + subject.path().name() +
                 "\nlogged state: " + loggedState() +
                 "\nprotocol state: " + protocolState +
                 "\nparticipants: " + participants.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", ")) +
