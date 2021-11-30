@@ -223,7 +223,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.addYesVoter(getSender());
 
                         if (ctx.allVotedYes()) {
-                            ctx.cancelVoteResponseTimeout();
+                            ctx.cancelVoteResponseTimer();
 
                             ctx.log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
@@ -252,7 +252,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     case NO: {
                         logger.info("Received a NO vote from " + getSender().path().name());
 
-                        ctx.cancelVoteResponseTimeout();
+                        ctx.cancelVoteResponseTimer();
 
                         ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
@@ -369,7 +369,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     protected void crash() {
         super.crash();
 
-        getRepository().getAllRequestContexts().forEach(CoordinatorRequestContext::cancelVoteResponseTimeout);
+        getRepository().getAllRequestContexts().forEach(CoordinatorRequestContext::cancelVoteResponseTimer);
 
         if (getParameters().coordinatorRecoveryTimeS >= 0) {
             getContext().system().scheduler().scheduleOnce(
