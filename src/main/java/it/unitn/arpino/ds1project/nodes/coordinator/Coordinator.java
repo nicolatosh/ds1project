@@ -6,7 +6,6 @@ import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
-import it.unitn.arpino.ds1project.messages.client.Reset;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
@@ -44,14 +43,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         if (obj instanceof TxnMessage) {
             var msg = (TxnMessage) obj;
 
-            if (!(msg instanceof TxnBeginMsg)) {
-
-                // there must exist a context associated with this message
-                if (!getRepository().existsContextWithId(msg.uuid)) {
+            if (!getRepository().existsContextWithId(msg.uuid)) {
+                if (!(msg instanceof TxnBeginMsg)) {
                     logger.severe("Bad request");
-
-                    var reset = new Reset(msg.uuid);
-                    getSender().tell(reset, getSelf());
                 }
             }
         }
