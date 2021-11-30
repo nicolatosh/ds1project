@@ -21,7 +21,6 @@ import scala.runtime.BoxedUnit;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -425,19 +424,27 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     protected void resume() {
         super.resume();
 
-        Collection<ServerRequestContext> voteNotCasted = getRepository().getAllRequestContexts(ctx -> ctx.loggedState() == ServerRequestContext.LogState.INIT);
+        getRepository().getAllRequestContexts().forEach(ctx -> {
+            switch (ctx.loggedState()) {
+                case INIT: {
+                    // If the server has not already cast the vote for the transaction, it aborts it.
+                    logger.info("Aborting transaction " + ctx.uuid);
 
-        Collection<ServerRequestContext> voteCasted = getRepository().getAllRequestContexts(ctx -> ctx.loggedState() == ServerRequestContext.LogState.VOTE_COMMIT);
+                    ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
+                    ctx.abort();
+                    ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
-        // If the server has not already cast the vote for the transaction, it aborts it.
-        voteNotCasted.forEach(ctx -> {
-            ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
-            ctx.abort();
-            ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
+                    break;
+                }
+                case VOTE_COMMIT: {
+                    // If the server has already cast the vote for the transaction, it asks the others about the coordinator's
+                    // FinalDecision.
+                    logger.info("Starting the termination protocol for transaction " + ctx.uuid);
+
+                    terminationProtocol(ctx);
+                    break;
+                }
+            }
         });
-
-        // If the server has already cast the vote for the transaction, it asks the others about the coordinator's
-        // FinalDecision.
-        voteCasted.forEach(this::terminationProtocol);
     }
 }
