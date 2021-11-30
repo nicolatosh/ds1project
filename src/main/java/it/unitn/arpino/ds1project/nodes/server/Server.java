@@ -53,18 +53,29 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     @Override
     public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object obj) {
-        super.aroundReceive(receive, obj);
-
         if (obj instanceof TxnMessage) {
             var msg = (TxnMessage) obj;
+
+            switch (getStatus()) {
+                case ALIVE: {
+                    logger.info("Received " + msg + " from " + getSender().path().name());
+                    break;
+                }
+                case CRASHED: {
+                    logger.info("Dropped " + msg + " from " + getSender().path().name());
+                    return;
+                }
+            }
 
             if (!getRepository().existsContextWithId(msg.uuid)) {
                 if (!(msg instanceof ReadRequest) && !(msg instanceof WriteRequest)) {
                     logger.severe("Bad request");
-                    unhandled(msg);
+                    return;
                 }
             }
         }
+
+        super.aroundReceive(receive, obj);
     }
 
     @Override
@@ -101,7 +112,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
 
     private void onReadRequest(ReadRequest req) {
-        if (getRepository().existsContextWithId(req.uuid)) {
+        if (!getRepository().existsContextWithId(req.uuid)) {
             var connection = controller.beginTransaction();
             var ctx = new ServerRequestContext(req.uuid, getSender(), connection);
             getRepository().addRequestContext(ctx);
@@ -125,7 +136,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     private void onWriteRequest(WriteRequest req) {
-        if (getRepository().existsContextWithId(req.uuid)) {
+        if (!getRepository().existsContextWithId(req.uuid)) {
             var connection = controller.beginTransaction();
             var ctx = new ServerRequestContext(req.uuid, getSender(), connection);
             getRepository().addRequestContext(ctx);
@@ -409,6 +420,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     @Override
     protected void crash() {
         super.crash();
+
+        getRepository().getAllRequestContexts().forEach(ServerRequestContext::cancelVoteRequestTimer);
+        getRepository().getAllRequestContexts().forEach(ServerRequestContext::cancelFinalDecisionTimer);
 
         if (getParameters().serverRecoveryTimeS >= 0) {
             getContext().system().scheduler().scheduleOnce(

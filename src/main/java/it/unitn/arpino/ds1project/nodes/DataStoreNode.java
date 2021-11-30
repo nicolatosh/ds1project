@@ -4,14 +4,11 @@ import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
 import it.unitn.arpino.ds1project.messages.StartMessage;
-import it.unitn.arpino.ds1project.messages.TxnMessage;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.context.RequestContextRepository;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import it.unitn.arpino.ds1project.simulation.Parameters;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 /**
  * Base class for the nodes of the distributed Data Store ({@link Coordinator}s and {@link Server}s).
@@ -69,29 +66,10 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
                 .match(JoinMessage.class, this::onJoinMessage)
                 .match(StartMessage.class, this::onStartMsg)
                 .matchAny(msg -> {
-                    logger.info("Stashed " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
+                    logger.info("Stashed " + msg + " from " + getSender().path().name());
                     stash();
                 })
                 .build();
-    }
-
-    @Override
-    public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object obj) {
-        if (obj instanceof TxnMessage) {
-            TxnMessage msg = (TxnMessage) obj;
-
-            switch (getStatus()) {
-                case ALIVE: {
-                    logger.info("Received " + msg + " from " + getSender().path().name());
-                    super.aroundReceive(receive, obj);
-                    break;
-                }
-                case CRASHED: {
-                    logger.info("Dropped " + msg + " from " + getSender().path().name());
-                    break;
-                }
-            }
-        }
     }
 
     protected abstract void onJoinMessage(JoinMessage msg);

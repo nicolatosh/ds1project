@@ -35,18 +35,29 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
     @Override
     public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object obj) {
-        super.aroundReceive(receive, obj);
-
         if (obj instanceof TxnMessage) {
-            var msg = (TxnMessage) obj;
+            TxnMessage msg = (TxnMessage) obj;
+
+            switch (getStatus()) {
+                case ALIVE: {
+                    logger.info("Received " + msg + " from " + getSender().path().name());
+                    break;
+                }
+                case CRASHED: {
+                    logger.info("Dropped " + msg + " from " + getSender().path().name());
+                    return;
+                }
+            }
 
             if (!getRepository().existsContextWithId(msg.uuid)) {
                 if (!(msg instanceof TxnBeginMsg)) {
-                    logger.severe("Bad request");
-                    unhandled(msg);
+                    logger.severe("Bad request: " + msg);
+                    return;
                 }
             }
         }
+
+        super.aroundReceive(receive, obj);
     }
 
     @Override
@@ -171,6 +182,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
             return;
         }
+
+        ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
         var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
         var multicast = Communication.builder()
@@ -360,6 +373,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         super.crash();
 
         getRepository().getAllRequestContexts().forEach(CoordinatorRequestContext::cancelVoteResponseTimer);
+        getRepository().getAllRequestContexts().forEach(CoordinatorRequestContext::cancelTxnEndTimer);
 
         if (getParameters().coordinatorRecoveryTimeS >= 0) {
             getContext().system().scheduler().scheduleOnce(
@@ -394,7 +408,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     logger.info("Aborting the transaction");
                     ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
-                    var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
+                    var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                     Communication multicast = Communication.builder()
                             .ofSender(getSelf())
                             .ofReceivers(ctx.getParticipants())
