@@ -5,7 +5,6 @@ import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
 import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
-import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.context.RequestContextRepository;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
@@ -83,25 +82,16 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
 
             switch (getStatus()) {
                 case ALIVE: {
-                    if (msg instanceof TxnBeginMsg) {
-                        logger.info("Received " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
-                    } else {
-                        logger.info("Received " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + " with UUID " + msg.uuid);
-                    }
+                    logger.info("Received " + msg + " from " + getSender().path().name());
+                    super.aroundReceive(receive, obj);
                     break;
                 }
                 case CRASHED: {
-                    if (msg instanceof TxnBeginMsg) {
-                        logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
-                    } else {
-                        logger.info("Dropped " + msg.getClass().getSimpleName() + " from " + getSender().path().name() + " with UUID " + msg.uuid);
-                    }
-                    return;
+                    logger.info("Dropped " + msg + " from " + getSender().path().name());
+                    break;
                 }
             }
         }
-
-        super.aroundReceive(receive, obj);
     }
 
     protected abstract void onJoinMessage(JoinMessage msg);
