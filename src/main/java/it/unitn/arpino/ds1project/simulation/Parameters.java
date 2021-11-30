@@ -1,6 +1,6 @@
 package it.unitn.arpino.ds1project.simulation;
 
-public class Simulation {
+public class Parameters {
     public static final double DEFAULT_COORDINATOR_ON_VOTE_RESPONSE_CRASH_PROBABILITY = 0.0;
     public static final double DEFAULT_COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY = 0.0;
     public static final double DEFAULT_COORDINATOR_ON_FINAL_DECISION_CRASH_PROBABILITY = 0.0;
@@ -30,7 +30,7 @@ public class Simulation {
     public long serverRecoveryTimeS;
 
 
-    public Simulation() {
+    public Parameters() {
         this.coordinatorOnVoteResponseCrashProbability = DEFAULT_COORDINATOR_ON_VOTE_RESPONSE_CRASH_PROBABILITY;
         this.coordinatorOnVoteRequestCrashProbability = DEFAULT_COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY;
         this.coordinatorOnFinalDecisionCrashProbability = DEFAULT_COORDINATOR_ON_FINAL_DECISION_CRASH_PROBABILITY;

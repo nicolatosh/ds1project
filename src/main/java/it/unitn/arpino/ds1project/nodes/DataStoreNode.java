@@ -9,7 +9,7 @@ import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.context.RequestContextRepository;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
-import it.unitn.arpino.ds1project.simulation.Simulation;
+import it.unitn.arpino.ds1project.simulation.Parameters;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
@@ -25,14 +25,14 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     private final Receive aliveReceive;
     private final Receive crashedReceive;
 
-    private final Simulation parameters;
+    private final Parameters parameters;
 
     private Status status;
 
     private final RequestContextRepository<T> repository;
 
     public DataStoreNode() {
-        parameters = new Simulation();
+        parameters = new Parameters();
         status = DataStoreNode.Status.ALIVE;
         repository = new RequestContextRepository<>();
 
@@ -55,7 +55,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
         return status;
     }
 
-    public Simulation getParameters() {
+    public Parameters getParameters() {
         return parameters;
     }
 
