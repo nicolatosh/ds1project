@@ -2,7 +2,10 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
-import it.unitn.arpino.ds1project.messages.coordinator.*;
+import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
+import it.unitn.arpino.ds1project.messages.coordinator.VoteResponseTimeout;
+import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
@@ -40,18 +43,11 @@ public class CoordinatorRequestContext extends RequestContext {
      */
     public static final int VOTE_RESPONSE_TIMEOUT_S = 1;
 
-    /**
-     * Duration (in seconds) which the {@link Coordinator}, cyclically, should solicit the participants to send a {@link Done} message.
-     */
-    public static final int DONE_TIMEOUT_S = 2;
-
     private final ActorRef client;
 
     private final Collection<ActorRef> participants;
 
     private final Collection<ActorRef> yesVoters;
-
-    private final Collection<ActorRef> doneParticipants;
 
     private final List<LogState> localLog;
 
@@ -59,14 +55,11 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private Cancellable voteResponseTimer;
 
-    private Cancellable doneRequestTimer;
-
     public CoordinatorRequestContext(ActorRef client) {
         this.client = client;
 
         participants = new HashSet<>();
         yesVoters = new HashSet<>();
-        doneParticipants = new HashSet<>();
         localLog = new ArrayList<>();
     }
 
@@ -132,22 +125,6 @@ public class CoordinatorRequestContext extends RequestContext {
         return yesVoters.size() == participants.size();
     }
 
-    public void addDoneParticipant(ActorRef participant) {
-        if (!doneParticipants.contains(participant)) {
-            doneParticipants.add(participant);
-        }
-    }
-
-    boolean allParticipantsDone() {
-        return doneParticipants.size() == participants.size();
-    }
-
-    Collection<ActorRef> getMissingDoneParticipants() {
-        Collection<ActorRef> missing = new HashSet<>(participants);
-        missing.removeAll(doneParticipants);
-        return missing;
-    }
-
     /**
      * Writes something to the local log.
      *
@@ -185,22 +162,6 @@ public class CoordinatorRequestContext extends RequestContext {
         }
     }
 
-    public void startDoneRequestTimer(Coordinator coordinator) {
-        cancelDoneRequestTimer();
-        doneRequestTimer = coordinator.getContext().system().scheduler().scheduleOnce(
-                Duration.ofSeconds(DONE_TIMEOUT_S), // delay
-                coordinator.getSelf(), // receiver
-                new DoneTimeout(uuid), // message
-                coordinator.getContext().dispatcher(), // executor
-                coordinator.getSelf()); // sender
-    }
-
-    public void cancelDoneRequestTimer() {
-        if (doneRequestTimer != null) {
-            doneRequestTimer.cancel();
-        }
-    }
-
     @Override
     public String toString() {
         return "uuid: " + uuid +
@@ -208,7 +169,6 @@ public class CoordinatorRequestContext extends RequestContext {
                 "\nlogged state: " + loggedState() +
                 "\nprotocol state: " + protocolState +
                 "\nparticipants: " + participants.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", ")) +
-                "\nyes voters: " + yesVoters.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", ")) +
-                "\ndone participants: " + doneParticipants.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", "));
+                "\nyes voters: " + yesVoters.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", "));
     }
 }

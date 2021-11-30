@@ -8,12 +8,14 @@ import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
-import it.unitn.arpino.ds1project.messages.server.*;
+import it.unitn.arpino.ds1project.messages.server.FinalDecision;
+import it.unitn.arpino.ds1project.messages.server.ReadRequest;
+import it.unitn.arpino.ds1project.messages.server.VoteRequest;
+import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.simulation.Communication;
 
 import java.time.Duration;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -40,8 +42,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .match(WriteMsg.class, this::onWriteMsg)
                 .match(VoteResponse.class, this::onVoteResponse)
                 .match(VoteResponseTimeout.class, this::onVoteResponseTimeout)
-                .match(Done.class, this::onDone)
-                .match(DoneTimeout.class, this::onDoneTimeout)
                 .build();
     }
 
@@ -131,8 +131,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                     // if we received a client abort, we do not have to start the Two-phase commit (2PC) protocol,
                     // thus we must not start the vote response timer.
-                    // Instead, we should wait for the Done messages to arrive in order to remove the transaction.
-                    ctx.get().startDoneRequestTimer(this);
                 }
                 break;
             }
@@ -230,8 +228,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         break;
                     }
                 }
-                // wait for the Done messages to arrive in order to remove the transaction.
-                ctx.get().startDoneRequestTimer(this);
 
                 break;
             }
@@ -276,9 +272,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         }
 
         ctx.get().setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-        // wait for the Done messages to arrive in order to remove the transaction.
-        ctx.get().startDoneRequestTimer(this);
 
         logger.info("Sending the transaction result to " + ctx.get().getClient().path().name());
         TxnResultMsg result = new TxnResultMsg(ctx.get().uuid, false);
@@ -337,52 +330,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         server.tell(req, getSelf());
     }
 
-    private void onDone(Done msg) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(msg.uuid);
-        if (ctx.isEmpty()) {
-            logger.severe("Bad request");
-            return;
-        }
-
-        if (!ctx.get().isDecided()) {
-            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be GLOBAL_COMMIT or GLOBAL_ABORT)");
-            return;
-        }
-
-        ctx.get().addDoneParticipant(getSender());
-
-        if (ctx.get().allParticipantsDone()) {
-            ctx.get().cancelDoneRequestTimer();
-
-            logger.info("All Done messages arrived. Removing the context");
-            removeContext(ctx.get());
-        } else {
-            Collection<ActorRef> missing = ctx.get().getMissingDoneParticipants();
-            logger.info(missing.size() + " Done messages required left, from " + missing.stream()
-                    .map(participant -> participant.path().name())
-                    .collect(Collectors.joining(", ")));
-        }
-    }
-
-    private void onDoneTimeout(DoneTimeout timeout) {
-        Optional<CoordinatorRequestContext> ctx = getRequestContext(timeout.uuid);
-        if (ctx.isEmpty()) {
-            return;
-        }
-
-        if (!ctx.get().isDecided()) {
-            logger.severe("Invalid logged state (" + ctx.get().loggedState() + ", should be GLOBAL_COMMIT or GLOBAL_ABORT)");
-            return;
-        }
-
-        logger.info("Soliciting the participants");
-
-        Solicit solicit = new Solicit(ctx.get().uuid);
-        ctx.get().getMissingDoneParticipants().forEach(participant -> participant.tell(solicit, getSelf()));
-
-        ctx.get().startDoneRequestTimer(this);
-    }
-
     @Override
     protected void crash() {
         super.crash();
@@ -410,8 +357,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             logger.info("Aborting the transaction");
             ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
             ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-            ctx.startDoneRequestTimer(this);
 
             logger.info("Sending the transaction result to " + ctx.getClient().path().name());
             TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
@@ -441,8 +386,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
                     ctx.getClient().tell(result, getSelf());
 
-                    ctx.startDoneRequestTimer(this);
-
                     break;
                 }
                 case GLOBAL_ABORT: {
@@ -460,8 +403,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         return;
                     }
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-                    ctx.startDoneRequestTimer(this);
 
                     logger.info("Sending the transaction result to " + ctx.getClient().path().name());
                     TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);

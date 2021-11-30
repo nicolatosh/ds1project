@@ -8,7 +8,6 @@ import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.database.IDatabase;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
-import it.unitn.arpino.ds1project.messages.coordinator.Done;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
@@ -61,7 +60,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(FinalDecisionTimeout.class, this::onFinalDecisionTimeout)
                 .match(DecisionResponse.class, this::onDecisionResponse)
                 .match(DecisionRequest.class, this::onDecisionRequest)
-                .match(Solicit.class, this::onSolicit)
                 .build();
     }
 
@@ -285,11 +283,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         ctx.get().log(ServerRequestContext.LogState.DECISION);
                         ctx.get().commit();
                         ctx.get().setProtocolState(TwoPhaseCommitFSM.COMMIT);
-
-                        // Whenever the server transitions to a state of certainty,
-                        // it informs the coordinator that it is done.
-                        Done done = new Done(ctx.get().uuid);
-                        ctx.get().coordinator.tell(done, getSelf());
                         break;
                     }
                     case GLOBAL_ABORT: {
@@ -297,11 +290,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         ctx.get().log(ServerRequestContext.LogState.DECISION);
                         ctx.get().abort();
                         ctx.get().setProtocolState(TwoPhaseCommitFSM.ABORT);
-
-                        // Whenever the server transitions to a state of certainty,
-                        // it informs the coordinator that it is done.
-                        Done done = new Done(ctx.get().uuid);
-                        ctx.get().coordinator.tell(done, getSelf());
                         break;
                     }
                 }
@@ -377,10 +365,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
         }
-
-        // always send the Done message, regardless of logged state
-        Done done = new Done(ctx.get().uuid);
-        ctx.get().coordinator.tell(done, getSelf());
     }
 
     /**
@@ -400,19 +384,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     .map(participant -> participant.path().name())
                     .collect(Collectors.joining(", ")));
             crash();
-        }
-    }
-
-    private void onSolicit(Solicit solicit) {
-        Optional<ServerRequestContext> ctx = getRequestContext(solicit.uuid);
-        if (ctx.isEmpty()) {
-            logger.severe("Bad request");
-            return;
-        }
-
-        if (ctx.get().isDecided()) {
-            Done done = new Done(ctx.get().uuid);
-            getSender().tell(done, getSelf());
         }
     }
 
