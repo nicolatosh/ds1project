@@ -22,7 +22,6 @@ import scala.runtime.BoxedUnit;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class Server extends DataStoreNode<ServerRequestContext> {
@@ -96,18 +95,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     protected void onJoinMessage(JoinMessage msg) {
         logger.info(getSender().path().name() + " joined");
         servers.add(getSender());
-    }
-
-    /**
-     * Creates a new context and adds it to the list of contexts so that it can be later retrieved.
-     *
-     * @param uuid Identifier to assign to the new context.
-     * @return The newly created context.
-     */
-    public ServerRequestContext createNewContext(UUID uuid, ActorRef coordinator) {
-        ServerRequestContext ctx = new ServerRequestContext(uuid, coordinator, controller.beginTransaction());
-        getRepository().addRequestContext(ctx);
-        return ctx;
     }
 
 
