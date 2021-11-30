@@ -40,7 +40,7 @@ public class CoordinatorRequestContext extends RequestContext {
     /**
      * Duration (in seconds) within which the {@link Coordinator} should receive the client's {@link TxnEndMsg}.
      */
-    public static final int TXN_END_TIMEOUT_S = 2;
+    public static final int TXN_END_TIMEOUT_S = 4;
 
     private final Collection<ActorRef> participants;
 
