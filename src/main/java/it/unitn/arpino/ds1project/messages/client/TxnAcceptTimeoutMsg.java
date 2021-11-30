@@ -10,4 +10,9 @@ public class TxnAcceptTimeoutMsg extends TxnMessage {
     public TxnAcceptTimeoutMsg() {
         super(null);
     }
+
+    @Override
+    public String toString() {
+        return "TxnAcceptTimeoutMsg";
+    }
 }

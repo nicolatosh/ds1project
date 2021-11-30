@@ -14,4 +14,11 @@ public class VoteRequest extends TxnMessage {
     public VoteRequest(UUID uuid) {
         super(uuid);
     }
+
+    @Override
+    public String toString() {
+        return "VoteRequest{" +
+                "uuid=" + uuid +
+                '}';
+    }
 }

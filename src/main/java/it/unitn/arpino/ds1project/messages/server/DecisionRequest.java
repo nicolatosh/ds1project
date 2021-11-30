@@ -12,4 +12,11 @@ public class DecisionRequest extends TxnMessage {
     public DecisionRequest(UUID uuid) {
         super(uuid);
     }
+
+    @Override
+    public String toString() {
+        return "DecisionRequest{" +
+                "uuid=" + uuid +
+                '}';
+    }
 }

@@ -13,4 +13,11 @@ public class TxnAcceptMsg extends TxnMessage {
     public TxnAcceptMsg(UUID uuid) {
         super(uuid);
     }
+
+    @Override
+    public String toString() {
+        return "TxnAcceptMsg{" +
+                "uuid=" + uuid +
+                '}';
+    }
 }

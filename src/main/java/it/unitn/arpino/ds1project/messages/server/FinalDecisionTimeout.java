@@ -15,4 +15,11 @@ public class FinalDecisionTimeout extends TxnMessage implements ControlMessage {
     public FinalDecisionTimeout(UUID uuid) {
         super(uuid);
     }
+
+    @Override
+    public String toString() {
+        return "FinalDecisionTimeout{" +
+                "uuid=" + uuid +
+                '}';
+    }
 }

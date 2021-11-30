@@ -37,4 +37,12 @@ public class FinalDecision extends TxnMessage {
     public int hashCode() {
         return Objects.hash(super.hashCode(), decision);
     }
+
+    @Override
+    public String toString() {
+        return "FinalDecision{" +
+                "uuid=" + uuid +
+                ", decision=" + decision +
+                '}';
+    }
 }

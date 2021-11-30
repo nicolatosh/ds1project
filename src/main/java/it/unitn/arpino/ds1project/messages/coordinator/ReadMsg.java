@@ -16,4 +16,12 @@ public class ReadMsg extends TxnMessage {
         super(uuid);
         this.key = key;
     }
+
+    @Override
+    public String toString() {
+        return "ReadMsg{" +
+                "uuid=" + uuid +
+                ", key=" + key +
+                '}';
+    }
 }

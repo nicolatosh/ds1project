@@ -17,4 +17,12 @@ public class JoinMessage implements ControlMessage, Serializable {
         this.lowerKey = lowerKey;
         this.upperKey = upperKey;
     }
+
+    @Override
+    public String toString() {
+        return "JoinMessage{" +
+                "lowerKey=" + lowerKey +
+                ", upperKey=" + upperKey +
+                '}';
+    }
 }

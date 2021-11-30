@@ -21,4 +21,12 @@ public class DecisionResponse extends TxnMessage {
         super(uuid);
         this.decision = decision;
     }
+
+    @Override
+    public String toString() {
+        return "DecisionResponse{" +
+                "uuid=" + uuid +
+                ", decision=" + decision +
+                '}';
+    }
 }

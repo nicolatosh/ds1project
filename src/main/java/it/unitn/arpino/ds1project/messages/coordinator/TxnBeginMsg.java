@@ -11,4 +11,9 @@ public class TxnBeginMsg extends TxnMessage {
     public TxnBeginMsg() {
         super(null);
     }
+
+    @Override
+    public String toString() {
+        return "TxnBeginMsg";
+    }
 }

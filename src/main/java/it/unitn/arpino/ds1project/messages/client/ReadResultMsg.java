@@ -34,4 +34,13 @@ public class ReadResultMsg extends TxnMessage {
     public int hashCode() {
         return Objects.hash(super.hashCode(), key, value);
     }
+
+    @Override
+    public String toString() {
+        return "ReadResultMsg{" +
+                "uuid=" + uuid +
+                ", key=" + key +
+                ", value=" + value +
+                '}';
+    }
 }

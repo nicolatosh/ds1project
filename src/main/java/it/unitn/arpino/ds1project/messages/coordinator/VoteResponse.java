@@ -43,4 +43,12 @@ public class VoteResponse extends TxnMessage {
     public int hashCode() {
         return Objects.hash(super.hashCode(), vote);
     }
+
+    @Override
+    public String toString() {
+        return "VoteResponse{" +
+                "uuid=" + uuid +
+                ", vote=" + vote +
+                '}';
+    }
 }

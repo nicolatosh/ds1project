@@ -9,4 +9,11 @@ public class TxnEndTimeout extends TxnMessage implements ControlMessage {
     public TxnEndTimeout(UUID uuid) {
         super(uuid);
     }
+
+    @Override
+    public String toString() {
+        return "TxnEndTimeout{" +
+                "uuid=" + uuid +
+                '}';
+    }
 }

@@ -18,4 +18,13 @@ public class WriteMsg extends TxnMessage {
         this.key = key;
         this.value = value;
     }
+
+    @Override
+    public String toString() {
+        return "WriteMsg{" +
+                "uuid=" + uuid +
+                ", key=" + key +
+                ", value=" + value +
+                '}';
+    }
 }

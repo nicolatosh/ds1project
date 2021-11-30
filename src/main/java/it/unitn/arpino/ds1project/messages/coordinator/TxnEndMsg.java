@@ -16,4 +16,12 @@ public class TxnEndMsg extends TxnMessage {
         super(uuid);
         this.commit = commit;
     }
+
+    @Override
+    public String toString() {
+        return "TxnEndMsg{" +
+                "uuid=" + uuid +
+                ", commit=" + commit +
+                '}';
+    }
 }

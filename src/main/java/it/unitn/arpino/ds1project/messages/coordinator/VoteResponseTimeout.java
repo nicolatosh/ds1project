@@ -15,4 +15,11 @@ public class VoteResponseTimeout extends TxnMessage implements ControlMessage {
     public VoteResponseTimeout(UUID uuid) {
         super(uuid);
     }
+
+    @Override
+    public String toString() {
+        return "VoteResponseTimeout{" +
+                "uuid=" + uuid +
+                '}';
+    }
 }

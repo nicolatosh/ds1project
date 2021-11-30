@@ -30,4 +30,11 @@ public abstract class TxnMessage implements Serializable {
     public int hashCode() {
         return uuid.hashCode();
     }
+
+    @Override
+    public String toString() {
+        return "TxnMessage{" +
+                "uuid=" + uuid +
+                '}';
+    }
 }
