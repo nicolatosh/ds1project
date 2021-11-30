@@ -315,6 +315,11 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         switch (ctx.get().loggedState()) {
             case INIT: {
+                if (req.decision != FinalDecision.Decision.GLOBAL_ABORT) {
+                    logger.severe("Received GLOBAL_COMMIT but the logged state is INIT");
+                    return;
+                }
+
                 logger.info("Received while in INIT: client abort or coordinator timeout");
 
                 ctx.get().cancelVoteRequestTimer();
