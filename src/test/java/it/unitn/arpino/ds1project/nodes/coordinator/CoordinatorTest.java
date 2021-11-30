@@ -9,15 +9,10 @@ import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
-import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.*;
 import scala.concurrent.duration.Duration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -26,18 +21,15 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 public class CoordinatorTest {
     ActorSystem system;
     TestActorRef<Coordinator> coordinator;
-    TestActorRef<Server> server;
 
     @BeforeEach
     void setUp() {
         system = ActorSystem.create();
 
-        server = TestActorRef.create(system, Server.props(0, 9), "server");
-
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
-        coordinator.tell(new JoinMessage(0, 9), server);
+        coordinator.tell(new JoinMessage(0, 9), ActorRef.noSender());
 
-        List.of(server, coordinator).forEach(node -> node.tell(new StartMessage(), ActorRef.noSender()));
+        coordinator.tell(new StartMessage(), ActorRef.noSender());
     }
 
     @AfterEach
@@ -45,7 +37,6 @@ public class CoordinatorTest {
         TestKit.shutdownActorSystem(system, Duration.create(1, TimeUnit.SECONDS), true);
         system = null;
         coordinator = null;
-        server = null;
     }
 
     @Test
@@ -55,17 +46,21 @@ public class CoordinatorTest {
             {
                 // Note: right now, coordinators can accept two simultaneous transactions from the same client.
 
-                coordinator.tell(new TxnBeginMsg(), testActor());
-                UUID uuid1 = expectMsgClass(TxnAcceptMsg.class).uuid;
+                var begin1 = new TxnBeginMsg();
+                var uuid1 = begin1.uuid;
+                coordinator.tell(begin1, testActor());
+                expectMsg(new TxnAcceptMsg(uuid1));
 
-                coordinator.tell(new TxnBeginMsg(), testActor());
-                UUID uuid2 = expectMsgClass(TxnAcceptMsg.class).uuid;
+                var begin2 = new TxnBeginMsg();
+                var uuid2 = begin2.uuid;
+                coordinator.tell(begin2, testActor());
+                expectMsg(new TxnAcceptMsg(uuid2));
 
                 assertNotEquals(uuid1, uuid2);
 
-                List<CoordinatorRequestContext> contexts = new ArrayList<>(coordinator.underlyingActor().getRepository().getAllRequestContexts(Predicate.not(CoordinatorRequestContext::isDecided)));
-                assertEquals(2, contexts.size());
-                assertNotEquals(contexts.get(0), contexts.get(1));
+                var ctx1 = coordinator.underlyingActor().getRepository().getRequestContextById(uuid1);
+                var ctx2 = coordinator.underlyingActor().getRepository().getRequestContextById(uuid2);
+                assertNotEquals(ctx1, ctx2);
             }
         };
     }
@@ -75,13 +70,17 @@ public class CoordinatorTest {
     void testNoDuplicateParticipant() {
         new TestKit(system) {
             {
-                CoordinatorRequestContext ctx = new CoordinatorRequestContext(UUID.randomUUID(), testActor());
-                coordinator.underlyingActor().getRepository().addRequestContext(ctx);
-                ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
-                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
+                var begin = new TxnBeginMsg();
+                var uuid = begin.uuid;
+                coordinator.tell(begin, testActor());
 
-                coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
-                coordinator.tell(new ReadMsg(ctx.uuid, 0), testActor());
+                var read0 = new ReadMsg(uuid, 0);
+                coordinator.tell(read0, testActor());
+
+                var read1 = new ReadMsg(uuid, 1);
+                coordinator.tell(read1, testActor());
+
+                var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
                 assertEquals(1, ctx.getParticipants().size());
             }
         };
