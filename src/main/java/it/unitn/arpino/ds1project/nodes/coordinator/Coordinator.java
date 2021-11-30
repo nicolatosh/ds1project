@@ -334,6 +334,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     protected void crash() {
         super.crash();
 
+        getActive().forEach(CoordinatorRequestContext::cancelVoteResponseTimeout);
+
         if (getParameters().coordinatorRecoveryTimeS >= 0) {
             getContext().system().scheduler().scheduleOnce(
                     Duration.ofSeconds(getParameters().coordinatorRecoveryTimeS), // delay
