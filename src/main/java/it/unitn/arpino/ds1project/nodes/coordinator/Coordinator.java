@@ -197,9 +197,19 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        logger.info("Sending the transaction result to " + ctx.subject.path().name());
-        TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
-        ctx.subject.tell(result, getSelf());
+        var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
+        var multicast = Communication.builder()
+                .ofSender(getSelf())
+                .ofReceivers(ctx.getParticipants())
+                .ofMessage(decision)
+                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+        if (!multicast.run()) {
+            logger.info("Did not send the message to " + multicast.getMissing().stream()
+                    .map(participant -> participant.path().name())
+                    .collect(Collectors.joining(", ")));
+            crash();
+            return;
+        }
 
         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
