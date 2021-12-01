@@ -108,49 +108,65 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 if (msg.commit) {
                     logger.info(ctx.subject.path().name() + " requested to commit");
 
-                    ctx.log(CoordinatorRequestContext.LogState.START_2PC);
+                    if (ctx.getParticipants().size() > 0) {
+                        ctx.log(CoordinatorRequestContext.LogState.START_2PC);
 
-                    logger.info("Asking the vote requests to the participants");
-                    Communication multicast = Communication.builder()
-                            .ofSender(getSelf())
-                            .ofReceivers(ctx.getParticipants())
-                            .ofMessage(new VoteRequest(msg.uuid))
-                            .ofCrashProbability(getParameters().coordinatorOnVoteRequestCrashProbability);
-                    if (!multicast.run()) {
-                        logger.info("Did not send the message to " + multicast.getMissing().stream()
-                                .map(participant -> participant.path().name())
-                                .collect(Collectors.joining(", ")));
-                        crash();
-                        return;
+                        logger.info("Asking the vote requests to the participants");
+                        Communication multicast = Communication.builder()
+                                .ofSender(getSelf())
+                                .ofReceivers(ctx.getParticipants())
+                                .ofMessage(new VoteRequest(msg.uuid))
+                                .ofCrashProbability(getParameters().coordinatorOnVoteRequestCrashProbability);
+                        if (!multicast.run()) {
+                            logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                    .map(participant -> participant.path().name())
+                                    .collect(Collectors.joining(", ")));
+                            crash();
+                            return;
+                        }
+
+                        ctx.startVoteResponseTimer(this);
+
+                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
+                    } else {
+                        logger.info("No participant is involved");
+
+                        ctx.log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
+
+                        logger.info("Sending the transaction result to " + ctx.subject.path().name());
+                        TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+                        ctx.subject.tell(result, getSelf());
+
+                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
                     }
-
-                    ctx.startVoteResponseTimer(this);
-
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
                 } else {
                     logger.info(ctx.subject.path().name() + " requested to abort");
 
                     ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
-                    logger.info("Sending the final decision to the participants");
-                    Communication multicast = Communication.builder()
-                            .ofSender(getSelf())
-                            .ofReceivers(ctx.getParticipants())
-                            .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT))
-                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
-                    if (!multicast.run()) {
-                        logger.info("Did not send the message to " + multicast.getMissing().stream()
-                                .map(participant -> participant.path().name())
-                                .collect(Collectors.joining(", ")));
-                        crash();
-                        return;
+                    if (ctx.getParticipants().size() > 0) {
+                        logger.info("Sending the final decision to the participants");
+                        Communication multicast = Communication.builder()
+                                .ofSender(getSelf())
+                                .ofReceivers(ctx.getParticipants())
+                                .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                        if (!multicast.run()) {
+                            logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                    .map(participant -> participant.path().name())
+                                    .collect(Collectors.joining(", ")));
+                            crash();
+                            return;
+                        }
+                    } else {
+                        logger.info("No participant is involved");
                     }
-
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     logger.info("Sending the transaction result to " + ctx.subject.path().name());
                     TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
                     ctx.subject.tell(result, getSelf());
+
+                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     // if we received a client abort, we do not have to start the Two-phase commit (2PC) protocol,
                     // thus we must not start the vote response timer.
