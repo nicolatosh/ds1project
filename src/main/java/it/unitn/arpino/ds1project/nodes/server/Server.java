@@ -154,6 +154,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         ctx.cancelVoteRequestTimer();
 
         if (ctx.prepare()) {
+            logger.info("Transaction prepared: voting commit");
+
             ctx.log(ServerRequestContext.LogState.VOTE_COMMIT);
 
             Communication unicast = Communication.builder()
@@ -171,6 +173,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.startFinalDecisionTimer(this);
         } else {
+            logger.info("Aborting the transaction");
+
             ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
             Communication unicast = Communication.builder()
