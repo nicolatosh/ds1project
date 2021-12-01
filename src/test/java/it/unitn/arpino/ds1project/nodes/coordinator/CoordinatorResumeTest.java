@@ -169,7 +169,7 @@ public class CoordinatorResumeTest {
                 var voteRequest = new VoteRequest(uuid);
                 expectMsg(voteRequest);
 
-                var voteResponse = new VoteResponse(uuid, VoteResponse.Vote.NO);
+                var voteResponse = new VoteResponse(uuid, VoteResponse.Vote.YES);
                 // this forces the coordinator to log GLOBAL_ABORT and crash
                 coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1;
                 coordinator.tell(voteResponse, testActor());
@@ -177,14 +177,14 @@ public class CoordinatorResumeTest {
                 // restore the normality
                 coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0;
 
-                var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                 expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeS + 1, TimeUnit.SECONDS),
                         decision);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
-                assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
+                assertSame(CoordinatorRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
+                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT, ctx.getProtocolState());
             }
         };
     }
