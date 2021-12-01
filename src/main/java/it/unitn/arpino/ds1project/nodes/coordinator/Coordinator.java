@@ -448,8 +448,62 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     private void onReset(Reset reset) {
         var ctx = getRepository().getRequestContextById(reset.uuid);
 
-        logger.info("Removing " + getSender().path().name() + " from the participants");
-        ctx.removeParticipant(getSender());
+        switch (ctx.loggedState()) {
+            case CONVERSATIONAL: {
+                logger.severe("Logged state is CONVERSATIONAL, should be START_2PC or GLOBAL_ABORT");
+                return;
+            }
+            case START_2PC: {
+                logger.info("Logged state is START_2PC: removing " + getSender().path().name() + " from the participants");
+                ctx.removeParticipant(getSender());
+
+                ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
+
+                // we are not any more interested in collecting the votes, as we now know the final decision
+                ctx.cancelVoteResponseTimer();
+
+                if (ctx.allParticipantsDone()) {
+                    // the participant we just removed was the only one participating in this transaction
+                    ctx.cancelDoneRequestTimer();
+                } else {
+                    logger.info("Sending the final decision to the participants");
+                    var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                    var multicast = Communication.builder()
+                            .ofSender(getSelf())
+                            .ofReceivers(ctx.getParticipants())
+                            .ofMessage(decision)
+                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                    if (!multicast.run()) {
+                        logger.info("Did not send the message to " + multicast.getMissing().stream()
+                                .map(participant -> participant.path().name())
+                                .collect(Collectors.joining(", ")));
+                        crash();
+                        return;
+                    }
+                }
+
+                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
+
+                var result = new TxnResultMsg(ctx.uuid, false);
+                ctx.subject.tell(result, getSelf());
+
+                break;
+            }
+            case GLOBAL_COMMIT: {
+                logger.severe("Logged state is GLOBAL_COMMIT, should be START_2PC or GLOBAL_ABORT");
+                return;
+            }
+            case GLOBAL_ABORT: {
+                logger.info("Logged state is GLOBAL_ABORT: removing " + getSender().path().name() + " from the participants");
+                ctx.removeParticipant(getSender());
+
+                if (ctx.allParticipantsDone()) {
+                    ctx.cancelDoneRequestTimer();
+                }
+
+                break;
+            }
+        }
     }
 
     @Override
