@@ -1,5 +1,6 @@
 package it.unitn.arpino.ds1project.nodes;
 
+import akka.actor.AbstractActorWithStash;
 import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
@@ -10,14 +11,21 @@ import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import it.unitn.arpino.ds1project.simulation.Parameters;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+
 /**
  * Base class for the nodes of the distributed Data Store ({@link Coordinator}s and {@link Server}s).
  */
-public abstract class DataStoreNode<T extends RequestContext> extends AbstractNode {
+public abstract class DataStoreNode<T extends RequestContext> extends AbstractActorWithStash {
     public enum Status {
         ALIVE,
         CRASHED
     }
+
+    protected final Logger logger;
 
     private final Receive aliveReceive;
     private final Receive crashedReceive;
@@ -29,6 +37,15 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractNo
     private final RequestContextRepository<T> repository;
 
     public DataStoreNode() {
+        try (InputStream config = DataStoreNode.class.getResourceAsStream("/logging.properties")) {
+            if (config != null) {
+                LogManager.getLogManager().readConfiguration(config);
+            }
+        } catch (IOException ignored) {
+        }
+
+        logger = Logger.getLogger(getSelf().path().name());
+
         parameters = new Parameters();
         status = DataStoreNode.Status.ALIVE;
         repository = new RequestContextRepository<>();

@@ -14,7 +14,6 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
-import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
@@ -315,7 +314,7 @@ public class EndToEnd {
         public MyTestKit(ActorSystem system) {
             super(system);
 
-            try (InputStream config = AbstractNode.class.getResourceAsStream("/logging.properties")) {
+            try (InputStream config = MyTestKit.class.getResourceAsStream("/logging.properties")) {
                 if (config != null) {
                     LogManager.getLogManager().readConfiguration(config);
                 }

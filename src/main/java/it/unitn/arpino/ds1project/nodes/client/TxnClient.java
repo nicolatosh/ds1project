@@ -1,6 +1,7 @@
 package it.unitn.arpino.ds1project.nodes.client;
 
 
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import akka.actor.Props;
@@ -10,17 +11,22 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
-import it.unitn.arpino.ds1project.nodes.AbstractNode;
 import scala.PartialFunction;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
-public class TxnClient extends AbstractNode {
+public class TxnClient extends AbstractActor {
+    private final Logger logger;
+
     private static final double COMMIT_PROBABILITY = 0.8;
     private static final double WRITE_PROBABILITY = 0.5;
     private static final int MIN_TXN_LENGTH = 20;
@@ -51,6 +57,15 @@ public class TxnClient extends AbstractNode {
     /*-- Actor constructor ---------------------------------------------------- */
 
     public TxnClient(int clientId) {
+        try (InputStream config = TxnClient.class.getResourceAsStream("/logging.properties")) {
+            if (config != null) {
+                LogManager.getLogManager().readConfiguration(config);
+            }
+        } catch (IOException ignored) {
+        }
+
+        logger = Logger.getLogger(getSelf().path().name());
+
         this.clientId = clientId;
         this.numAttemptedTxn = 0;
         this.numCommittedTxn = 0;
