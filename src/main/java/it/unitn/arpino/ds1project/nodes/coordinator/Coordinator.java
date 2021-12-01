@@ -163,13 +163,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 break;
             }
             case GLOBAL_COMMIT: {
-                FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                getSender().tell(decision, getSelf());
+                var result = new TxnResultMsg(ctx.uuid, true);
+                getSender().tell(result, getSelf());
                 break;
             }
             case GLOBAL_ABORT: {
-                FinalDecision decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                getSender().tell(decision, getSelf());
+                var result = new TxnResultMsg(ctx.uuid, false);
+                getSender().tell(result, getSelf());
                 break;
             }
         }
