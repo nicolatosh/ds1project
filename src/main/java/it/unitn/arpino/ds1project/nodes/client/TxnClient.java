@@ -82,8 +82,8 @@ public class TxnClient extends AbstractActor {
             TxnMessage msg = (TxnMessage) obj;
 
             logger.info("Received " + msg.getClass().getSimpleName() + " from " + getSender().path().name());
-            super.aroundReceive(receive, obj);
         }
+        super.aroundReceive(receive, obj);
     }
 
     /*-- Actor methods -------------------------------------------------------- */
