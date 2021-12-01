@@ -393,8 +393,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     protected void crash() {
         super.crash();
 
-        getRepository().getAllRequestContexts().forEach(CoordinatorRequestContext::cancelVoteResponseTimer);
-        getRepository().getAllRequestContexts().forEach(CoordinatorRequestContext::cancelTxnEndTimer);
+        getRepository().getAllRequestContexts().forEach(ctx -> {
+            System.out.println("Crashing transaction " + ctx.uuid);
+
+            ctx.cancelVoteResponseTimer();
+            ctx.cancelTxnEndTimer();
+        });
 
         if (getParameters().coordinatorRecoveryTimeS >= 0) {
             getContext().system().scheduler().scheduleOnce(
@@ -411,6 +415,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         super.resume();
 
         getRepository().getAllRequestContexts().forEach(ctx -> {
+            logger.info("Resuming transaction " + ctx.uuid);
+
             switch (ctx.loggedState()) {
                 case CONVERSATIONAL: {
                     // Bernstein, p. 231, case 1
