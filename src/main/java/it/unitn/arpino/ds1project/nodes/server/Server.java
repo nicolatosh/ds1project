@@ -118,8 +118,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         int value = ctx.read(req.key);
 
-        ReadResult res = new ReadResult(req.uuid, req.key, value);
-        getSender().tell(res, getSelf());
+        var result = new ReadResult(req.uuid, req.key, value);
+        getSender().tell(result, getSelf());
     }
 
     private void onWriteRequest(WriteRequest req) {
@@ -158,7 +158,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.VOTE_COMMIT);
 
-            Communication unicast = Communication.builder()
+            var unicast = Communication.builder()
                     .ofSender(getSelf())
                     .ofReceiver(getSender())
                     .ofMessage(new VoteResponse(req.uuid, VoteResponse.Vote.YES))
@@ -177,7 +177,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
-            Communication unicast = Communication.builder()
+            var unicast = Communication.builder()
                     .ofSender(getSelf())
                     .ofReceiver(getSender())
                     .ofMessage(new VoteResponse(req.uuid, VoteResponse.Vote.NO))
@@ -273,7 +273,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             }
         }
 
-        Communication unicast = Communication.builder()
+        var unicast = Communication.builder()
                 .ofSender(getSelf())
                 .ofReceiver(getSender())
                 .ofMessage(response)
@@ -395,7 +395,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * @param ctx Context for which to start the termination protocol
      */
     private void terminationProtocol(ServerRequestContext ctx) {
-        Communication multicast = Communication.builder()
+        var multicast = Communication.builder()
                 .ofSender(getSelf())
                 .ofReceivers(servers)
                 .ofMessage(new DecisionRequest(ctx.uuid))
