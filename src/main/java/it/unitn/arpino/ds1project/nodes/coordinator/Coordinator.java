@@ -70,6 +70,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .match(VoteResponseTimeout.class, this::onVoteResponseTimeout)
                 .match(Done.class, this::onDone)
                 .match(DoneTimeout.class, this::onDoneTimeout)
+                .match(Reset.class, this::onReset)
                 .build();
     }
 
@@ -442,6 +443,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.getRemainingDoneParticipants().forEach(participant -> participant.tell(solicit, getSelf()));
 
         ctx.startDoneRequestTimer(this);
+    }
+
+    private void onReset(Reset reset) {
+        var ctx = getRepository().getRequestContextById(reset.uuid);
+
+        logger.info("Removing " + getSender().path().name() + " from the participants");
+        ctx.removeParticipant(getSender());
     }
 
     @Override

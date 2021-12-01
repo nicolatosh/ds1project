@@ -11,6 +11,7 @@ import it.unitn.arpino.ds1project.messages.ResumeMessage;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
 import it.unitn.arpino.ds1project.messages.coordinator.Done;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
+import it.unitn.arpino.ds1project.messages.coordinator.Reset;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
@@ -70,6 +71,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             if (!getRepository().existsContextWithId(msg.uuid)) {
                 if (!(msg instanceof ReadRequest) && !(msg instanceof WriteRequest)) {
                     logger.severe("Bad request");
+
+                    var reset = new Reset(msg.uuid);
+                    getSender().tell(reset, getSelf());
+
                     return;
                 }
             }

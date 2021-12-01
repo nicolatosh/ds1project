@@ -114,6 +114,15 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
+     * Removes a participant from the list of participants of this transaction, if present..
+     */
+    public void removeParticipant(ActorRef participant) {
+        if (participants.contains(participant)) {
+            participants.remove(participant);
+        }
+    }
+
+    /**
      * Adds a participant to the list of those which have cast a positive {@link VoteResponse}
      * upon receiving the {@link Coordinator}'s {@link VoteRequest},
      */
