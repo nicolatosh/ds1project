@@ -76,7 +76,7 @@ public class EndToEnd {
     }
 
     @Test
-    void sequentialTransactionsWithCoordinatorCrashes() {
+    void sequentialTransactionsWithCoordinatorCrashes() throws InterruptedException {
         coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0.25;
         coordinator.underlyingActor().getParameters().coordinatorOnVoteResponseCrashProbability = 0.25;
         coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0.25;
@@ -93,6 +93,7 @@ public class EndToEnd {
                 testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -107,6 +108,7 @@ public class EndToEnd {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -118,6 +120,7 @@ public class EndToEnd {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -137,6 +140,7 @@ public class EndToEnd {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -151,7 +155,7 @@ public class EndToEnd {
     }
 
     @Test
-    void sequentialTransactionsWithServerCrashes() {
+    void sequentialTransactionsWithServerCrashes() throws InterruptedException {
         List.of(server0, server1).forEach(server -> {
             server.underlyingActor().getParameters().serverOnVoteResponseCrashProbability = 0.25;
             server.underlyingActor().getParameters().serverOnDecisionRequestCrashProbability = 0.25;
@@ -170,6 +174,7 @@ public class EndToEnd {
                 testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -184,6 +189,7 @@ public class EndToEnd {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -195,6 +201,7 @@ public class EndToEnd {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -214,6 +221,7 @@ public class EndToEnd {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -228,7 +236,7 @@ public class EndToEnd {
     }
 
     @Test
-    void sequentialTransactionsWithCoordinatorAndServerCrashes() {
+    void sequentialTransactionsWithCoordinatorAndServerCrashes() throws InterruptedException {
         coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0.25;
         coordinator.underlyingActor().getParameters().coordinatorOnVoteResponseCrashProbability = 0.25;
         coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0.25;
@@ -251,6 +259,7 @@ public class EndToEnd {
                 testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -265,6 +274,7 @@ public class EndToEnd {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -276,6 +286,7 @@ public class EndToEnd {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
@@ -295,6 +306,7 @@ public class EndToEnd {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
+                Thread.sleep(5000);
                 continue;
             }
 
