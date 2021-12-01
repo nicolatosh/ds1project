@@ -448,12 +448,14 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     protected void crash() {
         super.crash();
 
-        getRepository().getAllRequestContexts().forEach(ctx -> {
-            logger.info("Crashing transaction " + ctx.uuid);
+        getRepository().getAllRequestContexts().stream()
+                .filter(ctx -> !ctx.isCompleted() || !ctx.allParticipantsDone())
+                .forEach(ctx -> {
+                    logger.info("Crashing transaction " + ctx.uuid);
 
-            ctx.cancelVoteResponseTimer();
-            ctx.cancelTxnEndTimer();
-        });
+                    ctx.cancelVoteResponseTimer();
+                    ctx.cancelTxnEndTimer();
+                });
 
         if (getParameters().coordinatorRecoveryTimeS >= 0) {
             getContext().system().scheduler().scheduleOnce(
