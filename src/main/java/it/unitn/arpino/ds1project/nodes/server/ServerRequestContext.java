@@ -137,6 +137,9 @@ public class ServerRequestContext extends RequestContext {
      * {@link VoteRequest}. If the vote does not arrive in time, the Server assumes the Coordinator to be crashed.
      */
     public void startVoteRequestTimer(Server server) {
+        if (voteRequestTimer != null) {
+            cancelVoteRequestTimer();
+        }
         voteRequestTimer = server.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(VOTE_REQUEST_TIMEOUT_S), // delay
                 server.getSelf(), // receiver
@@ -149,7 +152,9 @@ public class ServerRequestContext extends RequestContext {
      * Cancels the timer.
      */
     public void cancelVoteRequestTimer() {
-        voteRequestTimer.cancel();
+        if (voteRequestTimer != null) {
+            voteRequestTimer.cancel();
+        }
     }
 
     /**
@@ -157,6 +162,9 @@ public class ServerRequestContext extends RequestContext {
      * {@link FinalDecision}. If the decision does not arrive in time, the Server assumes the Coordinator to be crashed.
      */
     public void startFinalDecisionTimer(Server server) {
+        if (finalDecisionTimer != null) {
+            cancelFinalDecisionTimer();
+        }
         finalDecisionTimer = server.getContext().system().scheduler().scheduleOnce(
                 Duration.ofSeconds(FINAL_DECISION_TIMEOUT_S), // delay
                 server.getSelf(), // receiver
