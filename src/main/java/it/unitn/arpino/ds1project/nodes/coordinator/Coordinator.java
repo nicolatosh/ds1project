@@ -449,7 +449,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         super.crash();
 
         getRepository().getAllRequestContexts().forEach(ctx -> {
-            System.out.println("Crashing transaction " + ctx.uuid);
+            logger.info("Crashing transaction " + ctx.uuid);
 
             ctx.cancelVoteResponseTimer();
             ctx.cancelTxnEndTimer();
