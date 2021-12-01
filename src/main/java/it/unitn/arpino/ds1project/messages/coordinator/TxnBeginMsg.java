@@ -16,6 +16,8 @@ public class TxnBeginMsg extends TxnMessage {
 
     @Override
     public String toString() {
-        return "TxnBeginMsg";
+        return "TxnBeginMsg{" +
+                "uuid=" + uuid +
+                '}';
     }
 }
