@@ -35,7 +35,7 @@ public class CoordinatorRequestContext extends RequestContext {
     /**
      * Duration (in seconds) within which the {@link Coordinator} should collect all the participants' {@link VoteResponse}s.
      */
-    public static final int VOTE_RESPONSE_TIMEOUT_S = 1;
+    public static final int VOTE_RESPONSE_TIMEOUT_S = 4;
 
     /**
      * Duration (in seconds) within which the {@link Coordinator} should receive the client's {@link TxnEndMsg}.
