@@ -393,7 +393,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             switch (ctx.loggedState()) {
                 case CONVERSATIONAL: {
                     // Bernstein, p. 231, case 1
-                    logger.info("Aborting the transaction");
+                    logger.info("Logged state is CONVERSATIONAL: aborting the transaction");
                     ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
@@ -405,7 +405,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 }
                 case START_2PC: {
                     // Bernstein, p. 231, case 2
-                    logger.info("Aborting the transaction");
+                    logger.info("Logged state is START_2PC: aborting the transaction");
                     ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
                     var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
@@ -428,7 +428,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 }
                 case GLOBAL_COMMIT: {
                     // Bernstein, p. 231, case 3
-                    logger.info("Retransmitting the final decision to the participants");
+                    logger.info("Logged state is GLOBAL_COMMIT: retransmitting the final decision to the participants");
 
                     var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                     Communication multicast = Communication.builder()
@@ -453,7 +453,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 }
                 case GLOBAL_ABORT: {
                     // Bernstein, p. 231, case 3
-                    logger.info("Retransmitting the final decision to the participants");
+                    logger.info("Logged state is GLOBAL_ABORT: retransmitting the final decision to the participants");
 
                     var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                     Communication multicast = Communication.builder()
