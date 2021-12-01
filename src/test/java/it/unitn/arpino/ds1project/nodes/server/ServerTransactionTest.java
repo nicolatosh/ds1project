@@ -12,13 +12,14 @@ import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ServerTransactionTest {
     ActorSystem system;
     TestActorRef<Server> server;
@@ -39,7 +40,6 @@ public class ServerTransactionTest {
     }
 
     @Test
-    @Order(1)
     void testConcurrentTxn() {
         new TestKit(system) {
             {

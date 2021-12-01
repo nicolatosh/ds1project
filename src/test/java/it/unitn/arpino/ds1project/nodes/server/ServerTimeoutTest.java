@@ -9,7 +9,9 @@ import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.server.DecisionRequest;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
@@ -17,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ServerTimeoutTest {
     ActorSystem system;
     TestActorRef<Server> server0;
@@ -36,7 +37,6 @@ public class ServerTimeoutTest {
     }
 
     @Test
-    @Order(1)
     void testVoteRequestTimeout() throws InterruptedException {
         var start = new StartMessage();
         server0.tell(start, ActorRef.noSender());
@@ -55,7 +55,6 @@ public class ServerTimeoutTest {
     }
 
     @Test
-    @Order(2)
     void testFinalDecisionTimeout() {
         new TestKit(system) {
             {

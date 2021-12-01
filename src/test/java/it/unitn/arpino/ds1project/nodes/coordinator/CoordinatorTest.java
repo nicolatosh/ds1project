@@ -9,7 +9,9 @@ import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
@@ -17,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CoordinatorTest {
     ActorSystem system;
     TestActorRef<Coordinator> coordinator;
@@ -40,7 +41,6 @@ public class CoordinatorTest {
     }
 
     @Test
-    @Order(1)
     void testNoDuplicateContexts() {
         new TestKit(system) {
             {
@@ -66,7 +66,6 @@ public class CoordinatorTest {
     }
 
     @Test
-    @Order(2)
     void testNoDuplicateParticipant() {
         new TestKit(system) {
             {

@@ -13,14 +13,15 @@ import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
 import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CoordinatorTimeoutTest {
     ActorSystem system;
     TestActorRef<Coordinator> coordinator;
@@ -39,7 +40,6 @@ public class CoordinatorTimeoutTest {
     }
 
     @Test
-    @Order(1)
     void testOnTxnEndTimeout() {
         new TestKit(system) {
             {
@@ -72,7 +72,6 @@ public class CoordinatorTimeoutTest {
     }
 
     @Test
-    @Order(2)
     void testOnVoteResponseTimeout() {
         new TestKit(system) {
             {
