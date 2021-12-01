@@ -228,7 +228,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      */
     private void onDecisionRequest(DecisionRequest req) {
         if (!getRepository().existsContextWithId(req.uuid)) {
-            // Ignore the request
+            logger.info("This server is not participating in the transaction: ignoring");
             return;
         }
 
