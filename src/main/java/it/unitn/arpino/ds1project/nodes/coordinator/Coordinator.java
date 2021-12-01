@@ -36,7 +36,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     @Override
     public void aroundReceive(PartialFunction<Object, BoxedUnit> receive, Object obj) {
         if (obj instanceof TxnMessage) {
-            TxnMessage msg = (TxnMessage) obj;
+            var msg = (TxnMessage) obj;
 
             switch (getStatus()) {
                 case ALIVE: {
@@ -112,7 +112,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.log(CoordinatorRequestContext.LogState.START_2PC);
 
                         logger.info("Asking the vote requests to the participants");
-                        Communication multicast = Communication.builder()
+                        var multicast = Communication.builder()
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
                                 .ofMessage(new VoteRequest(msg.uuid))
@@ -134,7 +134,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                        TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+                        var result = new TxnResultMsg(ctx.uuid, false);
                         ctx.subject.tell(result, getSelf());
 
                         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
@@ -146,7 +146,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                     if (ctx.getParticipants().size() > 0) {
                         logger.info("Sending the final decision to the participants");
-                        Communication multicast = Communication.builder()
+                        var multicast = Communication.builder()
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
                                 .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT))
@@ -163,7 +163,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     }
 
                     logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+                    var result = new TxnResultMsg(ctx.uuid, false);
                     ctx.subject.tell(result, getSelf());
 
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
@@ -242,7 +242,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             ctx.log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
                             logger.info("All voted YES. Sending the final decision to the participants");
-                            Communication multicast = Communication.builder()
+                            var multicast = Communication.builder()
                                     .ofSender(getSelf())
                                     .ofReceivers(ctx.getParticipants())
                                     .ofMessage(new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT))
@@ -258,7 +258,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                             logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                            TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
+                            var result = new TxnResultMsg(ctx.uuid, true);
                             ctx.subject.tell(result, getSelf());
                         }
                         break;
@@ -271,7 +271,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
                         logger.info("Sending the final decision to the participants");
-                        Communication multicast = Communication.builder()
+                        var multicast = Communication.builder()
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
                                 .ofMessage(new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT))
@@ -287,7 +287,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                        TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+                        var result = new TxnResultMsg(ctx.uuid, false);
                         ctx.subject.tell(result, getSelf());
 
                         break;
@@ -319,7 +319,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
         logger.info("Sending the final decision to the participants");
-        Communication multicast = Communication.builder()
+        var multicast = Communication.builder()
                 .ofSender(getSelf())
                 .ofReceivers(ctx.getParticipants())
                 .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT))
@@ -335,7 +335,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
         logger.info("Sending the transaction result to " + ctx.subject.path().name());
-        TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+        var result = new TxnResultMsg(ctx.uuid, false);
         ctx.subject.tell(result, getSelf());
     }
 
@@ -347,11 +347,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        ActorRef server = dispatcher.getServer(msg.key);
+        var server = dispatcher.getServer(msg.key);
 
         ctx.addParticipant(server);
 
-        ReadRequest req = new ReadRequest(msg.uuid, msg.key);
+        var req = new ReadRequest(msg.uuid, msg.key);
         server.tell(req, getSelf());
     }
 
@@ -363,7 +363,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        ReadResultMsg result = new ReadResultMsg(msg.uuid, msg.key, msg.value);
+        var result = new ReadResultMsg(msg.uuid, msg.key, msg.value);
 
         ctx.subject.tell(result, getSelf());
     }
@@ -376,11 +376,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        ActorRef server = dispatcher.getServer(msg.key);
+        var server = dispatcher.getServer(msg.key);
 
         ctx.addParticipant(server);
 
-        WriteRequest req = new WriteRequest(msg.uuid, msg.key, msg.value);
+        var req = new WriteRequest(msg.uuid, msg.key, msg.value);
         server.tell(req, getSelf());
     }
 
@@ -414,7 +414,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, false);
+                    var result = new TxnResultMsg(ctx.uuid, false);
                     ctx.subject.tell(result, getSelf());
 
                     break;
@@ -425,7 +425,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
                     var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                    Communication multicast = Communication.builder()
+                    var multicast = Communication.builder()
                             .ofSender(getSelf())
                             .ofReceivers(ctx.getParticipants())
                             .ofMessage(decision)
@@ -447,7 +447,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     logger.info("Logged state is GLOBAL_COMMIT: retransmitting the final decision to the participants");
 
                     var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                    Communication multicast = Communication.builder()
+                    var multicast = Communication.builder()
                             .ofSender(getSelf())
                             .ofReceivers(ctx.getParticipants())
                             .ofMessage(decision)
@@ -462,7 +462,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
+                    var result = new TxnResultMsg(ctx.uuid, true);
                     ctx.subject.tell(result, getSelf());
 
                     break;
@@ -472,7 +472,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     logger.info("Logged state is GLOBAL_ABORT: retransmitting the final decision to the participants");
 
                     var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                    Communication multicast = Communication.builder()
+                    var multicast = Communication.builder()
                             .ofSender(getSelf())
                             .ofReceivers(ctx.getParticipants())
                             .ofMessage(decision)
@@ -487,7 +487,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                    TxnResultMsg result = new TxnResultMsg(ctx.uuid, true);
+                    var result = new TxnResultMsg(ctx.uuid, true);
                     ctx.subject.tell(result, getSelf());
 
                     break;
