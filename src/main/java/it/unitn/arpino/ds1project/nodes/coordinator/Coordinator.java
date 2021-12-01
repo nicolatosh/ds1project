@@ -479,7 +479,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     public void resume() {
         super.resume();
 
-        getRepository().getAllRequestContexts().forEach(ctx -> {
+        getRepository().getAllRequestContexts().stream().filter(ctx -> !(ctx.isCompleted() && ctx.allParticipantsDone())).forEach(ctx -> {
             logger.info("Resuming transaction " + ctx.uuid);
 
             switch (ctx.loggedState()) {
