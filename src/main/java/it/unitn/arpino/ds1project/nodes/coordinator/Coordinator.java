@@ -137,6 +137,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
                         var result = new TxnResultMsg(ctx.uuid, false);
                         ctx.subject.tell(result, getSelf());
+                        ctx.setCompleted();
 
                         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
                     }
@@ -167,6 +168,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     logger.info("Sending the transaction result to " + ctx.subject.path().name());
                     var result = new TxnResultMsg(ctx.uuid, false);
                     ctx.subject.tell(result, getSelf());
+                    ctx.setCompleted();
 
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
@@ -183,11 +185,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             case GLOBAL_COMMIT: {
                 var result = new TxnResultMsg(ctx.uuid, true);
                 getSender().tell(result, getSelf());
+                ctx.setCompleted();
                 break;
             }
             case GLOBAL_ABORT: {
                 var result = new TxnResultMsg(ctx.uuid, false);
                 getSender().tell(result, getSelf());
+                ctx.setCompleted();
                 break;
             }
         }
@@ -263,6 +267,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             logger.info("Sending the transaction result to " + ctx.subject.path().name());
                             var result = new TxnResultMsg(ctx.uuid, true);
                             ctx.subject.tell(result, getSelf());
+                            ctx.setCompleted();
                         }
                         break;
                     }
@@ -293,6 +298,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
                         var result = new TxnResultMsg(ctx.uuid, false);
                         ctx.subject.tell(result, getSelf());
+                        ctx.setCompleted();
 
                         break;
                     }
@@ -342,6 +348,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         logger.info("Sending the transaction result to " + ctx.subject.path().name());
         var result = new TxnResultMsg(ctx.uuid, false);
         ctx.subject.tell(result, getSelf());
+        ctx.setCompleted();
     }
 
     private void onReadMsg(ReadMsg msg) {
@@ -424,9 +431,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
-                    logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                    var result = new TxnResultMsg(ctx.uuid, false);
-                    ctx.subject.tell(result, getSelf());
+                    if (!ctx.isCompleted()) {
+                        logger.info("Sending the transaction result to " + ctx.subject.path().name());
+                        var result = new TxnResultMsg(ctx.uuid, false);
+                        ctx.subject.tell(result, getSelf());
+                        ctx.setCompleted();
+                    }
 
                     break;
                 }
@@ -472,9 +482,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     }
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
-                    logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                    var result = new TxnResultMsg(ctx.uuid, true);
-                    ctx.subject.tell(result, getSelf());
+                    if (!ctx.isCompleted()) {
+                        logger.info("Sending the transaction result to " + ctx.subject.path().name());
+                        var result = new TxnResultMsg(ctx.uuid, true);
+                        ctx.subject.tell(result, getSelf());
+                        ctx.setCompleted();
+                    }
 
                     break;
                 }
@@ -497,9 +510,12 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     }
                     ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
-                    logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                    var result = new TxnResultMsg(ctx.uuid, true);
-                    ctx.subject.tell(result, getSelf());
+                    if (!ctx.isCompleted()) {
+                        logger.info("Sending the transaction result to " + ctx.subject.path().name());
+                        var result = new TxnResultMsg(ctx.uuid, true);
+                        ctx.subject.tell(result, getSelf());
+                        ctx.setCompleted();
+                    }
 
                     break;
                 }

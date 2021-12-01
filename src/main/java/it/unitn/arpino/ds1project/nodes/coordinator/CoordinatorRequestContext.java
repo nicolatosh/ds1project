@@ -54,6 +54,8 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private Cancellable txnEndTimer;
 
+    private boolean completed;
+
     public CoordinatorRequestContext(UUID uuid, ActorRef client) {
         super(uuid, client);
 
@@ -172,6 +174,23 @@ public class CoordinatorRequestContext extends RequestContext {
         if (txnEndTimer != null) {
             txnEndTimer.cancel();
         }
+    }
+
+    /**
+     * @return Whether the client "should" know the result of the transaction (unless it crashed before receiving the result).
+     * This variable is used by the coordinator to determine whether it should retransmit the final decision to the participants
+     * or the transaction result to the client when resuming from a crash.
+     */
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    /**
+     * Sets the context as completed, meaning that the client "should" know the result of the transaction
+     * (unless it crashed before receiving the result).
+     */
+    public void setCompleted() {
+        this.completed = true;
     }
 
     @Override
