@@ -112,10 +112,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.log(CoordinatorRequestContext.LogState.START_2PC);
 
                         logger.info("Asking the vote requests to the participants");
+                        var request = new VoteRequest(msg.uuid);
                         var multicast = Communication.builder()
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
-                                .ofMessage(new VoteRequest(msg.uuid))
+                                .ofMessage(request)
                                 .ofCrashProbability(getParameters().coordinatorOnVoteRequestCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
@@ -146,10 +147,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                     if (ctx.getParticipants().size() > 0) {
                         logger.info("Sending the final decision to the participants");
+                        var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                         var multicast = Communication.builder()
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
-                                .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                                .ofMessage(decision)
                                 .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
@@ -242,10 +244,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             ctx.log(CoordinatorRequestContext.LogState.GLOBAL_COMMIT);
 
                             logger.info("All voted YES. Sending the final decision to the participants");
+                            var decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                             var multicast = Communication.builder()
                                     .ofSender(getSelf())
                                     .ofReceivers(ctx.getParticipants())
-                                    .ofMessage(new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_COMMIT))
+                                    .ofMessage(decision)
                                     .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
                             if (!multicast.run()) {
                                 logger.info("Did not send the message to " + multicast.getMissing().stream()
@@ -271,10 +274,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
                         logger.info("Sending the final decision to the participants");
+                        var decision = new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT);
                         var multicast = Communication.builder()
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
-                                .ofMessage(new FinalDecision(resp.uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                                .ofMessage(decision)
                                 .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
@@ -319,10 +323,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
         logger.info("Sending the final decision to the participants");
+        var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
         var multicast = Communication.builder()
                 .ofSender(getSelf())
                 .ofReceivers(ctx.getParticipants())
-                .ofMessage(new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT))
+                .ofMessage(decision)
                 .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
         if (!multicast.run()) {
             logger.info("Did not send the message to " + multicast.getMissing().stream()

@@ -158,10 +158,11 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.VOTE_COMMIT);
 
+            var yesVote = new VoteResponse(req.uuid, VoteResponse.Vote.YES);
             var unicast = Communication.builder()
                     .ofSender(getSelf())
                     .ofReceiver(getSender())
-                    .ofMessage(new VoteResponse(req.uuid, VoteResponse.Vote.YES))
+                    .ofMessage(yesVote)
                     .ofCrashProbability(getParameters().serverOnVoteResponseCrashProbability);
             if (!unicast.run()) {
                 logger.info("Did not send the message to " + getSender().path().name());
@@ -177,10 +178,11 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
 
+            var noVote = new VoteResponse(req.uuid, VoteResponse.Vote.NO);
             var unicast = Communication.builder()
                     .ofSender(getSelf())
                     .ofReceiver(getSender())
-                    .ofMessage(new VoteResponse(req.uuid, VoteResponse.Vote.NO))
+                    .ofMessage(noVote)
                     .ofCrashProbability(getParameters().serverOnVoteResponseCrashProbability);
             if (!unicast.run()) {
                 logger.info("Did not send the message to " + getSender().path().name());
@@ -395,10 +397,11 @@ public class Server extends DataStoreNode<ServerRequestContext> {
      * @param ctx Context for which to start the termination protocol
      */
     private void terminationProtocol(ServerRequestContext ctx) {
+        var request = new DecisionRequest(ctx.uuid);
         var multicast = Communication.builder()
                 .ofSender(getSelf())
                 .ofReceivers(servers)
-                .ofMessage(new DecisionRequest(ctx.uuid))
+                .ofMessage(request)
                 .ofCrashProbability(getParameters().serverOnDecisionRequestCrashProbability);
         if (!multicast.run()) {
             logger.info("Did not send the message to " + multicast.getMissing().stream()
