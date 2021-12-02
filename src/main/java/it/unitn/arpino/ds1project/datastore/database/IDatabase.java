@@ -2,20 +2,11 @@ package it.unitn.arpino.ds1project.datastore.database;
 
 import it.unitn.arpino.ds1project.datastore.workspace.IWorkspace;
 
-import java.util.Map;
-
 /**
  * Interface to a generic key-value database, where keys and values are integers. Access to the database must be
  * sequential: it does not support concurrent access.
  */
 public interface IDatabase {
-    /**
-     * Preloads the database with the specified keys and values.
-     *
-     * @param keyValues Map of keys and vales which should be copied in the database.
-     */
-    void initialize(Map<Integer, Integer> keyValues);
-
     /**
      * Reads the data item in the database with the specified key.
      *

@@ -46,8 +46,7 @@ public class DatabaseBuilder {
     public DatabaseBuilder create() {
         IntStream.rangeClosed(lowerKey, upperKey).forEach(key -> keyValues.put(key, value));
 
-        database = new Database();
-        database.initialize(keyValues);
+        database = new Database(keyValues);
 
         controller = new DatabaseController(database);
 

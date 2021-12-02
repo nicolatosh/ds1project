@@ -13,10 +13,8 @@ public class Database implements IDatabase {
         this.values = new Column();
     }
 
-    @Override
-    public void initialize(Map<Integer, Integer> keyValues) {
-
-        // Setting up keys, values and versions. Versions by default are 0
+    public Database(Map<Integer, Integer> keyValues) {
+        this();
         keyValues.forEach((k, v) -> {
             values.put(k, v);
             versions.put(k, 0);
