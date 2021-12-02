@@ -209,6 +209,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
+        logger.info("Sending the final decision (GLOBAL_ABORT) to the participants");
         var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
         var multicast = Communication.builder()
                 .ofSender(getSelf())
