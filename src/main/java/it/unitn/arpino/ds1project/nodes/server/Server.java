@@ -443,14 +443,24 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     private void onSolicit(Solicit solicit) {
         var ctx = getRepository().getRequestContextById(solicit.uuid);
 
-        if (!ctx.isDecided()) {
-            logger.info("The decision is not known");
-            return;
+        switch (ctx.loggedState()) {
+            case INIT: {
+                logger.severe("Invalid protocol state (INIT, should be VOTE_COMMIT, GLOBAL_ABORT or DECISION)");
+                return;
+            }
+            case VOTE_COMMIT: {
+                logger.info("The decision is not known: starting the termination protocol");
+                terminationProtocol(ctx);
+                break;
+            }
+            case GLOBAL_ABORT:
+            case DECISION: {
+                logger.info("Sending a Done message");
+                var done = new Done(ctx.uuid);
+                getSender().tell(done, getSelf());
+                break;
+            }
         }
-
-        logger.info("Sending a Done message");
-        var done = new Done(ctx.uuid);
-        getSender().tell(done, getSelf());
     }
 
     @Override
