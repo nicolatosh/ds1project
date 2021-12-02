@@ -412,16 +412,17 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     private void onDone(Done msg) {
         var ctx = getRepository().getRequestContextById(msg.uuid);
 
-        if (!ctx.isDecided()) {
-            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be GLOBAL_COMMIT or GLOBAL_ABORT)");
-            return;
-        }
+        // all logged states are possible.
+        // CONVERSATIONAL:  when the coordinator has not yet received the TxnEndMsg from the client;
+        //                  a crashed participant resumes, aborts and sends Done.
+        // START_2PC:       when the coordinator sends the VoteRequest;
+        //                  a crashed participant drops it, resumes, aborts and sends Done.
 
         ctx.addDoneParticipant(getSender());
 
         if (ctx.allParticipantsDone()) {
-            ctx.cancelDoneRequestTimer();
             logger.info("All Done messages arrived");
+            ctx.cancelDoneRequestTimer();
         } else {
             var missing = ctx.getRemainingDoneParticipants();
             logger.info(missing.size() + " Done messages required left, from " + missing.stream()
