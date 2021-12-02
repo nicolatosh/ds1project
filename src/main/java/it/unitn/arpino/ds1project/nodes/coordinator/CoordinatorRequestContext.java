@@ -144,7 +144,7 @@ public class CoordinatorRequestContext extends RequestContext {
         }
     }
 
-    boolean allParticipantsDone() {
+    public boolean allParticipantsDone() {
         return doneParticipants.size() == participants.size();
     }
 
