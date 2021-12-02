@@ -15,6 +15,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
+import it.unitn.arpino.ds1project.nodes.coordinator.CoordinatorRequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -34,6 +35,7 @@ import java.util.stream.IntStream;
 public class EndToEnd {
     Random random;
     final int N_TRANSACTIONS = 5;
+    final int BACKOFF_S = 1;
     final int initialSum = 20 * DatabaseBuilder.DEFAULT_DATA_VALUE;
 
 
@@ -68,11 +70,16 @@ public class EndToEnd {
         coordinator = null;
     }
 
-    private int calculateSum() {
-        return Integer.sum(
-                IntStream.rangeClosed(0, 9).map(key -> server0.underlyingActor().getDatabase().read(key)).sum(),
-                IntStream.rangeClosed(10, 19).map(key -> server1.underlyingActor().getDatabase().read(key)).sum()
-        );
+    private void checkConsistency() throws InterruptedException {
+        while (!coordinator.underlyingActor().getRepository().getAllRequestContexts().stream()
+                .allMatch(CoordinatorRequestContext::allParticipantsDone)) {
+            Thread.sleep(BACKOFF_S * 1000);
+        }
+
+        int currentSum = IntStream.rangeClosed(0, 9).map(key -> server0.underlyingActor().getDatabase().read(key)).sum() +
+                IntStream.rangeClosed(10, 19).map(key -> server1.underlyingActor().getDatabase().read(key)).sum();
+
+        Assertions.assertEquals(initialSum, currentSum);
     }
 
     @Test
@@ -83,6 +90,9 @@ public class EndToEnd {
 
         int txnLeft = N_TRANSACTIONS;
         while (txnLeft > 0) {
+
+            checkConsistency();
+
             MyTestKit testKit = new MyTestKit(system);
             testKit.logger.info(txnLeft + " transactions left");
 
@@ -93,7 +103,7 @@ public class EndToEnd {
                 testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -108,7 +118,7 @@ public class EndToEnd {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -120,7 +130,7 @@ public class EndToEnd {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -140,18 +150,16 @@ public class EndToEnd {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
             testKit.logger.info(testKit.testActor().path().name() + ": Transaction completed! Outcome: " + (commit ? "committed" : "aborted"));
 
-            Assertions.assertEquals(initialSum, calculateSum());
-
             --txnLeft;
         }
 
-        Assertions.assertEquals(initialSum, calculateSum());
+        checkConsistency();
     }
 
     @Test
@@ -164,6 +172,9 @@ public class EndToEnd {
 
         int txnLeft = N_TRANSACTIONS;
         while (txnLeft > 0) {
+
+            checkConsistency();
+
             MyTestKit testKit = new MyTestKit(system);
             testKit.logger.info(txnLeft + " transactions left");
 
@@ -174,7 +185,7 @@ public class EndToEnd {
                 testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -189,7 +200,7 @@ public class EndToEnd {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -201,7 +212,7 @@ public class EndToEnd {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -221,18 +232,16 @@ public class EndToEnd {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
             testKit.logger.info(testKit.testActor().path().name() + ": Transaction completed! Outcome: " + (commit ? "committed" : "aborted"));
 
-            Assertions.assertEquals(initialSum, calculateSum());
-
             --txnLeft;
         }
 
-        Assertions.assertEquals(initialSum, calculateSum());
+        checkConsistency();
     }
 
     @Test
@@ -249,6 +258,9 @@ public class EndToEnd {
 
         int txnLeft = N_TRANSACTIONS;
         while (txnLeft > 0) {
+
+            checkConsistency();
+
             MyTestKit testKit = new MyTestKit(system);
             testKit.logger.info(txnLeft + " transactions left");
 
@@ -259,7 +271,7 @@ public class EndToEnd {
                 testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -274,7 +286,7 @@ public class EndToEnd {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -286,7 +298,7 @@ public class EndToEnd {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
@@ -306,18 +318,16 @@ public class EndToEnd {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
-                Thread.sleep(5000);
+                Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
             testKit.logger.info(testKit.testActor().path().name() + ": Transaction completed! Outcome: " + (commit ? "committed" : "aborted"));
 
-            Assertions.assertEquals(initialSum, calculateSum());
-
             --txnLeft;
         }
 
-        Assertions.assertEquals(initialSum, calculateSum());
+        checkConsistency();
     }
 
     private static class MyTestKit extends TestKit {
