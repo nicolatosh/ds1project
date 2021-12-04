@@ -475,7 +475,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     protected void resume() {
         super.resume();
 
-        getRepository().getAllRequestContexts().forEach(ctx -> {
+        getRepository().getAllRequestContexts().stream().filter(ctx -> !ctx.isDecided()).forEach(ctx -> {
+            logger.info("Resuming transaction " + ctx.uuid);
+
             switch (ctx.loggedState()) {
                 case INIT: {
                     // If the server has not already cast the vote for the transaction, it aborts it.
