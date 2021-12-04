@@ -291,7 +291,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .ofSender(getSelf())
                 .ofReceiver(getSender())
                 .ofMessage(response)
-                .ofCrashProbability(getParameters().serverOnVoteResponseCrashProbability);
+                .ofCrashProbability(getParameters().serverOnDecisionResponseCrashProbability);
         if (!unicast.run()) {
             logger.info("Did not send the message to " + getSender().path().name());
             crash();
