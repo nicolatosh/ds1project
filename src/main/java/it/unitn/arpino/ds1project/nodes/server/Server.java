@@ -268,17 +268,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.UNKNOWN);
                 break;
             }
-            case DECISION: {
-                switch (ctx.getProtocolState()) {
-                    case ABORT: {
-                        response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.GLOBAL_ABORT);
-                        break;
-                    }
-                    case COMMIT: {
-                        response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.GLOBAL_COMMIT);
-                        break;
-                    }
-                }
+            case GLOBAL_COMMIT: {
+                response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.GLOBAL_COMMIT);
                 break;
             }
             case GLOBAL_ABORT: {
@@ -314,7 +305,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     }
                     case GLOBAL_COMMIT: {
                         logger.info("Received GLOBAL_COMMIT: committing");
-                        ctx.log(ServerRequestContext.LogState.DECISION);
+                        ctx.log(ServerRequestContext.LogState.GLOBAL_COMMIT);
                         ctx.commit();
                         ctx.setProtocolState(TwoPhaseCommitFSM.COMMIT);
 
@@ -327,7 +318,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     }
                     case GLOBAL_ABORT: {
                         logger.info("Received GLOBAL_ABORT: aborting");
-                        ctx.log(ServerRequestContext.LogState.DECISION);
+                        ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                         ctx.abort();
                         ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
@@ -341,8 +332,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 }
                 break;
             }
-            case GLOBAL_ABORT:
-            case DECISION: {
+            case GLOBAL_COMMIT:
+            case GLOBAL_ABORT: {
                 logger.info("The decision is already known, ignoring");
                 break;
             }
@@ -366,7 +357,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
                 ctx.cancelVoteRequestTimer();
 
-                ctx.log(ServerRequestContext.LogState.DECISION);
+                ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                 ctx.abort();
                 ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
@@ -382,20 +373,24 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 switch (req.decision) {
                     case GLOBAL_COMMIT: {
                         logger.info("Received GLOBAL_COMMIT: committing");
-                        ctx.log(ServerRequestContext.LogState.DECISION);
+                        ctx.log(ServerRequestContext.LogState.GLOBAL_COMMIT);
                         ctx.commit();
                         ctx.setProtocolState(TwoPhaseCommitFSM.COMMIT);
                         break;
                     }
                     case GLOBAL_ABORT: {
                         logger.info("Received GLOBAL_ABORT: aborting");
-                        ctx.log(ServerRequestContext.LogState.DECISION);
+                        ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                         ctx.abort();
                         ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
                         break;
                     }
                 }
 
+                break;
+            }
+            case GLOBAL_COMMIT: {
+                logger.info("This should be a retransmission");
                 break;
             }
             case GLOBAL_ABORT: {
@@ -405,10 +400,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 }
                 logger.info("This should be a retransmission");
 
-                break;
-            }
-            case DECISION: {
-                logger.info("This should be a retransmission");
                 break;
             }
         }
@@ -453,8 +444,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 terminationProtocol(ctx);
                 break;
             }
-            case GLOBAL_ABORT:
-            case DECISION: {
+            case GLOBAL_COMMIT:
+            case GLOBAL_ABORT: {
                 logger.info("Sending a Done message");
                 var done = new Done(ctx.uuid);
                 getSender().tell(done, getSelf());

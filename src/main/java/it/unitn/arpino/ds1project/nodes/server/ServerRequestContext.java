@@ -17,8 +17,8 @@ public class ServerRequestContext extends RequestContext {
     public enum LogState {
         INIT,
         VOTE_COMMIT,
-        GLOBAL_ABORT,
-        DECISION
+        GLOBAL_COMMIT,
+        GLOBAL_ABORT
     }
 
     /**
@@ -60,7 +60,7 @@ public class ServerRequestContext extends RequestContext {
 
     @Override
     public boolean isDecided() {
-        return loggedState() == LogState.DECISION || loggedState() == LogState.GLOBAL_ABORT;
+        return loggedState() == LogState.GLOBAL_COMMIT || loggedState() == LogState.GLOBAL_ABORT;
     }
 
     public void log(LogState state) {
