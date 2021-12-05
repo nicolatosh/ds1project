@@ -375,6 +375,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
+        ctx.startTxnEndTimer(this);
+
         var server = dispatcher.getServer(msg.key);
 
         ctx.addParticipant(server);
@@ -403,6 +405,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             logger.info("Arrived too late (" + ctx.loggedState() + ")");
             return;
         }
+
+        ctx.startTxnEndTimer(this);
 
         var server = dispatcher.getServer(msg.key);
 
