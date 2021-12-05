@@ -112,7 +112,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.INIT);
             ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
-            ctx.startTimer(this, ServerRequestContext.VOTE_REQUEST_TIMEOUT_S);
         }
 
         var ctx = getRepository().getRequestContextById(req.uuid);
@@ -121,6 +120,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             logger.severe("Invalid protocol state (" + ctx.loggedState() + ", should be INIT)");
             return;
         }
+
+        ctx.startTimer(this, ServerRequestContext.VOTE_REQUEST_TIMEOUT_S);
 
         int value = ctx.read(req.key);
 
@@ -136,7 +137,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.INIT);
             ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
-            ctx.startTimer(this, ServerRequestContext.VOTE_REQUEST_TIMEOUT_S);
         }
 
         var ctx = getRepository().getRequestContextById(req.uuid);
@@ -145,6 +145,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             logger.severe("Invalid protocol state (" + ctx.loggedState() + ", should be INIT)");
             return;
         }
+
+        ctx.startTimer(this, ServerRequestContext.VOTE_REQUEST_TIMEOUT_S);
 
         ctx.write(req.key, req.value);
     }
