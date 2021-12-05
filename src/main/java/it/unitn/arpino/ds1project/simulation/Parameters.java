@@ -1,41 +1,60 @@
 package it.unitn.arpino.ds1project.simulation;
 
+import it.unitn.arpino.ds1project.nodes.DataStoreNode;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 public class Parameters {
-    public static final double DEFAULT_COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY = 0.0;
-    public static final double DEFAULT_COORDINATOR_ON_FINAL_DECISION_CRASH_PROBABILITY = 0.0;
+    private static final Properties cache;
 
-    public static final double DEFAULT_SERVER_ON_VOTE_RESPONSE_CRASH_PROBABILITY = 0.0;
-    public static final double DEFAULT_SERVER_ON_DECISION_RESPONSE_CRASH_PROBABILITY = 0.0;
-    public static final double DEFAULT_SERVER_ON_DECISION_REQUEST_CRASH_PROBABILITY = 0.0;
+    static {
+        cache = new Properties();
 
-    public static final long DEFAULT_COORDINATOR_RECOVERY_TIME_S = 3;
-    public static final long DEFAULT_SERVER_RECOVERY_TIME_S = 3;
+        try (InputStream file = DataStoreNode.class.getResourceAsStream("/simulation.properties")) {
+            if (file == null) {
+                throw new FileNotFoundException("simulation.properties not found");
+            }
+            cache.load(file);
 
-    public double coordinatorOnVoteRequestCrashProbability;
-    public double coordinatorOnFinalDecisionCrashProbability;
-
-    public double serverOnVoteResponseCrashProbability;
-    public double serverOnDecisionResponseCrashProbability;
-    public double serverOnDecisionRequestCrashProbability;
+        } catch (IOException ignored) {
+        }
+    }
 
     /**
      * Time (in seconds) after which a crashed coordinator recovers. Set to a negative number to keep it crashed forever.
      */
     public long coordinatorRecoveryTimeS;
+    public double coordinatorOnVoteRequestCrashProbability;
+    public double coordinatorOnFinalDecisionCrashProbability;
+
     /**
      * Time (in seconds) after which a crashed server recovers. Set to a negative number to keep it crashed forever.
      */
     public long serverRecoveryTimeS;
+    public double serverOnVoteResponseCrashProbability;
+    public double serverOnDecisionResponseCrashProbability;
+    public double serverOnDecisionRequestCrashProbability;
+
+    public boolean simulateNetworkDelays;
+    public long minimumNetworkDelayMs;
+    public long maximumNetworkDelayMs;
 
 
     public Parameters() {
-        this.coordinatorOnVoteRequestCrashProbability = DEFAULT_COORDINATOR_ON_VOTE_REQUEST_CRASH_PROBABILITY;
-        this.coordinatorOnFinalDecisionCrashProbability = DEFAULT_COORDINATOR_ON_FINAL_DECISION_CRASH_PROBABILITY;
-        this.coordinatorRecoveryTimeS = DEFAULT_COORDINATOR_RECOVERY_TIME_S;
+        coordinatorRecoveryTimeS = Integer.parseInt(cache.getProperty("coordinatorRecoveryTimeS"));
+        coordinatorOnVoteRequestCrashProbability = Integer.parseInt(cache.getProperty("coordinatorOnVoteRequestCrashProbability"));
+        coordinatorOnFinalDecisionCrashProbability = Integer.parseInt(cache.getProperty("coordinatorOnFinalDecisionCrashProbability"));
 
-        this.serverOnVoteResponseCrashProbability = DEFAULT_SERVER_ON_VOTE_RESPONSE_CRASH_PROBABILITY;
-        this.serverOnDecisionResponseCrashProbability = DEFAULT_SERVER_ON_DECISION_RESPONSE_CRASH_PROBABILITY;
-        this.serverOnDecisionRequestCrashProbability = DEFAULT_SERVER_ON_DECISION_REQUEST_CRASH_PROBABILITY;
-        this.serverRecoveryTimeS = DEFAULT_SERVER_RECOVERY_TIME_S;
+        serverRecoveryTimeS = Integer.parseInt(cache.getProperty("serverRecoveryTimeS"));
+        serverOnVoteResponseCrashProbability = Integer.parseInt(cache.getProperty("serverOnVoteResponseCrashProbability"));
+        serverOnDecisionResponseCrashProbability = Integer.parseInt(cache.getProperty("serverOnDecisionResponseCrashProbability"));
+        serverOnDecisionRequestCrashProbability = Integer.parseInt(cache.getProperty("serverOnDecisionRequestCrashProbability"));
+
+        simulateNetworkDelays = Boolean.parseBoolean(cache.getProperty("simulateNetworkDelays"));
+        minimumNetworkDelayMs = Long.parseLong(cache.getProperty("minimumNetworkDelayMs"));
+        maximumNetworkDelayMs = Long.parseLong(cache.getProperty("maximumNetworkDelayMs"));
     }
 }
