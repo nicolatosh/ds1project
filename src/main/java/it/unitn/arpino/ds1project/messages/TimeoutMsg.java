@@ -12,7 +12,7 @@ public class TimeoutMsg extends TxnMessage implements ControlMessage {
 
     @Override
     public String toString() {
-        return "VoteRequestTimeout{" +
+        return "TimeoutMsg{" +
                 "uuid=" + uuid +
                 '}';
     }
