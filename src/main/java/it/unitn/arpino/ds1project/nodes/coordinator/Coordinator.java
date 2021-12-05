@@ -442,11 +442,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        logger.info("Soliciting the remaining participants");
-        var solicit = new Solicit(ctx.uuid);
-        ctx.getRemainingDoneParticipants().forEach(participant -> participant.tell(solicit, getSelf()));
+        if (!ctx.allParticipantsDone()) {
+            logger.info("Soliciting the remaining participants");
+            var solicit = new Solicit(ctx.uuid);
+            ctx.getRemainingDoneParticipants().forEach(participant -> participant.tell(solicit, getSelf()));
 
-        ctx.startDoneRequestTimer(this);
+            ctx.startDoneRequestTimer(this);
+        }
     }
 
     private void onReset(Reset reset) {
