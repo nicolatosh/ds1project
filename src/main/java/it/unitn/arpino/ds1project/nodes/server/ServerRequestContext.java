@@ -132,8 +132,7 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
-     * Starts a countdown timer, within which the {@link Server} should receive the {@link Coordinator}'s
-     * message.
+     * Starts a countdown timer. When the timeout expires, it sends a {@link TimeoutMsg} to the server itself.
      */
     public void startTimer(Server server, int duration) {
         if (timer != null) {
