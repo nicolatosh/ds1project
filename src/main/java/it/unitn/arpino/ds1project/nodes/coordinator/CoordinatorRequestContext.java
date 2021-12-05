@@ -1,7 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
-import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
@@ -10,7 +9,6 @@ import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -56,12 +54,6 @@ public class CoordinatorRequestContext extends RequestContext {
     private final List<LogState> localLog;
 
     private TwoPhaseCommitFSM protocolState;
-
-    private Cancellable voteResponseTimer;
-
-    private Cancellable txnEndTimer;
-
-    private Cancellable doneTimer;
 
     private boolean completed;
 
@@ -168,63 +160,6 @@ public class CoordinatorRequestContext extends RequestContext {
      */
     public LogState loggedState() {
         return localLog.get(localLog.size() - 1);
-    }
-
-    /**
-     * Starts a countdown timer, within which the {@link Coordinator} should collect all the participants' {@link VoteResponse}s.
-     * If the responses do not arrive in time, the Coordinator assumes one participant has crashed, and sends to itself
-     * a {@link VoteResponseTimeout}.
-     */
-    public void startVoteResponseTimer(Coordinator coordinator) {
-        cancelVoteResponseTimer();
-        voteResponseTimer = coordinator.getContext().system().scheduler().scheduleOnce(
-                Duration.ofSeconds(VOTE_RESPONSE_TIMEOUT_S), // delay
-                coordinator.getSelf(), // receiver
-                new VoteResponseTimeout(uuid), // message
-                coordinator.getContext().dispatcher(), // executor
-                coordinator.getSelf()); // sender
-    }
-
-    public void cancelVoteResponseTimer() {
-        if (voteResponseTimer != null) {
-            voteResponseTimer.cancel();
-        }
-    }
-
-    /**
-     * Starts a countdown timer, within which the {@link Coordinator} should receive the client's {@link TxnEndMsg}.
-     * If the message does not arrive in time, the Coordinator sends to itself a {@link TxnEndTimeout}.
-     */
-    public void startTxnEndTimer(Coordinator coordinator) {
-        cancelTxnEndTimer();
-        txnEndTimer = coordinator.getContext().system().scheduler().scheduleOnce(
-                Duration.ofSeconds(TXN_END_TIMEOUT_S), // delay
-                coordinator.getSelf(), // receiver
-                new TxnEndTimeout(uuid), // message
-                coordinator.getContext().dispatcher(), // executor
-                coordinator.getSelf()); // sender
-    }
-
-    public void cancelTxnEndTimer() {
-        if (txnEndTimer != null) {
-            txnEndTimer.cancel();
-        }
-    }
-
-    public void startDoneRequestTimer(Coordinator coordinator) {
-        cancelDoneRequestTimer();
-        doneTimer = coordinator.getContext().system().scheduler().scheduleOnce(
-                Duration.ofSeconds(DONE_TIMEOUT_S), // delay
-                coordinator.getSelf(), // receiver
-                new DoneTimeout(uuid), // message
-                coordinator.getContext().dispatcher(), // executor
-                coordinator.getSelf()); // sender
-    }
-
-    public void cancelDoneRequestTimer() {
-        if (doneTimer != null) {
-            doneTimer.cancel();
-        }
     }
 
     /**
