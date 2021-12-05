@@ -405,9 +405,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        var result = new ReadResultMsg(msg.uuid, msg.key, msg.value);
+        ctx.cancelTimer();
 
+        var result = new ReadResultMsg(msg.uuid, msg.key, msg.value);
         ctx.subject.tell(result, getSelf());
+
+        // give the client more time, as it may be blocked, waiting to receive the read result
+        ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
     }
 
     private void onWriteMsg(WriteMsg msg) {
