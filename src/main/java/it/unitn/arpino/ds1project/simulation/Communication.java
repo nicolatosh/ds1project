@@ -7,7 +7,7 @@ import java.util.*;
 
 public class Communication {
     public static final int MINIMUM_NETWORK_DELAY = 5; //ms
-    public static final int MAXIMUM_NETWORK_DELAY = 10; //ms
+    public static final int MAXIMUM_NETWORK_DELAY = 1000; //ms
     private ActorRef sender;
     private final List<ActorRef> receivers;
     private TxnMessage message;

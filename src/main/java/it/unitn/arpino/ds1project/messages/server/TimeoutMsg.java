@@ -11,8 +11,8 @@ import java.util.UUID;
  * A message that a {@link Server} can send to itself to signal that the time within which to receive the
  * {@link Coordinator}'s {@link VoteRequest} has elapsed.
  */
-public class VoteRequestTimeout extends TxnMessage implements ControlMessage {
-    public VoteRequestTimeout(UUID uuid) {
+public class TimeoutMsg extends TxnMessage implements ControlMessage {
+    public TimeoutMsg(UUID uuid) {
         super(uuid);
     }
 

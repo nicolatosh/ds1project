@@ -90,8 +90,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(WriteRequest.class, this::onWriteRequest)
                 .match(VoteRequest.class, this::onVoteRequest)
                 .match(FinalDecision.class, this::onFinalDecision)
-                .match(VoteRequestTimeout.class, this::onVoteRequestTimeout)
-                .match(FinalDecisionTimeout.class, this::onFinalDecisionTimeout)
+                .match(TimeoutMsg.class, this::onTimeoutMsg)
                 .match(DecisionResponse.class, this::onDecisionResponse)
                 .match(DecisionRequest.class, this::onDecisionRequest)
                 .match(Solicit.class, this::onSolicit)
@@ -113,7 +112,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.INIT);
             ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
-            ctx.startVoteRequestTimer(this);
+            ctx.startTimer(this, ServerRequestContext.VOTE_REQUEST_TIMEOUT_S);
         }
 
         var ctx = getRepository().getRequestContextById(req.uuid);
@@ -137,7 +136,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.log(ServerRequestContext.LogState.INIT);
             ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
-            ctx.startVoteRequestTimer(this);
+            ctx.startTimer(this, ServerRequestContext.VOTE_REQUEST_TIMEOUT_S);
         }
 
         var ctx = getRepository().getRequestContextById(req.uuid);
@@ -158,7 +157,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        ctx.cancelVoteRequestTimer();
+        ctx.cancelTimer();
 
         if (ctx.prepare()) {
             logger.info("Transaction prepared: voting commit");
@@ -179,7 +178,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             ctx.setProtocolState(TwoPhaseCommitFSM.READY);
 
-            ctx.startFinalDecisionTimer(this);
+            ctx.startTimer(this, ServerRequestContext.FINAL_DECISION_TIMEOUT_S);
         } else {
             logger.info("Aborting the transaction");
 
@@ -205,35 +204,33 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         }
     }
 
-    private void onVoteRequestTimeout(VoteRequestTimeout timeout) {
+    private void onTimeoutMsg(TimeoutMsg timeout) {
         var ctx = getRepository().getRequestContextById(timeout.uuid);
 
-        if (ctx.loggedState() != ServerRequestContext.LogState.INIT) {
-            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be INIT)");
-            return;
+        switch (ctx.loggedState()) {
+            case INIT: {
+                logger.info("Aborting the transaction");
+
+                ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
+                ctx.abort();
+                ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
+
+                logger.info("Sending a Done message");
+                var done = new Done(ctx.uuid);
+                ctx.subject.tell(done, getSelf());
+
+                break;
+            }
+            case VOTE_COMMIT: {
+                logger.info("Starting the termination protocol");
+                terminationProtocol(ctx);
+                break;
+            }
+            case GLOBAL_ABORT: {
+                logger.severe("Invalid logged state (" + ctx.loggedState() + ")");
+                break;
+            }
         }
-
-        logger.info("Aborting the transaction");
-
-        ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
-        ctx.abort();
-        ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
-
-        logger.info("Sending a Done message");
-        var done = new Done(ctx.uuid);
-        ctx.subject.tell(done, getSelf());
-    }
-
-    private void onFinalDecisionTimeout(FinalDecisionTimeout timeout) {
-        var ctx = getRepository().getRequestContextById(timeout.uuid);
-
-        if (ctx.loggedState() != ServerRequestContext.LogState.VOTE_COMMIT) {
-            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be VOTE_COMMIT)");
-            return;
-        }
-
-        logger.info("Starting the termination protocol");
-        terminationProtocol(ctx);
     }
 
     /**
@@ -255,7 +252,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 // Tanenbaum, p. 486,
                 logger.info("Logged state is INIT: abort");
 
-                ctx.cancelVoteRequestTimer();
+                ctx.cancelTimer();
 
                 ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                 ctx.abort();
@@ -364,7 +361,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
                 logger.info("Received while in INIT: client abort or coordinator timeout");
 
-                ctx.cancelVoteRequestTimer();
+                ctx.cancelTimer();
 
                 ctx.log(ServerRequestContext.LogState.DECISION);
                 ctx.abort();
@@ -377,7 +374,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 // There is a case in which the final decision timer was never started.
                 // It happens when, in the function onVoteRequest, in the true branch of branch ctx.prepare(),
                 // the server crashes and thus does not reach the line with ctx.startFinalDecisionTimer(this).
-                ctx.cancelFinalDecisionTimer();
+                ctx.cancelTimer();
 
                 switch (req.decision) {
                     case GLOBAL_COMMIT: {
@@ -467,8 +464,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     protected void crash() {
         super.crash();
 
-        getRepository().getAllRequestContexts().forEach(ServerRequestContext::cancelVoteRequestTimer);
-        getRepository().getAllRequestContexts().forEach(ServerRequestContext::cancelFinalDecisionTimer);
+        getRepository().getAllRequestContexts().forEach(ServerRequestContext::cancelTimer);
 
         if (getParameters().serverRecoveryTimeS >= 0) {
             getContext().system().scheduler().scheduleOnce(
