@@ -230,6 +230,8 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         // Do not send the transaction result to the client!
         // The client will send a TxnEndMsg later, to which we will immediately respond with a global abort
+        var result = new TxnEndMsg(ctx.uuid, false);
+        ctx.subject.tell(result, getSelf());
     }
 
     private void onVoteResponse(VoteResponse resp) {
