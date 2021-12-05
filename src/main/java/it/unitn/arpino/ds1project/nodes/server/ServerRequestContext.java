@@ -4,11 +4,13 @@ import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
-import it.unitn.arpino.ds1project.messages.server.*;
+import it.unitn.arpino.ds1project.messages.server.FinalDecision;
+import it.unitn.arpino.ds1project.messages.server.ReadRequest;
+import it.unitn.arpino.ds1project.messages.server.VoteRequest;
+import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -128,30 +130,6 @@ public class ServerRequestContext extends RequestContext {
         if (protocolState == TwoPhaseCommitFSM.INIT || protocolState == TwoPhaseCommitFSM.READY) {
             connection.abort();
             connection = null;
-        }
-    }
-
-    /**
-     * Starts a countdown timer. When the timeout expires, it sends a {@link TimeoutMsg} to the server itself.
-     */
-    public void startTimer(Server server, int duration) {
-        if (timer != null) {
-            cancelTimer();
-        }
-        timer = server.getContext().system().scheduler().scheduleOnce(
-                Duration.ofSeconds(duration), // delay
-                server.getSelf(), // receiver
-                new TimeoutMsg(uuid), // message
-                server.getContext().dispatcher(), // executor
-                server.getSelf()); // sender
-    }
-
-    /**
-     * Cancels the timer.
-     */
-    public void cancelTimer() {
-        if (timer != null) {
-            timer.cancel();
         }
     }
 
