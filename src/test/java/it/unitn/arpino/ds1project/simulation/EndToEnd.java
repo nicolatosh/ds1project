@@ -85,7 +85,6 @@ public class EndToEnd {
     @Test
     void sequentialTransactionsWithCoordinatorCrashes() throws InterruptedException {
         coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0.25;
-        coordinator.underlyingActor().getParameters().coordinatorOnVoteResponseCrashProbability = 0.25;
         coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0.25;
 
         int txnLeft = N_TRANSACTIONS;
@@ -247,7 +246,6 @@ public class EndToEnd {
     @Test
     void sequentialTransactionsWithCoordinatorAndServerCrashes() throws InterruptedException {
         coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0.25;
-        coordinator.underlyingActor().getParameters().coordinatorOnVoteResponseCrashProbability = 0.25;
         coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0.25;
 
         List.of(server0, server1).forEach(server -> {
