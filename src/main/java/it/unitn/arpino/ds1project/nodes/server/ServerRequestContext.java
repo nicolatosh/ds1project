@@ -49,8 +49,7 @@ public class ServerRequestContext extends RequestContext {
 
     private IConnection connection;
 
-    private Cancellable voteRequestTimer;
-    private Cancellable finalDecisionTimer;
+    private Cancellable timer;
 
     public ServerRequestContext(UUID uuid, ActorRef coordinator, IConnection connection) {
         super(uuid, coordinator);
@@ -134,16 +133,16 @@ public class ServerRequestContext extends RequestContext {
 
     /**
      * Starts a countdown timer, within which the {@link Server} should receive the {@link Coordinator}'s
-     * {@link VoteRequest}. If the vote does not arrive in time, the Server assumes the Coordinator to be crashed.
+     * message.
      */
-    public void startVoteRequestTimer(Server server) {
-        if (voteRequestTimer != null) {
-            cancelVoteRequestTimer();
+    public void startTimer(Server server, int duration) {
+        if (timer != null) {
+            cancelTimer();
         }
-        voteRequestTimer = server.getContext().system().scheduler().scheduleOnce(
-                Duration.ofSeconds(VOTE_REQUEST_TIMEOUT_S), // delay
+        timer = server.getContext().system().scheduler().scheduleOnce(
+                Duration.ofSeconds(duration), // delay
                 server.getSelf(), // receiver
-                new VoteRequestTimeout(uuid), // message
+                new TimeoutMsg(uuid), // message
                 server.getContext().dispatcher(), // executor
                 server.getSelf()); // sender
     }
@@ -151,36 +150,12 @@ public class ServerRequestContext extends RequestContext {
     /**
      * Cancels the timer.
      */
-    public void cancelVoteRequestTimer() {
-        if (voteRequestTimer != null) {
-            voteRequestTimer.cancel();
+    public void cancelTimer() {
+        if (timer != null) {
+            timer.cancel();
         }
     }
 
-    /**
-     * Starts a countdown timer, within which the {@link Server} should receive the {@link Coordinator}'s
-     * {@link FinalDecision}. If the decision does not arrive in time, the Server assumes the Coordinator to be crashed.
-     */
-    public void startFinalDecisionTimer(Server server) {
-        if (finalDecisionTimer != null) {
-            cancelFinalDecisionTimer();
-        }
-        finalDecisionTimer = server.getContext().system().scheduler().scheduleOnce(
-                Duration.ofSeconds(FINAL_DECISION_TIMEOUT_S), // delay
-                server.getSelf(), // receiver
-                new FinalDecisionTimeout(uuid), // message
-                server.getContext().dispatcher(), // executor
-                server.getSelf()); // sender
-    }
-
-    /**
-     * Cancels the timer. If the timer was not started, it does nothing.
-     */
-    public void cancelFinalDecisionTimer() {
-        if (finalDecisionTimer != null) {
-            finalDecisionTimer.cancel();
-        }
-    }
 
     @Override
     public String toString() {
