@@ -371,7 +371,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         var ctx = getRepository().getRequestContextById(msg.uuid);
 
         if (ctx.loggedState() != CoordinatorRequestContext.LogState.CONVERSATIONAL) {
-            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
+            logger.info("Invalid too late (" + ctx.loggedState() + ")");
             return;
         }
 
@@ -387,7 +387,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         var ctx = getRepository().getRequestContextById(msg.uuid);
 
         if (ctx.loggedState() != CoordinatorRequestContext.LogState.CONVERSATIONAL) {
-            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
+            logger.info("Arrived too late: logged state (" + ctx.loggedState() + ")");
             return;
         }
 
@@ -400,7 +400,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         var ctx = getRepository().getRequestContextById(msg.uuid);
 
         if (ctx.loggedState() != CoordinatorRequestContext.LogState.CONVERSATIONAL) {
-            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
+            logger.info("Arrived too late (" + ctx.loggedState() + ")");
             return;
         }
 
