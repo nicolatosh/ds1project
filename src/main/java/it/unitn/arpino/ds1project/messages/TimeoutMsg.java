@@ -1,11 +1,9 @@
 package it.unitn.arpino.ds1project.messages;
 
-import akka.dispatch.ControlMessage;
-
 import java.util.UUID;
 
 
-public class TimeoutMsg extends TxnMessage implements ControlMessage {
+public class TimeoutMsg extends TxnMessage {
     public TimeoutMsg(UUID uuid) {
         super(uuid);
     }
