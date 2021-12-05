@@ -103,7 +103,9 @@ public class TxnClient extends AbstractActor {
 
         // contact a random coordinator and begin TXN
         currentCoordinator = coordinators.get(r.nextInt(coordinators.size()));
-        currentCoordinator.tell(new TxnBeginMsg(), getSelf());
+        var begin = new TxnBeginMsg();
+        uuid = begin.uuid;
+        currentCoordinator.tell(begin, getSelf());
 
         // how many operations (taking some amount and adding it somewhere else)?
         int numExtraOp = RAND_LENGTH_RANGE > 0 ? r.nextInt(RAND_LENGTH_RANGE) : 0;
