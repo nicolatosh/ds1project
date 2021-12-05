@@ -229,7 +229,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.startDoneRequestTimer(this);
 
         logger.info("Sending the transaction result to " + ctx.subject.path().name());
-        var result = new TxnEndMsg(ctx.uuid, false);
+        var result = new TxnResultMsg(ctx.uuid, false);
         ctx.subject.tell(result, getSelf());
         ctx.setCompleted();
     }
