@@ -226,8 +226,12 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 terminationProtocol(ctx);
                 break;
             }
+            case GLOBAL_COMMIT: {
+                logger.severe("Invalid logged state (GLOBAL_COMMIT)");
+                break;
+            }
             case GLOBAL_ABORT: {
-                logger.severe("Invalid logged state (" + ctx.loggedState() + ")");
+                logger.severe("Invalid logged state (GLOBAL_ABORT)");
                 break;
             }
         }
