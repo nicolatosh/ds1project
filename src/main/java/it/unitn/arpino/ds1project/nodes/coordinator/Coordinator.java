@@ -83,39 +83,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         var ctx = getRepository().getRequestContextById(timeout.uuid);
 
         switch (ctx.loggedState()) {
-            case CONVERSATIONAL: {
-                logger.info("Logged state is CONVERSATIONAL, aborting the transaction");
-
-                ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
-
-                logger.info("Sending the final decision (GLOBAL_ABORT) to the participants");
-                var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                var multicast = Communication.builder()
-                        .ofSender(getSelf())
-                        .ofReceivers(ctx.getParticipants())
-                        .ofMessage(decision)
-                        .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
-                if (!multicast.run()) {
-                    logger.info("Did not send the message to " + multicast.getMissing().stream()
-                            .map(participant -> participant.path().name())
-                            .collect(Collectors.joining(", ")));
-                    crash();
-                    return;
-                }
-
-                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
-                ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
-
-                logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                var result = new TxnResultMsg(ctx.uuid, false);
-                ctx.subject.tell(result, getSelf());
-                ctx.setCompleted();
-
-                break;
-            }
+            case CONVERSATIONAL:
             case START_2PC: {
-                logger.info("Logged state is CONVERSATIONAL, aborting the transaction");
+                logger.info("Logged state is " + ctx.loggedState() + ", aborting the transaction");
 
                 ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
