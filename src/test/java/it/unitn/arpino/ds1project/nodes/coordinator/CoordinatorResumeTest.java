@@ -144,7 +144,7 @@ public class CoordinatorResumeTest {
     }
 
     @Test
-    void testResumeInGlobalAbort() {
+    void testResumeInGlobalAbort() throws InterruptedException {
         new TestKit(system) {
             {
                 var join = new JoinMessage(0, 9);
@@ -169,7 +169,7 @@ public class CoordinatorResumeTest {
                 var voteRequest = new VoteRequest(uuid);
                 expectMsg(voteRequest);
 
-                var voteResponse = new VoteResponse(uuid, VoteResponse.Vote.YES);
+                var voteResponse = new VoteResponse(uuid, VoteResponse.Vote.NO);
                 // this forces the coordinator to log GLOBAL_ABORT and crash
                 coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1;
                 coordinator.tell(voteResponse, testActor());
@@ -177,14 +177,20 @@ public class CoordinatorResumeTest {
                 // restore the normality
                 coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0;
 
-                var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1, TimeUnit.SECONDS),
-                        decision);
+                // the "NO" vote from the participant counted as a Done message; thus, while resuming, the coordinator
+                // does not need to send the final decision.
+                // var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                // expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1000, TimeUnit.SECONDS),
+                //        decision);
+
+                // wait for the coordinator to execute the resume
+                Thread.sleep(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1000);
+
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
-                assertSame(CoordinatorRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT, ctx.getProtocolState());
+                assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
+                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
     }
