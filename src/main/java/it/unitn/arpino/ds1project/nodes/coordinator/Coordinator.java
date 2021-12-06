@@ -141,12 +141,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.log(CoordinatorRequestContext.LogState.CONVERSATIONAL);
 
         var accept = new TxnAcceptMsg(ctx.uuid);
-        Communication.builder()
-                .ofSender(getSelf())
-                .ofReceiver(getSender())
-                .ofMessage(accept)
-                .ofCrashProbability(0)
-                .run();
+        getSender().tell(accept, getSelf());
 
         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
 
