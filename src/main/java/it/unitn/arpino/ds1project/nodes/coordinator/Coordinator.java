@@ -577,10 +577,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             crash();
                             return;
                         }
-                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                         ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
                     }
+
+                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     if (!ctx.isCompleted()) {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
@@ -609,10 +610,11 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             crash();
                             return;
                         }
-                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                         ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
                     }
+
+                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     if (!ctx.isCompleted()) {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
