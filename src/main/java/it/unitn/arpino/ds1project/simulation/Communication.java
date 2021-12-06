@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Communication {
-    public Parameters parameters;
+    public static Parameters parameters = new Parameters();
 
     private ActorRef sender;
     private final List<ActorRef> receivers;
@@ -18,7 +18,6 @@ public class Communication {
     private double crashP;
 
     private Communication() {
-        parameters = new Parameters();
         receivers = new ArrayList<>();
     }
 
