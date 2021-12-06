@@ -86,7 +86,7 @@ public class CoordinatorResumeTest {
                 coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0;
 
                 var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_ABORT);
-                expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeS + 1, TimeUnit.SECONDS),
+                expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1000, TimeUnit.SECONDS),
                         decision);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
@@ -132,7 +132,7 @@ public class CoordinatorResumeTest {
                 coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0;
 
                 var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeS + 1, TimeUnit.SECONDS),
+                expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1000, TimeUnit.SECONDS),
                         decision);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
@@ -178,7 +178,7 @@ public class CoordinatorResumeTest {
                 coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0;
 
                 var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_COMMIT);
-                expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeS + 1, TimeUnit.SECONDS),
+                expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1, TimeUnit.SECONDS),
                         decision);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);

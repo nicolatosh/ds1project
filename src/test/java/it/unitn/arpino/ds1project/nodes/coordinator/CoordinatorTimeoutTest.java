@@ -117,7 +117,7 @@ public class CoordinatorTimeoutTest {
     void shouldTimeoutForVoteResponse() {
         // Make the server crash when handling the vote request
         server.underlyingActor().getParameters().serverOnVoteResponseCrashProbability = 1.;
-        server.underlyingActor().getParameters().serverRecoveryTimeS = -1;
+        server.underlyingActor().getParameters().serverCanRecover = false;
 
         new TestKit(system) {
             {

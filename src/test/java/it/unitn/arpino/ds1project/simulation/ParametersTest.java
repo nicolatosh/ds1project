@@ -9,8 +9,8 @@ public class ParametersTest {
         var first = new Parameters();
         var second = new Parameters();
 
-        second.coordinatorRecoveryTimeS = 1;
+        second.coordinatorRecoveryTimeMs = 1000;
 
-        Assertions.assertNotEquals(first.coordinatorRecoveryTimeS, second.coordinatorRecoveryTimeS);
+        Assertions.assertNotEquals(first.coordinatorRecoveryTimeMs, second.coordinatorRecoveryTimeMs);
     }
 }
