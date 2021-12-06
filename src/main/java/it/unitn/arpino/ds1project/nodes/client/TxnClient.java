@@ -173,8 +173,8 @@ public class TxnClient extends AbstractActor {
 
         var op = ctx.newOp(key1, key2);
 
-        var read1 = new ReadMsg(ctx.uuid, key1);
-        var read2 = new ReadMsg(ctx.uuid, key2);
+        var read1 = new ReadMsg(ctx.uuid, op.firstKey);
+        var read2 = new ReadMsg(ctx.uuid, op.secondKey);
 
         ctx.subject.tell(read1, getSelf());
         ctx.subject.tell(read2, getSelf());
