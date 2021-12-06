@@ -138,6 +138,8 @@ public class TxnClient extends AbstractActor {
     private void onReadResultMsg(ReadResultMsg msg) {
         var ctx = contexts.get(msg.uuid);
 
+        ctx.cancelTimer();
+
         var op = ctx.getOp();
         if (msg.key == op.firstKey) {
             op.firstValue = msg.value;
@@ -150,8 +152,6 @@ public class TxnClient extends AbstractActor {
             ctx.startTimer(this, ClientRequestContext.READ_TIMEOUT_S);
             return;
         }
-
-        ctx.cancelTimer();
 
         if (ThreadLocalRandom.current().nextDouble() < WRITE_PROBABILITY) {
             writeTwo(ctx);
@@ -197,9 +197,6 @@ public class TxnClient extends AbstractActor {
 
         ctx.subject.tell(write1, getSelf());
         ctx.subject.tell(write2, getSelf());
-
-        // give the coordinator more time to forward the writes
-        ctx.cancelTimer();
 
         if (ctx.opLeft() > 0) {
             readTwo(ctx);
