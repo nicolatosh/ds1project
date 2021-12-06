@@ -1,9 +1,9 @@
 package it.unitn.arpino.ds1project.nodes.context;
 
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.messages.TimeoutMsg;
-import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -37,7 +37,7 @@ public abstract class RequestContext {
     /**
      * Starts a countdown timer. When the timeout expires, it sends a {@link TimeoutMsg} to the DataStoreNode itself.
      */
-    public void startTimer(DataStoreNode<? extends RequestContext> node, int duration) {
+    public void startTimer(AbstractActor node, int duration) {
         if (timer != null) {
             cancelTimer();
         }
