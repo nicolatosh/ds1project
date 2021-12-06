@@ -85,13 +85,15 @@ public class TxnClient extends AbstractActor {
 
             logger.info("Received " + msg + " from " + getSender().path().name());
 
-            if (contexts.containsKey(msg.uuid)) {
-                var ctx = contexts.get(msg.uuid);
-                if (ctx.isDecided()) {
+            var ctx = contexts.get(msg.uuid);
+            if (ctx.isDecided()) {
+                if (!(msg instanceof TxnResultMsg)) {
                     logger.info("The decision is already known (" + ctx.getStatus() + ")");
                     return;
                 }
+                // else: let the TxnResultMsg pass anyway
             }
+
         }
 
         super.aroundReceive(receive, obj);
@@ -177,6 +179,11 @@ public class TxnClient extends AbstractActor {
         var read2 = new ReadMsg(ctx.uuid, op.secondKey);
 
         ctx.subject.tell(read1, getSelf());
+        try {
+            Thread.sleep(25);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         ctx.subject.tell(read2, getSelf());
 
         ctx.startTimer(this, ClientRequestContext.READ_TIMEOUT_S);
@@ -193,6 +200,11 @@ public class TxnClient extends AbstractActor {
         }
 
         var write1 = new WriteMsg(ctx.uuid, op.firstKey, op.firstValue);
+        try {
+            Thread.sleep(25);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         var write2 = new WriteMsg(ctx.uuid, op.secondKey, op.secondValue);
 
         ctx.subject.tell(write1, getSelf());
@@ -239,26 +251,59 @@ public class TxnClient extends AbstractActor {
     private void onTxnResultMsg(TxnResultMsg msg) {
         var ctx = contexts.get(msg.uuid);
 
-        ctx.cancelTimer();
+        // aroundReceive lets old TxnResultMsg pass through, so that we can do a consistency check here
+        switch (ctx.getStatus()) {
+            case CREATED:
+            case REQUESTED: {
+                logger.severe("Invalid state: " + ctx.getStatus());
+                return;
+            }
+            case CONVERSATIONAL: {
+                if (msg.commit) {
+                    // sanity check
+                    logger.severe("Received COMMIT, but state is CONVERSATIONAL");
+                    return;
+                }
+                break;
+            }
+            case PENDING: {
+                if (msg.commit) {
+                    ctx.setStatus(ClientRequestContext.Status.COMMIT);
+                    ++numCommittedTxn;
+                    logger.info("COMMIT OK (" + numCommittedTxn + "/" + numAttemptedTxn + ")");
+                } else {
+                    ctx.setStatus(ClientRequestContext.Status.ABORT);
+                    logger.info("COMMIT FAIL (" + (numAttemptedTxn - numCommittedTxn) + "/" + numAttemptedTxn + ")");
+                }
 
-        if (msg.commit) {
-            ctx.setStatus(ClientRequestContext.Status.COMMIT);
-            ++numCommittedTxn;
-            logger.info("COMMIT OK (" + numCommittedTxn + "/" + numAttemptedTxn + ")");
-        } else {
-            ctx.setStatus(ClientRequestContext.Status.ABORT);
-            logger.info("COMMIT FAIL (" + (numAttemptedTxn - numCommittedTxn) + "/" + numAttemptedTxn + ")");
-        }
-
-        if (parameters.clientLoop) {
-            // start a new transaction
-            var start = new StartMessage();
-            getContext().getSystem().getScheduler().scheduleOnce(
-                    Duration.ofSeconds(BACKOFF_S), // delay
-                    getSelf(), // receiver
-                    start, // message
-                    getContext().dispatcher(), // executor
-                    getSelf()); // sender
+                if (parameters.clientLoop) {
+                    // start a new transaction
+                    var start = new StartMessage();
+                    getContext().getSystem().getScheduler().scheduleOnce(
+                            Duration.ofSeconds(BACKOFF_S), // delay
+                            getSelf(), // receiver
+                            start, // message
+                            getContext().dispatcher(), // executor
+                            getSelf()); // sender
+                }
+                break;
+            }
+            case COMMIT: {
+                if (!msg.commit) {
+                    // sanity check
+                    logger.severe("Received ABORT, but state is COMMIT");
+                    return;
+                }
+                break;
+            }
+            case ABORT: {
+                if (msg.commit) {
+                    // sanity check
+                    logger.severe("Received COMMIT, but state is ABORT");
+                    return;
+                }
+                break;
+            }
         }
     }
 
