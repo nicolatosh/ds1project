@@ -212,7 +212,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         switch (ctx.loggedState()) {
             case CONVERSATIONAL: {
-                logger.info("Aborting the transaction");
+                logger.info("Logged state is CONVERSATIONAL, aborting the transaction");
 
                 ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                 ctx.abort();
@@ -225,7 +225,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
             case VOTE_COMMIT: {
-                logger.info("Starting the termination protocol");
+                logger.info("Logged state is VOTE_COMMIT, starting the termination protocol");
                 terminationProtocol(ctx);
                 break;
             }
