@@ -46,7 +46,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     public static Props props(int lowerKey, int upperKey) {
-        return Props.create(Server.class, () -> new Server(lowerKey, upperKey));
+        return Props.create(Server.class, () -> new Server(lowerKey, upperKey)).withDispatcher("my-pinned-dispatcher");
     }
 
     public IDatabase getDatabase() {

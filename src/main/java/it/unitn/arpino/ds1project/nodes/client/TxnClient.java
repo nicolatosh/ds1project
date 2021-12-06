@@ -73,7 +73,7 @@ public class TxnClient extends AbstractActor {
     }
 
     static public Props props(int clientId) {
-        return Props.create(TxnClient.class, () -> new TxnClient(clientId));
+        return Props.create(TxnClient.class, () -> new TxnClient(clientId)).withDispatcher("my-pinned-dispatcher");
     }
 
     @Override

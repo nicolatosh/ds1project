@@ -28,7 +28,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     public static Props props() {
-        return Props.create(Coordinator.class, Coordinator::new);
+        return Props.create(Coordinator.class, Coordinator::new).withDispatcher("my-pinned-dispatcher");
     }
 
     @Override
