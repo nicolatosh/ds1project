@@ -121,10 +121,7 @@ public class ServerRequestContext extends RequestContext {
      * Aborts the transaction.
      */
     public void abort() {
-        // case 1: The client asked to abort (a requested to prepare was never generated). Thus, the state is INIT.
-        // case 2: The Server has attempted to prepare and the outcome was positive. Thus, the state is READY.
-        // case 3: The Server has attempted to prepare and the outcome was negative. Thus, the state is ABORT.
-        if (protocolState == TwoPhaseCommitFSM.INIT || protocolState == TwoPhaseCommitFSM.READY) {
+        if (loggedState() == LogState.CONVERSATIONAL || loggedState() == LogState.VOTE_COMMIT) {
             connection.abort();
             connection = null;
         }
