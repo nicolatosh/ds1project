@@ -267,6 +267,8 @@ public class TxnClient extends AbstractActor {
                 break;
             }
             case PENDING: {
+                ctx.cancelTimer();
+
                 if (msg.commit) {
                     ctx.setStatus(ClientRequestContext.Status.COMMIT);
                     ++numCommittedTxn;
