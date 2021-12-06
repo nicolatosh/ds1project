@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -54,8 +55,8 @@ public class CoordinatorOnVoteResponseTest {
                 var start = new StartMessage();
                 coordinator.tell(start, ActorRef.noSender());
 
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, testActor());
 
                 var accept = new TxnAcceptMsg(uuid);
@@ -104,8 +105,8 @@ public class CoordinatorOnVoteResponseTest {
                 var start = new StartMessage();
                 coordinator.tell(start, ActorRef.noSender());
 
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, testActor());
 
                 var accept = new TxnAcceptMsg(uuid);

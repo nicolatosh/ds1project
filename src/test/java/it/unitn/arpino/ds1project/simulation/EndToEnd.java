@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -95,11 +96,12 @@ public class EndToEnd {
             MyTestKit testKit = new MyTestKit(system);
             testKit.logger.info(txnLeft + " transactions left");
 
-            var begin = new TxnBeginMsg();
+            var uuid = UUID.randomUUID();
+            var begin = new TxnBeginMsg(uuid);
             coordinator.tell(begin, testKit.testActor());
 
             try {
-                testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
+                testKit.expectMsg(new TxnAcceptMsg(uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
                 Thread.sleep(BACKOFF_S * 1000);
@@ -109,46 +111,46 @@ public class EndToEnd {
             int keyFrom = random.nextInt(10);
             int keyTo = 10 + random.nextInt(10);
 
-            var read1 = new ReadMsg(begin.uuid, keyFrom);
+            var read1 = new ReadMsg(uuid, keyFrom);
             coordinator.tell(read1, testKit.testActor());
 
             int value1;
             try {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for ReadResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
-            var read2 = new ReadMsg(begin.uuid, keyTo);
+            var read2 = new ReadMsg(uuid, keyTo);
             coordinator.tell(read2, testKit.testActor());
 
             int value2;
             try {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for ReadResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
-            var write1 = new WriteMsg(begin.uuid, keyFrom, value1 - 1);
+            var write1 = new WriteMsg(uuid, keyFrom, value1 - 1);
             coordinator.tell(write1, testKit.testActor());
             testKit.expectNoMessage();
 
-            var write2 = new WriteMsg(begin.uuid, keyTo, value2 + 1);
+            var write2 = new WriteMsg(uuid, keyTo, value2 + 1);
             coordinator.tell(write2, testKit.testActor());
             testKit.expectNoMessage();
 
-            var end = new TxnEndMsg(begin.uuid, true);
+            var end = new TxnEndMsg(uuid, true);
             coordinator.tell(end, testKit.testActor());
 
             boolean commit;
             try {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for TxnResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
@@ -177,11 +179,12 @@ public class EndToEnd {
             MyTestKit testKit = new MyTestKit(system);
             testKit.logger.info(txnLeft + " transactions left");
 
-            var begin = new TxnBeginMsg();
+            var uuid = UUID.randomUUID();
+            var begin = new TxnBeginMsg(uuid);
             coordinator.tell(begin, testKit.testActor());
 
             try {
-                testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
+                testKit.expectMsg(new TxnAcceptMsg(uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
                 Thread.sleep(BACKOFF_S * 1000);
@@ -191,46 +194,46 @@ public class EndToEnd {
             int keyFrom = random.nextInt(10);
             int keyTo = 10 + random.nextInt(10);
 
-            var read1 = new ReadMsg(begin.uuid, keyFrom);
+            var read1 = new ReadMsg(uuid, keyFrom);
             coordinator.tell(read1, testKit.testActor());
 
             int value1;
             try {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for ReadResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
-            var read2 = new ReadMsg(begin.uuid, keyTo);
+            var read2 = new ReadMsg(uuid, keyTo);
             coordinator.tell(read2, testKit.testActor());
 
             int value2;
             try {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for ReadResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
-            var write1 = new WriteMsg(begin.uuid, keyFrom, value1 - 1);
+            var write1 = new WriteMsg(uuid, keyFrom, value1 - 1);
             coordinator.tell(write1, testKit.testActor());
             testKit.expectNoMessage();
 
-            var write2 = new WriteMsg(begin.uuid, keyTo, value2 + 1);
+            var write2 = new WriteMsg(uuid, keyTo, value2 + 1);
             coordinator.tell(write2, testKit.testActor());
             testKit.expectNoMessage();
 
-            var end = new TxnEndMsg(begin.uuid, true);
+            var end = new TxnEndMsg(uuid, true);
             coordinator.tell(end, testKit.testActor());
 
             boolean commit;
             try {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for TxnResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
@@ -262,11 +265,12 @@ public class EndToEnd {
             MyTestKit testKit = new MyTestKit(system);
             testKit.logger.info(txnLeft + " transactions left");
 
-            var begin = new TxnBeginMsg();
+            var uuid = UUID.randomUUID();
+            var begin = new TxnBeginMsg(uuid);
             coordinator.tell(begin, testKit.testActor());
 
             try {
-                testKit.expectMsg(new TxnAcceptMsg(begin.uuid));
+                testKit.expectMsg(new TxnAcceptMsg(uuid));
             } catch (AssertionError err) {
                 testKit.logger.info(testKit.testActor().path().name() + ": timeout while waiting for TxnAcceptMsg");
                 Thread.sleep(BACKOFF_S * 1000);
@@ -276,46 +280,46 @@ public class EndToEnd {
             int keyFrom = random.nextInt(10);
             int keyTo = 10 + random.nextInt(10);
 
-            var read1 = new ReadMsg(begin.uuid, keyFrom);
+            var read1 = new ReadMsg(uuid, keyFrom);
             coordinator.tell(read1, testKit.testActor());
 
             int value1;
             try {
                 value1 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for ReadResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
-            var read2 = new ReadMsg(begin.uuid, keyTo);
+            var read2 = new ReadMsg(uuid, keyTo);
             coordinator.tell(read2, testKit.testActor());
 
             int value2;
             try {
                 value2 = testKit.expectMsgClass(ReadResultMsg.class).value;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for ReadResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for ReadResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }
 
-            var write1 = new WriteMsg(begin.uuid, keyFrom, value1 - 1);
+            var write1 = new WriteMsg(uuid, keyFrom, value1 - 1);
             coordinator.tell(write1, testKit.testActor());
             testKit.expectNoMessage();
 
-            var write2 = new WriteMsg(begin.uuid, keyTo, value2 + 1);
+            var write2 = new WriteMsg(uuid, keyTo, value2 + 1);
             coordinator.tell(write2, testKit.testActor());
             testKit.expectNoMessage();
 
-            var end = new TxnEndMsg(begin.uuid, true);
+            var end = new TxnEndMsg(uuid, true);
             coordinator.tell(end, testKit.testActor());
 
             boolean commit;
             try {
                 commit = testKit.expectMsgClass(TxnResultMsg.class).commit;
             } catch (AssertionError err) {
-                testKit.logger.info(testKit.testActor().path().name() + ": " + begin.uuid + ": timeout while waiting for TxnResultMsg");
+                testKit.logger.info(testKit.testActor().path().name() + ": " + uuid + ": timeout while waiting for TxnResultMsg");
                 Thread.sleep(BACKOFF_S * 1000);
                 continue;
             }

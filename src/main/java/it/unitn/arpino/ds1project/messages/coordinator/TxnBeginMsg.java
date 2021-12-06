@@ -10,8 +10,8 @@ import java.util.UUID;
  * A message that a {@link TxnClient} uses to open a transaction with a {@link Coordinator}.
  */
 public class TxnBeginMsg extends TxnMessage {
-    public TxnBeginMsg() {
-        super(UUID.randomUUID());
+    public TxnBeginMsg(UUID uuid) {
+        super(uuid);
     }
 
     @Override

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -58,9 +59,8 @@ public class CoordinatorTimeoutTest {
         new TestKit(system) {
             {
                 // testActor() will be the client of the transaction.
-
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, testActor());
 
                 var accept = new TxnAcceptMsg(uuid);
@@ -87,9 +87,8 @@ public class CoordinatorTimeoutTest {
         new TestKit(system) {
             {
                 // testActor() will be the client of the transaction.
-
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, testActor());
 
                 var accept = new TxnAcceptMsg(uuid);
@@ -122,9 +121,8 @@ public class CoordinatorTimeoutTest {
         new TestKit(system) {
             {
                 // testActor() will be the client of the transaction.
-
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, testActor());
 
                 var accept = new TxnAcceptMsg(uuid);
@@ -143,7 +141,7 @@ public class CoordinatorTimeoutTest {
                 expectMsg(Duration.create(CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S + 1, TimeUnit.SECONDS),
                         result);
 
-                var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(begin.uuid);
+                var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
                 assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());

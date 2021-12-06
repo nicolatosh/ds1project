@@ -61,7 +61,7 @@ public class ClientTransactionTest {
     void testReadYourWrites() {
         new TestKit(system) {
             {
-                coordinator.tell(new TxnBeginMsg(), testActor());
+                coordinator.tell(new TxnBeginMsg(UUID.randomUUID()), testActor());
                 UUID uuid = expectMsgClass(TxnAcceptMsg.class).uuid;
 
                 coordinator.tell(new WriteMsg(uuid, 1, 10), testActor());
@@ -78,7 +78,7 @@ public class ClientTransactionTest {
     void testCommit() {
         new TestKit(system) {
             {
-                coordinator.tell(new TxnBeginMsg(), testActor());
+                coordinator.tell(new TxnBeginMsg(UUID.randomUUID()), testActor());
                 UUID uuid = expectMsgClass(TxnAcceptMsg.class).uuid;
 
                 coordinator.tell(new WriteMsg(uuid, 3, 30), testActor());
@@ -94,7 +94,7 @@ public class ClientTransactionTest {
     void testAbort() {
         new TestKit(system) {
             {
-                coordinator.tell(new TxnBeginMsg(), testActor());
+                coordinator.tell(new TxnBeginMsg(UUID.randomUUID()), testActor());
                 UUID uuid = expectMsgClass(TxnAcceptMsg.class).uuid;
 
                 coordinator.tell(new WriteMsg(uuid, 3, 30), testActor());
@@ -110,10 +110,10 @@ public class ClientTransactionTest {
     void testTwoTransactionsWithPositiveOutcome() {
         new TestKit(system) {
             {
-                coordinator.tell(new TxnBeginMsg(), testActor());
+                coordinator.tell(new TxnBeginMsg(UUID.randomUUID()), testActor());
                 UUID uuid1 = expectMsgClass(TxnAcceptMsg.class).uuid;
 
-                coordinator.tell(new TxnBeginMsg(), testActor());
+                coordinator.tell(new TxnBeginMsg(UUID.randomUUID()), testActor());
                 UUID uuid2 = expectMsgClass(TxnAcceptMsg.class).uuid;
 
                 // The two data items are different, thus, the requests to commit should be satisfied.
@@ -135,10 +135,10 @@ public class ClientTransactionTest {
     void testTwoTransactionsWithDifferentOutcome() {
         new TestKit(system) {
             {
-                coordinator.tell(new TxnBeginMsg(), testActor());
+                coordinator.tell(new TxnBeginMsg(UUID.randomUUID()), testActor());
                 UUID uuid1 = expectMsgClass(TxnAcceptMsg.class).uuid;
 
-                coordinator.tell(new TxnBeginMsg(), testActor());
+                coordinator.tell(new TxnBeginMsg(UUID.randomUUID()), testActor());
                 UUID uuid2 = expectMsgClass(TxnAcceptMsg.class).uuid;
 
                 // The two data items are the same, thus, only one request to commit should be satisfied.

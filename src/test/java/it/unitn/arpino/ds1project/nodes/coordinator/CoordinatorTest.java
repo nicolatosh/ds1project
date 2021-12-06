@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,13 +47,13 @@ public class CoordinatorTest {
             {
                 // Note: right now, coordinators can accept two simultaneous transactions from the same client.
 
-                var begin1 = new TxnBeginMsg();
-                var uuid1 = begin1.uuid;
+                var uuid1 = UUID.randomUUID();
+                var begin1 = new TxnBeginMsg(uuid1);
                 coordinator.tell(begin1, testActor());
                 expectMsg(new TxnAcceptMsg(uuid1));
 
-                var begin2 = new TxnBeginMsg();
-                var uuid2 = begin2.uuid;
+                var uuid2 = UUID.randomUUID();
+                var begin2 = new TxnBeginMsg(uuid2);
                 coordinator.tell(begin2, testActor());
                 expectMsg(new TxnAcceptMsg(uuid2));
 
@@ -69,8 +70,8 @@ public class CoordinatorTest {
     void testNoDuplicateParticipant() {
         new TestKit(system) {
             {
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, testActor());
 
                 var read0 = new ReadMsg(uuid, 0);

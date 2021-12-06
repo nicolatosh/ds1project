@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -44,8 +45,8 @@ public class CoordinatorResumeTest {
         var start = new StartMessage();
         coordinator.tell(start, ActorRef.noSender());
 
-        var begin = new TxnBeginMsg();
-        var uuid = begin.uuid;
+        var uuid = UUID.randomUUID();
+        var begin = new TxnBeginMsg(uuid);
         coordinator.tell(begin, ActorRef.noSender());
 
         coordinator.underlyingActor().crash();
@@ -67,8 +68,8 @@ public class CoordinatorResumeTest {
                 var start = new StartMessage();
                 coordinator.tell(start, ActorRef.noSender());
 
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, ActorRef.noSender());
 
                 var readMsg = new ReadMsg(uuid, 0);
@@ -107,8 +108,8 @@ public class CoordinatorResumeTest {
                 var start = new StartMessage();
                 coordinator.tell(start, ActorRef.noSender());
 
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, ActorRef.noSender());
 
                 var readMsg = new ReadMsg(uuid, 0);
@@ -153,8 +154,8 @@ public class CoordinatorResumeTest {
                 var start = new StartMessage();
                 coordinator.tell(start, ActorRef.noSender());
 
-                var begin = new TxnBeginMsg();
-                var uuid = begin.uuid;
+                var uuid = UUID.randomUUID();
+                var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, ActorRef.noSender());
 
                 var readMsg = new ReadMsg(uuid, 0);
