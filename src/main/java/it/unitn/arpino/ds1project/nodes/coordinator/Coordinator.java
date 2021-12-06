@@ -499,7 +499,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.cancelTimer();
                 });
 
-        if (getParameters().coordinatorRecoveryTimeMs >= 0) {
+        if (getParameters().coordinatorCanRecover) {
             getContext().system().scheduler().scheduleOnce(
                     Duration.ofMillis(getParameters().coordinatorRecoveryTimeMs), // delay
                     getSelf(), // receiver

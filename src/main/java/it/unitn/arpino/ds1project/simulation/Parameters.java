@@ -27,6 +27,7 @@ public class Parameters {
      * Time (in seconds) after which a crashed coordinator recovers. Set to a negative number to keep it crashed forever.
      */
     public long coordinatorRecoveryTimeMs;
+    public boolean coordinatorCanRecover;
     public double coordinatorOnVoteRequestCrashProbability;
     public double coordinatorOnFinalDecisionCrashProbability;
 
@@ -34,6 +35,7 @@ public class Parameters {
      * Time (in seconds) after which a crashed server recovers. Set to a negative number to keep it crashed forever.
      */
     public long serverRecoveryTimeMs;
+    public boolean serverCanRecover;
     public double serverOnVoteResponseCrashProbability;
     public double serverOnDecisionResponseCrashProbability;
     public double serverOnDecisionRequestCrashProbability;
@@ -44,10 +46,12 @@ public class Parameters {
 
 
     public Parameters() {
+        coordinatorCanRecover = Boolean.parseBoolean(cache.getProperty("coordinatorCanRecover"));
         coordinatorRecoveryTimeMs = Integer.parseInt(cache.getProperty("coordinatorRecoveryTimeMs"));
         coordinatorOnVoteRequestCrashProbability = Integer.parseInt(cache.getProperty("coordinatorOnVoteRequestCrashProbability"));
         coordinatorOnFinalDecisionCrashProbability = Integer.parseInt(cache.getProperty("coordinatorOnFinalDecisionCrashProbability"));
 
+        serverCanRecover = Boolean.parseBoolean(cache.getProperty("serverCanRecover"));
         serverRecoveryTimeMs = Integer.parseInt(cache.getProperty("serverRecoveryTimeMs"));
         serverOnVoteResponseCrashProbability = Integer.parseInt(cache.getProperty("serverOnVoteResponseCrashProbability"));
         serverOnDecisionResponseCrashProbability = Integer.parseInt(cache.getProperty("serverOnDecisionResponseCrashProbability"));

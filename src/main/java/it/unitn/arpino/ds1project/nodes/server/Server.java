@@ -464,7 +464,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         getRepository().getAllRequestContexts().forEach(ServerRequestContext::cancelTimer);
 
-        if (getParameters().serverRecoveryTimeMs >= 0) {
+        if (getParameters().serverCanRecover) {
             getContext().system().scheduler().scheduleOnce(
                     Duration.ofMillis(getParameters().serverRecoveryTimeMs), // delay
                     getSelf(), // receiver
