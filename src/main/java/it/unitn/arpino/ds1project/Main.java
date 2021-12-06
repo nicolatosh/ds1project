@@ -35,11 +35,13 @@ public class Main {
         coord0.tell(start, ActorRef.noSender());
         coord1.tell(start, ActorRef.noSender());
 
-        var client0 = system.actorOf(TxnClient.props(1), "client0");
-        var client1 = system.actorOf(TxnClient.props(2), "client1");
+        var client0 = system.actorOf(TxnClient.props(), "client0");
+        var client1 = system.actorOf(TxnClient.props(), "client1");
 
         var clientStart = new ClientStartMsg(List.of(coord0, coord1), 19);
         client0.tell(clientStart, ActorRef.noSender());
         client1.tell(clientStart, ActorRef.noSender());
+        client0.tell(start, ActorRef.noSender());
+        client1.tell(start, ActorRef.noSender());
     }
 }

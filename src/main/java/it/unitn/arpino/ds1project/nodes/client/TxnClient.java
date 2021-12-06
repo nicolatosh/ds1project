@@ -3,60 +3,52 @@ package it.unitn.arpino.ds1project.nodes.client;
 
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
-import akka.actor.Cancellable;
 import akka.actor.Props;
+import it.unitn.arpino.ds1project.messages.StartMessage;
+import it.unitn.arpino.ds1project.messages.TimeoutMsg;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
-import it.unitn.arpino.ds1project.messages.client.*;
+import it.unitn.arpino.ds1project.messages.client.ClientStartMsg;
+import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
+import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
+import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
+import it.unitn.arpino.ds1project.simulation.Parameters;
 import scala.PartialFunction;
-import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class TxnClient extends AbstractActor {
-    private final Logger logger;
-
     private static final double COMMIT_PROBABILITY = 0.8;
     private static final double WRITE_PROBABILITY = 0.5;
-    private static final int MIN_TXN_LENGTH = 20;
-    private static final int MAX_TXN_LENGTH = 40;
-    private static final int RAND_LENGTH_RANGE = MAX_TXN_LENGTH - MIN_TXN_LENGTH + 1;
+    private static final int BACKOFF_S = 6;
 
-    private final Integer clientId;
-    private List<ActorRef> coordinators;
+    private final Logger logger;
+
+    private final Parameters parameters;
+
+    private final Map<UUID, ClientRequestContext> contexts;
+
+    private final List<ActorRef> coordinators;
 
     // the maximum key associated to items of the store
-    private Integer maxKey;
+    private int maxKey;
 
     // keep track of the number of TXNs (attempted, successfully committed)
-    private Integer numAttemptedTxn;
-    private Integer numCommittedTxn;
+    private int numAttemptedTxn;
+    private int numCommittedTxn;
 
-    // TXN operation (move some amount from a value to another)
-    private Boolean acceptedTxn;
-    private UUID uuid;
-    private ActorRef currentCoordinator;
-    private Integer firstKey, secondKey;
-    private Integer firstValue, secondValue;
-    private Integer numOpTotal;
-    private Integer numOpDone;
-    private Cancellable acceptTimeout;
-    private final Random r;
-
-    /*-- Actor constructor ---------------------------------------------------- */
-
-    public TxnClient(int clientId) {
+    public TxnClient() {
         try (InputStream config = TxnClient.class.getResourceAsStream("/logging.properties")) {
             if (config != null) {
                 LogManager.getLogManager().readConfiguration(config);
@@ -65,15 +57,25 @@ public class TxnClient extends AbstractActor {
         }
 
         logger = Logger.getLogger(getSelf().path().name());
-
-        this.clientId = clientId;
-        this.numAttemptedTxn = 0;
-        this.numCommittedTxn = 0;
-        this.r = new Random();
+        parameters = new Parameters();
+        contexts = new HashMap<>();
+        coordinators = new ArrayList<>();
     }
 
-    static public Props props(int clientId) {
-        return Props.create(TxnClient.class, () -> new TxnClient(clientId)).withDispatcher("my-pinned-dispatcher");
+    public static Props props() {
+        return Props.create(TxnClient.class, TxnClient::new).withDispatcher("my-pinned-dispatcher");
+    }
+
+    @Override
+    public Receive createReceive() {
+        return receiveBuilder()
+                .match(ClientStartMsg.class, this::onWelcomeMsg)
+                .match(StartMessage.class, this::onStartMsg)
+                .match(TxnAcceptMsg.class, this::onTxnAcceptMsg)
+                .match(ReadResultMsg.class, this::onReadResultMsg)
+                .match(TxnResultMsg.class, this::onTxnResultMsg)
+                .match(TimeoutMsg.class, this::onTimeoutMsg)
+                .build();
     }
 
     @Override
@@ -82,149 +84,223 @@ public class TxnClient extends AbstractActor {
             TxnMessage msg = (TxnMessage) obj;
 
             logger.info("Received " + msg + " from " + getSender().path().name());
+
+            if (contexts.containsKey(msg.uuid)) {
+                var ctx = contexts.get(msg.uuid);
+                if (ctx.isDecided()) {
+                    logger.info("The decision is already known (" + ctx.getStatus() + ")");
+                    return;
+                }
+            }
         }
+
         super.aroundReceive(receive, obj);
     }
 
-    /*-- Actor methods -------------------------------------------------------- */
-
-    // start a new TXN: choose a random coordinator, send TxnBeginMsg and set timeout
-    void beginTxn() {
-
-        // some delay between transactions from the same client
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        acceptedTxn = false;
-        numAttemptedTxn++;
-
-        // contact a random coordinator and begin TXN
-        currentCoordinator = coordinators.get(r.nextInt(coordinators.size()));
-        var begin = new TxnBeginMsg();
-        uuid = begin.uuid;
-        currentCoordinator.tell(begin, getSelf());
-
-        // how many operations (taking some amount and adding it somewhere else)?
-        int numExtraOp = RAND_LENGTH_RANGE > 0 ? r.nextInt(RAND_LENGTH_RANGE) : 0;
-        numOpTotal = MIN_TXN_LENGTH + numExtraOp;
-        numOpDone = 0;
-
-        // timeout for confirmation of TXN by the coordinator (sent to self)
-        acceptTimeout = getContext().system().scheduler().scheduleOnce(
-                Duration.create(5000, TimeUnit.MILLISECONDS),
-                getSelf(),
-                new TxnAcceptTimeoutMsg(), // message sent to myself
-                getContext().system().dispatcher(), getSelf()
-        );
-        logger.info("CLIENT " + clientId + " BEGIN");
-    }
-
-    // end the current TXN sending TxnEndMsg to the coordinator
-    void endTxn() {
-        boolean doCommit = r.nextDouble() < COMMIT_PROBABILITY;
-        currentCoordinator.tell(new TxnEndMsg(uuid, doCommit), getSelf());
-        firstValue = null;
-        secondValue = null;
-        logger.info("CLIENT " + clientId + " END");
-    }
-
-    // READ two items (will move some amount from the value of the first to the second)
-    void readTwo() {
-        // read two different keys
-        firstKey = r.nextInt(maxKey + 1);
-        int randKeyOffset = 1 + r.nextInt(maxKey - 1);
-        secondKey = (firstKey + randKeyOffset) % (maxKey + 1);
-
-        // READ requests
-        currentCoordinator.tell(new ReadMsg(uuid, firstKey), getSelf());
-        currentCoordinator.tell(new ReadMsg(uuid, secondKey), getSelf());
-
-        // delete the current read values
-        firstValue = null;
-        secondValue = null;
-
-        logger.info("CLIENT " + clientId + " READ #" + numOpDone + " (" + firstKey + "), (" + secondKey + ")");
-    }
-
-    // WRITE two items (called with probability WRITE_PROBABILITY after readTwo() values are returned)
-    void writeTwo() {
-
-        // take some amount from one value and pass it to the other, then request writes
-        Integer amountTaken = 0;
-        if (firstValue >= 1) amountTaken = 1 + r.nextInt(firstValue);
-        currentCoordinator.tell(new WriteMsg(uuid, firstKey, firstValue - amountTaken), getSelf());
-        currentCoordinator.tell(new WriteMsg(uuid, secondKey, secondValue + amountTaken), getSelf());
-        logger.info("CLIENT " + clientId + " WRITE #" + numOpDone
-                + " taken " + amountTaken
-                + " (" + firstKey + ", " + (firstValue - amountTaken) + "), ("
-                + secondKey + ", " + (secondValue + amountTaken) + ")");
-    }
-
-    /*-- Message handlers ----------------------------------------------------- */
-
     private void onWelcomeMsg(ClientStartMsg msg) {
-        this.coordinators = msg.coordinators;
-        logger.info(coordinators.toString());
+        coordinators.addAll(msg.coordinators);
+        logger.info("Available coordinators: " + coordinators.stream()
+                .map(coordinator -> coordinator.path().name())
+                .collect(Collectors.joining(", ")));
+
         this.maxKey = msg.maxKey;
-        beginTxn();
+    }
+
+    /**
+     * Starts a new transaction. Will time out if the coordinator does not reply in time.
+     */
+    void onStartMsg(StartMessage msg) {
+        // choose a random coordinator to contact
+        var coordinator = coordinators.get(ThreadLocalRandom.current().nextInt(coordinators.size()));
+        // choose a random number of read operations to perform
+        var numOp = ThreadLocalRandom.current().nextInt(parameters.clientMinTxnLength, parameters.clientMaxTxnLength + 1);
+
+        var ctx = new ClientRequestContext(coordinator, numOp);
+        contexts.put(ctx.uuid, ctx);
+
+        var begin = new TxnBeginMsg(ctx.uuid);
+        coordinator.tell(begin, getSelf());
+
+        ctx.setStatus(ClientRequestContext.Status.REQUESTED);
+
+        ctx.startTimer(this, ClientRequestContext.TXN_ACCEPT_TIMEOUT_S);
+        ++numAttemptedTxn;
     }
 
     private void onTxnAcceptMsg(TxnAcceptMsg msg) {
-        acceptedTxn = true;
-        acceptTimeout.cancel();
-        uuid = msg.uuid;
-        readTwo();
-    }
+        var ctx = contexts.get(msg.uuid);
 
-    private void onTxnAcceptTimeoutMsg(TxnAcceptTimeoutMsg msg) throws InterruptedException {
-        if (!acceptedTxn) beginTxn();
+        ctx.cancelTimer();
+        readTwo(ctx);
     }
 
     private void onReadResultMsg(ReadResultMsg msg) {
-        logger.info("CLIENT " + clientId + " READ RESULT (" + msg.key + ", " + msg.value + ")");
+        var ctx = contexts.get(msg.uuid);
 
-        // save the read value(s)
-        if (msg.key == firstKey) firstValue = msg.value;
-        if (msg.key == secondKey) secondValue = msg.value;
-
-        boolean opDone = (firstValue != null && secondValue != null);
-
-        // do we only read or also write?
-        double writeRandom = r.nextDouble();
-        boolean doWrite = writeRandom < WRITE_PROBABILITY;
-        if (doWrite && opDone) writeTwo();
-
-        // check if the transaction should end;
-        // otherwise, read two again
-        if (opDone) numOpDone++;
-        if (numOpDone >= numOpTotal) {
-            endTxn();
-        } else if (opDone) {
-            readTwo();
+        var op = ctx.getOp();
+        if (msg.key == op.firstKey) {
+            op.firstValue = msg.value;
+        } else { // msg.key == op.secondKey
+            op.secondValue = msg.value;
         }
+
+        if (!op.isDone()) {
+            // give the coordinator more time
+            ctx.startTimer(this, ClientRequestContext.READ_TIMEOUT_S);
+            return;
+        }
+
+        ctx.cancelTimer();
+
+        if (ThreadLocalRandom.current().nextDouble() < WRITE_PROBABILITY) {
+            writeTwo(ctx);
+            return;
+        }
+
+        if (ctx.opLeft() > 0) {
+            readTwo(ctx);
+            return;
+        }
+
+        endTxn(ctx);
     }
 
-    private void onTxnResultMsg(TxnResultMsg msg) throws InterruptedException {
-        if (msg.commit) {
-            numCommittedTxn++;
-            logger.info("CLIENT " + clientId + " COMMIT OK (" + numCommittedTxn + "/" + numAttemptedTxn + ")");
+    void readTwo(ClientRequestContext ctx) {
+        int randKeyOffset = 1 + ThreadLocalRandom.current().nextInt(maxKey - 1);
+        int key1 = ThreadLocalRandom.current().nextInt(maxKey + 1);
+        int key2 = (key1 + randKeyOffset) % (maxKey + 1);
+
+        var op = ctx.newOp(key1, key2);
+
+        var read1 = new ReadMsg(ctx.uuid, key1);
+        var read2 = new ReadMsg(ctx.uuid, key2);
+
+        ctx.subject.tell(read1, getSelf());
+        ctx.subject.tell(read2, getSelf());
+
+        ctx.startTimer(this, ClientRequestContext.READ_TIMEOUT_S);
+    }
+
+    void writeTwo(ClientRequestContext ctx) {
+        var op = ctx.getOp();
+
+        var amountTaken = 0;
+        if (op.firstValue >= 1) {
+            amountTaken = 1 + ThreadLocalRandom.current().nextInt(op.firstValue);
+            op.firstValue -= amountTaken;
+            op.secondValue += amountTaken;
+        }
+
+        var write1 = new WriteMsg(ctx.uuid, op.firstKey, op.firstValue);
+        var write2 = new WriteMsg(ctx.uuid, op.secondKey, op.secondValue);
+
+        ctx.subject.tell(write1, getSelf());
+        ctx.subject.tell(write2, getSelf());
+
+        // give the coordinator more time to forward the writes
+        ctx.cancelTimer();
+
+        if (ctx.opLeft() > 0) {
+            readTwo(ctx);
+            return;
+        }
+
+        endTxn(ctx);
+    }
+
+    void endTxn(ClientRequestContext ctx) {
+        var doCommit = ThreadLocalRandom.current().nextDouble() < COMMIT_PROBABILITY;
+
+        var end = new TxnEndMsg(ctx.uuid, doCommit);
+        ctx.subject.tell(end, getSelf());
+
+        if (doCommit) {
+            ctx.startTimer(this, ClientRequestContext.TXN_RESULT_TIMEOUT_S);
         } else {
-            logger.info("CLIENT " + clientId + " COMMIT FAIL (" + (numAttemptedTxn - numCommittedTxn) + "/" + numAttemptedTxn + ")");
+            // useless to start the timer: even if the coordinator misses this message, it will time out and abort
+
+            if (parameters.clientLoop) {
+                // start a new transaction
+                var start = new StartMessage();
+                getContext().getSystem().getScheduler().scheduleOnce(
+                        Duration.ofSeconds(BACKOFF_S), // delay
+                        getSelf(), // receiver
+                        start, // message
+                        getContext().dispatcher(), // executor
+                        getSelf()); // sender
+            }
         }
-        beginTxn();
     }
 
-    @Override
-    public Receive createReceive() {
-        return receiveBuilder()
-                .match(ClientStartMsg.class, this::onWelcomeMsg)
-                .match(TxnAcceptMsg.class, this::onTxnAcceptMsg)
-                .match(TxnAcceptTimeoutMsg.class, this::onTxnAcceptTimeoutMsg)
-                .match(ReadResultMsg.class, this::onReadResultMsg)
-                .match(TxnResultMsg.class, this::onTxnResultMsg)
-                .build();
+    private void onTxnResultMsg(TxnResultMsg msg) {
+        var ctx = contexts.get(msg.uuid);
+
+        ctx.cancelTimer();
+
+        if (msg.commit) {
+            ctx.setStatus(ClientRequestContext.Status.COMMIT);
+            ++numCommittedTxn;
+            logger.info("COMMIT OK (" + numCommittedTxn + "/" + numAttemptedTxn + ")");
+        } else {
+            ctx.setStatus(ClientRequestContext.Status.ABORT);
+            logger.info("COMMIT FAIL (" + (numAttemptedTxn - numCommittedTxn) + "/" + numAttemptedTxn + ")");
+        }
+
+        if (parameters.clientLoop) {
+            // start a new transaction
+            var start = new StartMessage();
+            getContext().getSystem().getScheduler().scheduleOnce(
+                    Duration.ofSeconds(BACKOFF_S), // delay
+                    getSelf(), // receiver
+                    start, // message
+                    getContext().dispatcher(), // executor
+                    getSelf()); // sender
+        }
+    }
+
+    private void onTimeoutMsg(TimeoutMsg timeout) {
+        var ctx = contexts.get(timeout.uuid);
+
+        switch (ctx.getStatus()) {
+            case CREATED: {
+                logger.severe("Invalid state (CREATED)");
+                break;
+            }
+            case REQUESTED:
+                // timeout while waiting for TxnAcceptMsg
+            case CONVERSATIONAL: {
+                // timeout while waiting for a read response
+                logger.info("State is " + ctx.getStatus() + ": aborting, backing off and retrying");
+                ctx.setStatus(ClientRequestContext.Status.ABORT);
+
+                var end = new TxnEndMsg(ctx.uuid, false);
+                ctx.subject.tell(end, getSelf());
+
+                if (parameters.clientLoop) {
+                    // start a new transaction
+                    var start = new StartMessage();
+                    getContext().getSystem().getScheduler().scheduleOnce(
+                            Duration.ofSeconds(BACKOFF_S), // delay
+                            getSelf(), // receiver
+                            start, // message
+                            getContext().dispatcher(), // executor
+                            getSelf()); // sender
+                }
+
+                break;
+            }
+            case PENDING: {
+                // this state means that the client requested to commit.
+                // the client should poll for the result.
+                logger.info("State is PENDING: polling the coordinator");
+
+                var end = new TxnEndMsg(ctx.uuid, false);
+                ctx.subject.tell(end, getSelf());
+
+                ctx.startTimer(this, ClientRequestContext.TXN_RESULT_TIMEOUT_S);
+                break;
+            }
+            // COMMIT and ABORT are already captured by aroundReceive, which checks isDecided
+        }
     }
 }

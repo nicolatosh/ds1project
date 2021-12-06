@@ -23,6 +23,10 @@ public class Parameters {
         }
     }
 
+    public boolean clientLoop;
+    public int clientMinTxnLength;
+    public int clientMaxTxnLength;
+
     /**
      * Time (in seconds) after which a crashed coordinator recovers. Set to a negative number to keep it crashed forever.
      */
@@ -46,6 +50,10 @@ public class Parameters {
 
 
     public Parameters() {
+        clientLoop = Boolean.parseBoolean(cache.getProperty("clientLoop"));
+        clientMinTxnLength = Integer.parseInt(cache.getProperty("clientMinTxnLength"));
+        clientMaxTxnLength = Integer.parseInt(cache.getProperty("clientMaxTxnLength"));
+
         coordinatorCanRecover = Boolean.parseBoolean(cache.getProperty("coordinatorCanRecover"));
         coordinatorRecoveryTimeMs = Integer.parseInt(cache.getProperty("coordinatorRecoveryTimeMs"));
         coordinatorOnVoteRequestCrashProbability = Integer.parseInt(cache.getProperty("coordinatorOnVoteRequestCrashProbability"));
