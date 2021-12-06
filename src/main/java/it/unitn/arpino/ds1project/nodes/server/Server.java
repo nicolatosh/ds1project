@@ -111,14 +111,14 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             var ctx = new ServerRequestContext(req.uuid, getSender(), connection);
             getRepository().addRequestContext(ctx);
 
-            ctx.log(ServerRequestContext.LogState.INIT);
+            ctx.log(ServerRequestContext.LogState.CONVERSATIONAL);
             ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
         }
 
         var ctx = getRepository().getRequestContextById(req.uuid);
 
-        if (ctx.loggedState() != ServerRequestContext.LogState.INIT) {
-            logger.severe("Invalid protocol state (" + ctx.loggedState() + ", should be INIT)");
+        if (ctx.loggedState() != ServerRequestContext.LogState.CONVERSATIONAL) {
+            logger.severe("Invalid protocol state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
             return;
         }
 
@@ -136,14 +136,14 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             var ctx = new ServerRequestContext(req.uuid, getSender(), connection);
             getRepository().addRequestContext(ctx);
 
-            ctx.log(ServerRequestContext.LogState.INIT);
+            ctx.log(ServerRequestContext.LogState.CONVERSATIONAL);
             ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
         }
 
         var ctx = getRepository().getRequestContextById(req.uuid);
 
-        if (ctx.loggedState() != ServerRequestContext.LogState.INIT) {
-            logger.severe("Invalid protocol state (" + ctx.loggedState() + ", should be INIT)");
+        if (ctx.loggedState() != ServerRequestContext.LogState.CONVERSATIONAL) {
+            logger.severe("Invalid protocol state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
             return;
         }
 
@@ -155,8 +155,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     private void onVoteRequest(VoteRequest req) {
         var ctx = getRepository().getRequestContextById(req.uuid);
 
-        if (ctx.loggedState() != ServerRequestContext.LogState.INIT) {
-            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be INIT)");
+        if (ctx.loggedState() != ServerRequestContext.LogState.CONVERSATIONAL) {
+            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
             return;
         }
 
@@ -211,7 +211,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         var ctx = getRepository().getRequestContextById(timeout.uuid);
 
         switch (ctx.loggedState()) {
-            case INIT: {
+            case CONVERSATIONAL: {
                 logger.info("Aborting the transaction");
 
                 ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
@@ -255,9 +255,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         DecisionResponse response = null;
 
         switch (ctx.loggedState()) {
-            case INIT: {
+            case CONVERSATIONAL: {
                 // Tanenbaum, p. 486,
-                logger.info("Logged state is INIT: abort");
+                logger.info("Logged state is CONVERSATIONAL: abort");
 
                 ctx.cancelTimer();
 
@@ -297,8 +297,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         var ctx = getRepository().getRequestContextById(resp.uuid);
 
         switch (ctx.loggedState()) {
-            case INIT: {
-                logger.severe("Invalid logged state (INIT, should be VOTE_COMMIT, GLOBAL_ABORT or DECISION)");
+            case CONVERSATIONAL: {
+                logger.severe("Invalid logged state (CONVERSATIONAL, should be VOTE_COMMIT, GLOBAL_ABORT or DECISION)");
                 return;
             }
             case VOTE_COMMIT: {
@@ -351,9 +351,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         var ctx = getRepository().getRequestContextById(req.uuid);
 
         switch (ctx.loggedState()) {
-            case INIT: {
+            case CONVERSATIONAL: {
                 if (req.decision != FinalDecision.Decision.GLOBAL_ABORT) {
-                    logger.severe("Received GLOBAL_COMMIT but the logged state is INIT");
+                    logger.severe("Received GLOBAL_COMMIT but the logged state is CONVERSATIONAL");
                     return;
                 }
 
@@ -439,8 +439,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         var ctx = getRepository().getRequestContextById(solicit.uuid);
 
         switch (ctx.loggedState()) {
-            case INIT: {
-                logger.severe("Invalid protocol state (INIT, should be VOTE_COMMIT, GLOBAL_ABORT or DECISION)");
+            case CONVERSATIONAL: {
+                logger.severe("Invalid protocol state (CONVERSATIONAL, should be VOTE_COMMIT, GLOBAL_ABORT or DECISION)");
                 return;
             }
             case VOTE_COMMIT: {
@@ -482,7 +482,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             logger.info("Resuming transaction " + ctx.uuid);
 
             switch (ctx.loggedState()) {
-                case INIT: {
+                case CONVERSATIONAL: {
                     // If the server has not already cast the vote for the transaction, it aborts it.
                     logger.info("Aborting transaction " + ctx.uuid);
 

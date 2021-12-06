@@ -17,7 +17,7 @@ import java.util.UUID;
 
 public class ServerRequestContext extends RequestContext {
     public enum LogState {
-        INIT,
+        CONVERSATIONAL,
         VOTE_COMMIT,
         GLOBAL_COMMIT,
         GLOBAL_ABORT
