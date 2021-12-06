@@ -615,7 +615,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                     if (!ctx.isCompleted()) {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
-                        var result = new TxnResultMsg(ctx.uuid, true);
+                        var result = new TxnResultMsg(ctx.uuid, false);
                         ctx.subject.tell(result, getSelf());
                         ctx.setCompleted();
                     }
