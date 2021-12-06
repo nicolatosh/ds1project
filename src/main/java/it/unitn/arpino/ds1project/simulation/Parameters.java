@@ -56,14 +56,14 @@ public class Parameters {
 
         coordinatorCanRecover = Boolean.parseBoolean(cache.getProperty("coordinatorCanRecover"));
         coordinatorRecoveryTimeMs = Integer.parseInt(cache.getProperty("coordinatorRecoveryTimeMs"));
-        coordinatorOnVoteRequestCrashProbability = Integer.parseInt(cache.getProperty("coordinatorOnVoteRequestCrashProbability"));
-        coordinatorOnFinalDecisionCrashProbability = Integer.parseInt(cache.getProperty("coordinatorOnFinalDecisionCrashProbability"));
+        coordinatorOnVoteRequestCrashProbability = Double.parseDouble(cache.getProperty("coordinatorOnVoteRequestCrashProbability"));
+        coordinatorOnFinalDecisionCrashProbability = Double.parseDouble(cache.getProperty("coordinatorOnFinalDecisionCrashProbability"));
 
         serverCanRecover = Boolean.parseBoolean(cache.getProperty("serverCanRecover"));
         serverRecoveryTimeMs = Integer.parseInt(cache.getProperty("serverRecoveryTimeMs"));
-        serverOnVoteResponseCrashProbability = Integer.parseInt(cache.getProperty("serverOnVoteResponseCrashProbability"));
-        serverOnDecisionResponseCrashProbability = Integer.parseInt(cache.getProperty("serverOnDecisionResponseCrashProbability"));
-        serverOnDecisionRequestCrashProbability = Integer.parseInt(cache.getProperty("serverOnDecisionRequestCrashProbability"));
+        serverOnVoteResponseCrashProbability = Double.parseDouble(cache.getProperty("serverOnVoteResponseCrashProbability"));
+        serverOnDecisionResponseCrashProbability = Double.parseDouble(cache.getProperty("serverOnDecisionResponseCrashProbability"));
+        serverOnDecisionRequestCrashProbability = Double.parseDouble(cache.getProperty("serverOnDecisionRequestCrashProbability"));
 
         simulateNetworkDelays = Boolean.parseBoolean(cache.getProperty("simulateNetworkDelays"));
         minimumNetworkDelayMs = Long.parseLong(cache.getProperty("minimumNetworkDelayMs"));
