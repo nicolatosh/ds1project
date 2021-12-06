@@ -348,7 +348,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         var ctx = getRepository().getRequestContextById(msg.uuid);
 
         if (ctx.loggedState() != CoordinatorRequestContext.LogState.CONVERSATIONAL) {
-            logger.info("Invalid too late (" + ctx.loggedState() + ")");
+            logger.info("Arrived too late (" + ctx.loggedState() + ")");
             return;
         }
 
