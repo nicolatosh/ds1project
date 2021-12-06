@@ -387,14 +387,16 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+        ctx.cancelTimer();
 
         var server = dispatcher.getServer(msg.key);
-
         ctx.addParticipant(server);
 
         var req = new WriteRequest(msg.uuid, msg.key, msg.value);
         server.tell(req, getSelf());
+
+        // give the client more time
+        ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
     }
 
     private void onDone(Done msg) {
