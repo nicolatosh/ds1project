@@ -71,7 +71,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
             if (!getRepository().existsContextWithId(msg.uuid)) {
                 if (!(msg instanceof ReadRequest) && !(msg instanceof WriteRequest)) {
-                    logger.severe("Bad request");
+                    logger.info("Bad request, sending Reset");
 
                     var reset = new Reset(msg.uuid);
                     getSender().tell(reset, getSelf());
