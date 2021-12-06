@@ -156,7 +156,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         var ctx = getRepository().getRequestContextById(req.uuid);
 
         if (ctx.loggedState() != ServerRequestContext.LogState.CONVERSATIONAL) {
-            logger.severe("Invalid logged state (" + ctx.loggedState() + ", should be CONVERSATIONAL)");
+            logger.info("Arrived too late (" + ctx.loggedState() + ")");
             return;
         }
 
