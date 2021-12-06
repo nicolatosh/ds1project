@@ -317,8 +317,26 @@ public class TxnClient extends AbstractActor {
                 logger.severe("Invalid state (CREATED)");
                 break;
             }
-            case REQUESTED:
-                // timeout while waiting for TxnAcceptMsg
+            case REQUESTED: {
+                // If we send a TxnEndMsg, and the coordinator did not previously receive our TxnBeginMsg,
+                // it will print SEVERE. So, we let the coordinator time out.
+                logger.info("State is " + ctx.getStatus() + ": aborting, backing off and retrying");
+                ctx.setStatus(ClientRequestContext.Status.ABORT);
+
+                if (parameters.clientLoop) {
+                    // start a new transaction
+                    var start = new StartMessage();
+                    getContext().getSystem().getScheduler().scheduleOnce(
+                            Duration.ofSeconds(BACKOFF_S), // delay
+                            getSelf(), // receiver
+                            start, // message
+                            getContext().dispatcher(), // executor
+                            getSelf()); // sender
+                }
+
+                break;
+            }
+            // timeout while waiting for TxnAcceptMsg
             case CONVERSATIONAL: {
                 // timeout while waiting for a read response
                 logger.info("State is " + ctx.getStatus() + ": aborting, backing off and retrying");
