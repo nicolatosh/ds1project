@@ -129,6 +129,7 @@ public class TxnClient extends AbstractActor {
 
     private void onTxnAcceptMsg(TxnAcceptMsg msg) {
         var ctx = contexts.get(msg.uuid);
+        ctx.setStatus(ClientRequestContext.Status.CONVERSATIONAL);
 
         ctx.cancelTimer();
         readTwo(ctx);
@@ -209,14 +210,20 @@ public class TxnClient extends AbstractActor {
     }
 
     void endTxn(ClientRequestContext ctx) {
-        var doCommit = ThreadLocalRandom.current().nextDouble() < COMMIT_PROBABILITY;
+        if (ThreadLocalRandom.current().nextDouble() < COMMIT_PROBABILITY) {
+            ctx.setStatus(ClientRequestContext.Status.PENDING);
 
-        var end = new TxnEndMsg(ctx.uuid, doCommit);
-        ctx.subject.tell(end, getSelf());
+            var end = new TxnEndMsg(ctx.uuid, true);
+            ctx.subject.tell(end, getSelf());
 
-        if (doCommit) {
             ctx.startTimer(this, ClientRequestContext.TXN_RESULT_TIMEOUT_S);
+
         } else {
+            ctx.setStatus(ClientRequestContext.Status.ABORT);
+
+            var end = new TxnEndMsg(ctx.uuid, false);
+            ctx.subject.tell(end, getSelf());
+
             // useless to start the timer: even if the coordinator misses this message, it will time out and abort
 
             if (parameters.clientLoop) {
