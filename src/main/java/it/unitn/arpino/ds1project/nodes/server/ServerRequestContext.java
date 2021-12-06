@@ -1,7 +1,6 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
 import akka.actor.ActorRef;
-import akka.actor.Cancellable;
 import it.unitn.arpino.ds1project.datastore.connection.IConnection;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
@@ -50,8 +49,6 @@ public class ServerRequestContext extends RequestContext {
     private TwoPhaseCommitFSM protocolState;
 
     private IConnection connection;
-
-    private Cancellable timer;
 
     public ServerRequestContext(UUID uuid, ActorRef coordinator, IConnection connection) {
         super(uuid, coordinator);
