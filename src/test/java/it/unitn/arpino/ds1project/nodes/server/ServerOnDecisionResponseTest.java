@@ -38,7 +38,7 @@ public class ServerOnDecisionResponseTest {
     }
 
     @Test
-    void testDecisionResponseWithCommit() {
+    void testDecisionResponseWithCommit() throws InterruptedException {
         new TestKit(system) {
             {
                 // pass the probe as a server to server0
@@ -65,13 +65,16 @@ public class ServerOnDecisionResponseTest {
 
                 var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
 
+                // give the server some time to process the decision response
+                Thread.sleep(500);
+
                 assertSame(ServerRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
             }
         };
     }
 
     @Test
-    void testDecisionResponseWithAbort() {
+    void testDecisionResponseWithAbort() throws InterruptedException {
         new TestKit(system) {
             {
                 // pass the probe as a server to server0
@@ -97,6 +100,9 @@ public class ServerOnDecisionResponseTest {
                 server0.tell(decisionResponse, testActor());
 
                 var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
+
+                // give the server some time to process the decision response
+                Thread.sleep(500);
 
                 assertSame(ServerRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
             }
