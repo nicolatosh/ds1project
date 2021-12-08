@@ -14,8 +14,23 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) {
         var system = ActorSystem.create("ds1project");
+        /*
+        SimulationBuilder builder = SimulationBuilder.builder(system, 1, 1, 1);
 
-        // setup servers, coordinators and clients
+        var clients = builder.getClients();
+        var coordinators = builder.getCoordinators();
+        var servers = builder.getServers();
+
+        var startMsg = new StartMessage();
+
+        // Starting actors
+        servers.forEach( s -> s.tell(startMsg, ActorRef.noSender()));
+        coordinators.forEach( c -> c.tell(startMsg, ActorRef.noSender()));
+        clients.forEach(c -> c.tell(new ClientStartMsg(coordinators, servers.size() * 10 + 9), ActorRef.noSender()));
+        clients.forEach(c -> c.tell(startMsg, ActorRef.noSender()));
+
+        */
+
 
         var server0 = system.actorOf(Server.props(0, 9), "server0");
         var server1 = system.actorOf(Server.props(10, 19), "server1");
@@ -43,5 +58,7 @@ public class Main {
         client1.tell(clientStart, ActorRef.noSender());
         client0.tell(start, ActorRef.noSender());
         client1.tell(start, ActorRef.noSender());
+
+
     }
 }

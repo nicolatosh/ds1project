@@ -13,9 +13,9 @@ import java.util.List;
 
 public class SimulationBuilder {
 
-    private List<ActorRef> clients = new ArrayList<>();
-    private List<ActorRef> coordinators = new ArrayList<>();
-    private List<ActorRef> servers = new ArrayList<>();
+    private final List<ActorRef> clients = new ArrayList<>();
+    private final List<ActorRef> coordinators = new ArrayList<>();
+    private final List<ActorRef> servers = new ArrayList<>();
 
     public SimulationBuilder() {
     }
@@ -45,14 +45,17 @@ public class SimulationBuilder {
         List<ActorRef> coordinators = new ArrayList<>();
         List<ActorRef> servers = new ArrayList<>();
 
+        // Generating clients
         for (int i = 0; i < clients_n; i++) {
             clients.add(system.actorOf(TxnClient.props(), "client-" + i));
         }
 
+        // Generating coordinators
         for (int i = 0; i < coordinators_n; i++) {
             coordinators.add(system.actorOf(Coordinator.props(), "coordinator-" + i));
         }
 
+        // Generating servers
         for (int i = 0; i < servers_n; i++) {
             var server = system.actorOf(Server.props(i * 10, i * 10 + 9), "server-" + i);
             servers.add(server);
