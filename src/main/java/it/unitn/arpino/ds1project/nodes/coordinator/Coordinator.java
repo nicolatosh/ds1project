@@ -145,7 +145,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
         ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
 
-        ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+        ctx.startTimer(this, CoordinatorRequestContext.CONVERSATIONAL_TIMEOUT);
     }
 
     private void onTxnEndMsg(TxnEndMsg msg) {
@@ -387,7 +387,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             var req = new ReadRequest(msg.uuid, msg.key);
             server.get().tell(req, getSelf());
 
-            ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+            ctx.startTimer(this, CoordinatorRequestContext.CONVERSATIONAL_TIMEOUT);
         }
     }
 
@@ -405,7 +405,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.subject.tell(result, getSelf());
 
         // give the client more time, as it may be blocked, waiting to receive the read result
-        ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+        ctx.startTimer(this, CoordinatorRequestContext.CONVERSATIONAL_TIMEOUT);
     }
 
     private void onWriteMsg(WriteMsg msg) {
@@ -452,7 +452,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             server.get().tell(req, getSelf());
 
             // give the client more time
-            ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+            ctx.startTimer(this, CoordinatorRequestContext.CONVERSATIONAL_TIMEOUT);
         }
     }
 

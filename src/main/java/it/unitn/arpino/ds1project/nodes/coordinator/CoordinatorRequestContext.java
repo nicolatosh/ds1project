@@ -1,7 +1,10 @@
 package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
-import it.unitn.arpino.ds1project.messages.coordinator.*;
+import it.unitn.arpino.ds1project.messages.coordinator.Done;
+import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
+import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
+import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
@@ -31,14 +34,14 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
+     * Duration (in seconds) within which the {@link Coordinator} should receive a client's request after the last one it previously received.
+     */
+    public static final int CONVERSATIONAL_TIMEOUT = 4;
+
+    /**
      * Duration (in seconds) within which the {@link Coordinator} should collect all the participants' {@link VoteResponse}s.
      */
     public static final int VOTE_RESPONSE_TIMEOUT_S = 4;
-
-    /**
-     * Duration (in seconds) within which the {@link Coordinator} should receive the client's {@link TxnEndMsg}.
-     */
-    public static final int TXN_END_TIMEOUT_S = 4;
 
     /**
      * Duration (in seconds) which the {@link Coordinator}, cyclically, should solicit the participants to send a {@link Done} message.

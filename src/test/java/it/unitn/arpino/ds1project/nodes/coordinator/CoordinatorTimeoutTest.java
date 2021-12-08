@@ -67,7 +67,7 @@ public class CoordinatorTimeoutTest {
                 expectMsg(accept);
 
                 var result = new TxnResultMsg(uuid, false);
-                expectMsg(Duration.create(CoordinatorRequestContext.TXN_END_TIMEOUT_S + 1, TimeUnit.SECONDS),
+                expectMsg(Duration.create(CoordinatorRequestContext.CONVERSATIONAL_TIMEOUT + 1, TimeUnit.SECONDS),
                         result);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
@@ -101,7 +101,7 @@ public class CoordinatorTimeoutTest {
                 expectMsg(readResultMsg);
 
                 var result = new TxnResultMsg(uuid, false);
-                expectMsg(Duration.create(CoordinatorRequestContext.TXN_END_TIMEOUT_S + 1, TimeUnit.SECONDS),
+                expectMsg(Duration.create(CoordinatorRequestContext.CONVERSATIONAL_TIMEOUT + 1, TimeUnit.SECONDS),
                         result);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
