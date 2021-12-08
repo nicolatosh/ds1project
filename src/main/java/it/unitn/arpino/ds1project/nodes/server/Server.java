@@ -17,7 +17,6 @@ import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
-import it.unitn.arpino.ds1project.nodes.server.ServerRequestContext.TwoPhaseCommitFSM;
 import it.unitn.arpino.ds1project.simulation.Communication;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
@@ -112,7 +111,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             getRepository().addRequestContext(ctx);
 
             ctx.log(ServerRequestContext.LogState.CONVERSATIONAL);
-            ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
         }
 
         var ctx = getRepository().getRequestContextById(req.uuid);
@@ -137,7 +135,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             getRepository().addRequestContext(ctx);
 
             ctx.log(ServerRequestContext.LogState.CONVERSATIONAL);
-            ctx.setProtocolState(TwoPhaseCommitFSM.INIT);
         }
 
         var ctx = getRepository().getRequestContextById(req.uuid);
@@ -179,8 +176,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 return;
             }
 
-            ctx.setProtocolState(TwoPhaseCommitFSM.READY);
-
             ctx.startTimer(this, ServerRequestContext.FINAL_DECISION_TIMEOUT_S);
         } else {
             logger.info("Aborting the transaction");
@@ -197,10 +192,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             if (!unicast.run()) {
                 logger.info("Did not send the message to " + getSender().path().name());
                 crash();
-                return;
             }
-
-            ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
             // if we could not prepare the transaction and have aborted, we do not have to wait for a final decision,
             // thus we must not start the final decision timer.
@@ -216,7 +208,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
                 ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                 ctx.abort();
-                ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
                 logger.info("Sending a Done message");
                 var done = new Done(ctx.uuid);
@@ -263,7 +254,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
                 ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                 ctx.abort();
-                ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
                 response = new DecisionResponse(ctx.uuid, DecisionResponse.Decision.GLOBAL_ABORT);
                 break;
@@ -311,7 +301,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         logger.info("Received GLOBAL_COMMIT: committing");
                         ctx.log(ServerRequestContext.LogState.GLOBAL_COMMIT);
                         ctx.commit();
-                        ctx.setProtocolState(TwoPhaseCommitFSM.COMMIT);
 
                         // Whenever the server transitions to a state of certainty,
                         // it informs the coordinator that it is done.
@@ -324,7 +313,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         logger.info("Received GLOBAL_ABORT: aborting");
                         ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                         ctx.abort();
-                        ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
                         // Whenever the server transitions to a state of certainty,
                         // it informs the coordinator that it is done.
@@ -363,7 +351,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
                 ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                 ctx.abort();
-                ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
                 break;
             }
@@ -379,14 +366,12 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                         logger.info("Received GLOBAL_COMMIT: committing");
                         ctx.log(ServerRequestContext.LogState.GLOBAL_COMMIT);
                         ctx.commit();
-                        ctx.setProtocolState(TwoPhaseCommitFSM.COMMIT);
                         break;
                     }
                     case GLOBAL_ABORT: {
                         logger.info("Received GLOBAL_ABORT: aborting");
                         ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                         ctx.abort();
-                        ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
                         break;
                     }
                 }
@@ -488,7 +473,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
                     ctx.log(ServerRequestContext.LogState.GLOBAL_ABORT);
                     ctx.abort();
-                    ctx.setProtocolState(TwoPhaseCommitFSM.ABORT);
 
                     logger.info("Sending a Done message");
                     var done = new Done(ctx.uuid);

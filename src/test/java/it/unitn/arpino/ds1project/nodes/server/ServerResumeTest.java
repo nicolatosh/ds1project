@@ -52,7 +52,6 @@ public class ServerResumeTest {
         var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
 
         assertSame(ServerRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-        assertSame(ServerRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
     }
 
     @Test

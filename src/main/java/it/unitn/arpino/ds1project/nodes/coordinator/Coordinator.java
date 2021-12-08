@@ -104,8 +104,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     return;
                 }
 
-                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
                 ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
 
                 logger.info("Sending the transaction result to " + ctx.subject.path().name());
@@ -143,8 +141,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         var accept = new TxnAcceptMsg(ctx.uuid);
         getSender().tell(accept, getSelf());
 
-        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.INIT);
-
         ctx.startTimer(this, CoordinatorRequestContext.CONVERSATIONAL_TIMEOUT);
     }
 
@@ -176,8 +172,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         }
 
                         ctx.startTimer(this, CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S);
-
-                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT);
                     } else {
                         logger.info("No participant is involved");
 
@@ -187,8 +181,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         var result = new TxnResultMsg(ctx.uuid, false);
                         ctx.subject.tell(result, getSelf());
                         ctx.setCompleted();
-
-                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
                     }
                 } else {
                     logger.info(ctx.subject.path().name() + " requested to abort");
@@ -223,8 +215,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     var result = new TxnResultMsg(ctx.uuid, false);
                     ctx.subject.tell(result, getSelf());
                     ctx.setCompleted();
-
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
                 }
                 break;
             }
@@ -283,8 +273,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                                 return;
                             }
 
-                            ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
-
                             ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
 
                             logger.info("Sending the transaction result to " + ctx.subject.path().name());
@@ -318,8 +306,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             crash();
                             return;
                         }
-
-                        ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                         ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
 
@@ -517,8 +503,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 // the participant we just removed was the only one participating in this transaction
                 //}
 
-                ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
                 var result = new TxnResultMsg(ctx.uuid, false);
                 ctx.subject.tell(result, getSelf());
 
@@ -575,7 +559,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     // Bernstein, p. 231, case 1
                     logger.info("Logged state is CONVERSATIONAL: aborting the transaction");
                     ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
 
@@ -607,8 +590,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         return;
                     }
 
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
-
                     ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
 
                     break;
@@ -634,8 +615,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                         ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
                     }
-
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT);
 
                     if (!ctx.isCompleted()) {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());
@@ -667,8 +646,6 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
 
                         ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
                     }
-
-                    ctx.setProtocolState(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT);
 
                     if (!ctx.isCompleted()) {
                         logger.info("Sending the transaction result to " + ctx.subject.path().name());

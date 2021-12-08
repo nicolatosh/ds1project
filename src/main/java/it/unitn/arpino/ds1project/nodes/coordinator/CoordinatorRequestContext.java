@@ -24,16 +24,6 @@ public class CoordinatorRequestContext extends RequestContext {
     }
 
     /**
-     * State of the Two-phase commit (2PC) protocol of a transaction.
-     */
-    public enum TwoPhaseCommitFSM {
-        INIT,
-        WAIT,
-        ABORT,
-        COMMIT
-    }
-
-    /**
      * Duration (in seconds) within which the {@link Coordinator} should receive a client's request after the last one it previously received.
      */
     public static final int CONVERSATIONAL_TIMEOUT = 4;
@@ -56,8 +46,6 @@ public class CoordinatorRequestContext extends RequestContext {
 
     private final List<LogState> localLog;
 
-    private TwoPhaseCommitFSM protocolState;
-
     private boolean completed;
 
     public CoordinatorRequestContext(UUID uuid, ActorRef client) {
@@ -72,20 +60,6 @@ public class CoordinatorRequestContext extends RequestContext {
     @Override
     public boolean isDecided() {
         return loggedState() == LogState.GLOBAL_COMMIT || loggedState() == LogState.GLOBAL_ABORT;
-    }
-
-    /**
-     * @return The current state of the Two-phase commit (2PC) protocol of the transaction.
-     */
-    public TwoPhaseCommitFSM getProtocolState() {
-        return protocolState;
-    }
-
-    /**
-     * Sets the current state of the Two-phase commit (2PC) protocol of the transaction.
-     */
-    public void setProtocolState(TwoPhaseCommitFSM protocolState) {
-        this.protocolState = protocolState;
     }
 
     /**
@@ -187,7 +161,6 @@ public class CoordinatorRequestContext extends RequestContext {
         return "uuid: " + uuid +
                 "\nclient: " + subject.path().name() +
                 "\nlogged state: " + loggedState() +
-                "\nprotocol state: " + protocolState +
                 "\nparticipants: " + participants.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", ")) +
                 "\nyes voters: " + yesVoters.stream().map(server -> server.path().name()).sorted().collect(Collectors.joining(", "));
     }

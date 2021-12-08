@@ -23,16 +23,6 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
-     * State of the Two-phase commit (2PC) protocol of a transaction.
-     */
-    public enum TwoPhaseCommitFSM {
-        INIT,
-        READY,
-        ABORT,
-        COMMIT
-    }
-
-    /**
      * Duration (in seconds) within which the {@link Server} should receive a {@link Coordinator}'s {@link ReadRequest}
      * or {@link WriteRequest} after the last one it previously received.
      */
@@ -45,8 +35,6 @@ public class ServerRequestContext extends RequestContext {
     public static final int FINAL_DECISION_TIMEOUT_S = 6;
 
     private final List<LogState> localLog;
-
-    private TwoPhaseCommitFSM protocolState;
 
     private IConnection connection;
 
@@ -67,20 +55,6 @@ public class ServerRequestContext extends RequestContext {
 
     public LogState loggedState() {
         return localLog.get(localLog.size() - 1);
-    }
-
-    /**
-     * @return The current state of the Two-phase commit (2PC) protocol of the transaction.
-     */
-    public TwoPhaseCommitFSM getProtocolState() {
-        return protocolState;
-    }
-
-    /**
-     * Sets the current state of the Two-phase commit (2PC) protocol of the transaction.
-     */
-    public void setProtocolState(TwoPhaseCommitFSM protocolState) {
-        this.protocolState = protocolState;
     }
 
     /**
@@ -132,7 +106,6 @@ public class ServerRequestContext extends RequestContext {
     public String toString() {
         return "uuid: " + uuid +
                 "\nlogged state: " + loggedState() +
-                "\nprotocol state: " + protocolState +
                 "\ntransaction:\n" + connection;
     }
 }

@@ -82,7 +82,6 @@ public class CoordinatorOnVoteResponseTest {
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
 
                 // the coordinator should also send the result to the client
 
@@ -140,14 +139,12 @@ public class CoordinatorOnVoteResponseTest {
                 coordinator.tell(yesVote, server0.testActor());
 
                 assertSame(CoordinatorRequestContext.LogState.START_2PC, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.WAIT, ctx.getProtocolState());
 
                 // server1 casts a YES vote, which makes the coordinator take the final decision
 
                 coordinator.tell(yesVote, server1.testActor());
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT, ctx.getProtocolState());
 
                 // the coordinator should also send the result to the client
 

@@ -55,7 +55,6 @@ public class CoordinatorResumeTest {
         var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
         assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-        assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
     }
 
     @Test
@@ -93,7 +92,6 @@ public class CoordinatorResumeTest {
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
     }
@@ -139,7 +137,6 @@ public class CoordinatorResumeTest {
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.COMMIT, ctx.getProtocolState());
             }
         };
     }
@@ -191,7 +188,6 @@ public class CoordinatorResumeTest {
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
     }

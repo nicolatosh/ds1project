@@ -62,7 +62,6 @@ public class ServerOnDecisionRequestTest {
                 var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(ServerRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-                assertSame(ServerRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
     }
@@ -95,7 +94,6 @@ public class ServerOnDecisionRequestTest {
                 var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(ServerRequestContext.LogState.VOTE_COMMIT, ctx.loggedState());
-                assertSame(ServerRequestContext.TwoPhaseCommitFSM.READY, ctx.getProtocolState());
             }
         };
     }

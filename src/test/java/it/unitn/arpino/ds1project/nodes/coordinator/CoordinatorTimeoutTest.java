@@ -73,7 +73,6 @@ public class CoordinatorTimeoutTest {
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
     }
@@ -107,7 +106,6 @@ public class CoordinatorTimeoutTest {
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
     }
@@ -144,7 +142,6 @@ public class CoordinatorTimeoutTest {
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
 
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
-                assertSame(CoordinatorRequestContext.TwoPhaseCommitFSM.ABORT, ctx.getProtocolState());
             }
         };
     }
