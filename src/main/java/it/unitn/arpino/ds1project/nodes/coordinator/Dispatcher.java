@@ -7,6 +7,7 @@ import it.unitn.arpino.ds1project.nodes.server.Server;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Holds the mappings between keys and the {@link ActorRef}s of the {@link Server}s in the distributed Data Store which
@@ -31,7 +32,10 @@ public class Dispatcher {
      * @param key The key of the data item for which a reference to the {@link Server} storing that data item is wanted.
      * @return The {@link Server} in the distributed Data Store which stores the data item with the specified key.
      */
-    public ActorRef getServer(int key) {
-        return map.get(key);
+    public Optional<ActorRef> getServer(int key) {
+        if (map.containsKey(key)) {
+            return Optional.of(map.get(key));
+        }
+        return Optional.empty();
     }
 }

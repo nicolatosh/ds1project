@@ -352,14 +352,43 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
             return;
         }
 
-        ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+        ctx.cancelTimer();
 
         var server = dispatcher.getServer(msg.key);
+        if (server.isEmpty()) {
+            logger.info("No server for key " + msg.key + ". Aborting the transaction");
+            ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
-        ctx.addParticipant(server);
+            if (ctx.getParticipants().size() > 0) {
+                logger.info("Sending the final decision to the participants");
+                var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                var multicast = Communication.builder()
+                        .ofSender(getSelf())
+                        .ofReceivers(ctx.getParticipants())
+                        .ofMessage(decision)
+                        .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                if (!multicast.run()) {
+                    logger.info("Did not send the message to " + multicast.getMissing().stream()
+                            .map(participant -> participant.path().name())
+                            .collect(Collectors.joining(", ")));
+                    crash();
+                    return;
+                }
 
-        var req = new ReadRequest(msg.uuid, msg.key);
-        server.tell(req, getSelf());
+                ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
+            }
+
+            var result = new TxnResultMsg(ctx.uuid, false);
+            getSender().tell(result, getSelf());
+            ctx.setCompleted();
+        } else {
+            ctx.addParticipant(server.get());
+
+            var req = new ReadRequest(msg.uuid, msg.key);
+            server.get().tell(req, getSelf());
+
+            ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+        }
     }
 
     private void onReadResult(ReadResult msg) {
@@ -390,13 +419,41 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
         ctx.cancelTimer();
 
         var server = dispatcher.getServer(msg.key);
-        ctx.addParticipant(server);
+        if (server.isEmpty()) {
+            logger.info("No server for key " + msg.key + ". Aborting the transaction");
+            ctx.log(CoordinatorRequestContext.LogState.GLOBAL_ABORT);
 
-        var req = new WriteRequest(msg.uuid, msg.key, msg.value);
-        server.tell(req, getSelf());
+            if (ctx.getParticipants().size() > 0) {
+                logger.info("Sending the final decision to the participants");
+                var decision = new FinalDecision(ctx.uuid, FinalDecision.Decision.GLOBAL_ABORT);
+                var multicast = Communication.builder()
+                        .ofSender(getSelf())
+                        .ofReceivers(ctx.getParticipants())
+                        .ofMessage(decision)
+                        .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                if (!multicast.run()) {
+                    logger.info("Did not send the message to " + multicast.getMissing().stream()
+                            .map(participant -> participant.path().name())
+                            .collect(Collectors.joining(", ")));
+                    crash();
+                    return;
+                }
 
-        // give the client more time
-        ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+                ctx.startTimer(this, CoordinatorRequestContext.DONE_TIMEOUT_S);
+            }
+
+            var result = new TxnResultMsg(ctx.uuid, false);
+            getSender().tell(result, getSelf());
+            ctx.setCompleted();
+        } else {
+            ctx.addParticipant(server.get());
+
+            var req = new WriteRequest(msg.uuid, msg.key, msg.value);
+            server.get().tell(req, getSelf());
+
+            // give the client more time
+            ctx.startTimer(this, CoordinatorRequestContext.TXN_END_TIMEOUT_S);
+        }
     }
 
     private void onDone(Done msg) {
