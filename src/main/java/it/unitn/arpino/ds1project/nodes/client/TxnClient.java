@@ -101,17 +101,26 @@ public class TxnClient extends AbstractActor {
 
     private void onWelcomeMsg(ClientStartMsg msg) {
         coordinators.addAll(msg.coordinators);
-        logger.info("Available coordinators: " + coordinators.stream()
-                .map(coordinator -> coordinator.path().name())
-                .collect(Collectors.joining(", ")));
+        if (coordinators.isEmpty()) {
+            logger.info("No available coordinators");
+        } else {
+            logger.info("Available coordinators: " + coordinators.stream()
+                    .map(coordinator -> coordinator.path().name())
+                    .collect(Collectors.joining(", ")));
 
-        this.maxKey = msg.maxKey;
+            this.maxKey = msg.maxKey;
+        }
     }
 
     /**
      * Starts a new transaction. Will time out if the coordinator does not reply in time.
      */
     void onStartMsg(StartMessage msg) {
+        if (coordinators.isEmpty()) {
+            logger.info("No available coordinators. Nothing to do.");
+            return;
+        }
+
         // choose a random coordinator to contact
         var coordinator = coordinators.get(ThreadLocalRandom.current().nextInt(coordinators.size()));
         // choose a random number of read operations to perform
