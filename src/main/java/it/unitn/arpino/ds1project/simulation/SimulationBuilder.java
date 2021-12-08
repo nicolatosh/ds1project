@@ -1,26 +1,25 @@
 package it.unitn.arpino.ds1project.simulation;
 
-import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class SimulationBuilder {
 
-    private List<TxnClient> clients;
-    private List<ActorRef> coordinators;
-    private List<ActorRef> servers;
+    private List<ActorRef> clients = new ArrayList<>();
+    private List<ActorRef> coordinators = new ArrayList<>();
+    private List<ActorRef> servers = new ArrayList<>();
 
-    private SimulationBuilder() {
+    public SimulationBuilder() {
     }
+
 
     /**
      * Constructor with 0 args
@@ -40,17 +39,35 @@ public class SimulationBuilder {
      * @param servers_n      Number of TxnClients {@link Server}
      * @return SimulationBuilder
      */
-    public static SimulationBuilder builder(int clients_n, int coordinators_n, int servers_n) {
+    public static SimulationBuilder builder(ActorSystem system, int clients_n, int coordinators_n, int servers_n) {
 
-        var clients = Stream.generate(TxnClient::new).limit(clients_n).collect(Collectors.toList());
-        var coordinators = Stream.generate(Coordinator::new).limit(coordinators_n).map(AbstractActor::getSelf).collect(Collectors.toList());
-        Set<ActorRef> servers = new HashSet<>();
+        List<ActorRef> clients = new ArrayList<>();
+        List<ActorRef> coordinators = new ArrayList<>();
+        List<ActorRef> servers = new ArrayList<>();
 
-        for (int i = 0; i < servers_n; i++) {
-            servers.add(new Server(i * 10, i * 10 + 9).getSelf());
+        for (int i = 0; i < clients_n; i++) {
+            clients.add(system.actorOf(TxnClient.props(), "client-" + i));
         }
 
-        // Servers should know each other
+        for (int i = 0; i < coordinators_n; i++) {
+            coordinators.add(system.actorOf(Coordinator.props(), "coordinator-" + i));
+        }
+
+        for (int i = 0; i < servers_n; i++) {
+            var server = system.actorOf(Server.props(i * 10, i * 10 + 9), "server-" + i);
+            servers.add(server);
+
+            // Telling coordinators about new server
+            for (ActorRef coordinator : coordinators) {
+                coordinator.tell(new JoinMessage(i * 10, i * 10 + 9), server);
+            }
+
+            // Servers must know each other
+            for (int k = 0; k < servers.size() - 1; k++) {
+                servers.get(k).tell(new JoinMessage(i * 10, i * 10 + 9), server);
+                server.tell(new JoinMessage(k * 10, k * 10 + 9), servers.get(k));
+            }
+        }
 
         return builder()
                 .ofClients(clients)
@@ -59,7 +76,7 @@ public class SimulationBuilder {
 
     }
 
-    public SimulationBuilder ofClients(Collection<TxnClient> clients) {
+    public SimulationBuilder ofClients(Collection<ActorRef> clients) {
         this.clients.addAll(clients);
         return this;
     }
@@ -74,7 +91,7 @@ public class SimulationBuilder {
         return this;
     }
 
-    public List<TxnClient> getClients() {
+    public List<ActorRef> getClients() {
         return clients;
     }
 
