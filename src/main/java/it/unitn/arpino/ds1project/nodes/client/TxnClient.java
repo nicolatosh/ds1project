@@ -7,7 +7,7 @@ import akka.actor.Props;
 import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.TimeoutMsg;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
-import it.unitn.arpino.ds1project.messages.client.ClientStartMsg;
+import it.unitn.arpino.ds1project.messages.client.CoordinatorList;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
@@ -69,7 +69,7 @@ public class TxnClient extends AbstractActor {
     @Override
     public Receive createReceive() {
         return receiveBuilder()
-                .match(ClientStartMsg.class, this::onWelcomeMsg)
+                .match(CoordinatorList.class, this::onCoordinatorList)
                 .match(StartMessage.class, this::onStartMsg)
                 .match(TxnAcceptMsg.class, this::onTxnAcceptMsg)
                 .match(ReadResultMsg.class, this::onReadResultMsg)
@@ -99,7 +99,7 @@ public class TxnClient extends AbstractActor {
         super.aroundReceive(receive, obj);
     }
 
-    private void onWelcomeMsg(ClientStartMsg msg) {
+    private void onCoordinatorList(CoordinatorList msg) {
         coordinators.addAll(msg.coordinators);
         if (coordinators.isEmpty()) {
             logger.info("No available coordinators");

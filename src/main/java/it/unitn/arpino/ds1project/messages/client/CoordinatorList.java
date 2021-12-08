@@ -11,18 +11,18 @@ import java.util.List;
  * A message that is used to provide to a {@link TxnClient} the list of {@link Coordinator}s that are available,
  * and the list of keys of data items it can request to read or write in a transaction.
  */
-public class ClientStartMsg implements Serializable {
+public class CoordinatorList implements Serializable {
     public final List<ActorRef> coordinators;
     public final int maxKey;
 
-    public ClientStartMsg(List<ActorRef> coordinators, int maxKey) {
+    public CoordinatorList(List<ActorRef> coordinators, int maxKey) {
         this.coordinators = List.copyOf(coordinators);
         this.maxKey = maxKey;
     }
 
     @Override
     public String toString() {
-        return "ClientStartMsg{" +
+        return "CoordinatorList{" +
                 "coordinators=" + coordinators +
                 ", maxKey=" + maxKey +
                 '}';

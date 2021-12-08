@@ -4,7 +4,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.StartMessage;
-import it.unitn.arpino.ds1project.messages.client.ClientStartMsg;
+import it.unitn.arpino.ds1project.messages.client.CoordinatorList;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
@@ -72,7 +72,7 @@ public class SimulationBuilder {
             coordinators.forEach(coordinator -> coordinator.tell(join, server));
         }
 
-        var list = new ClientStartMsg(coordinators, ((nServers - 1) * 10) + 9);
+        var list = new CoordinatorList(coordinators, ((nServers - 1) * 10) + 9);
         clients.forEach(client -> client.tell(list, ActorRef.noSender()));
 
         var start = new StartMessage();
