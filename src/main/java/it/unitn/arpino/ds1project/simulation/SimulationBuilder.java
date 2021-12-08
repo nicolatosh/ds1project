@@ -3,106 +3,82 @@ package it.unitn.arpino.ds1project.simulation;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
+import it.unitn.arpino.ds1project.messages.StartMessage;
+import it.unitn.arpino.ds1project.messages.client.ClientStartMsg;
 import it.unitn.arpino.ds1project.nodes.client.TxnClient;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class SimulationBuilder {
+    private int nClients;
+    private int nCoordinators;
+    private int nServers;
 
-    private final List<ActorRef> clients = new ArrayList<>();
-    private final List<ActorRef> coordinators = new ArrayList<>();
-    private final List<ActorRef> servers = new ArrayList<>();
-
-    public SimulationBuilder() {
+    // can be called by the Simulation only
+    protected SimulationBuilder() {
     }
 
-
-    /**
-     * Constructor with 0 args
-     *
-     * @return SimulationBuilder
-     */
-    public static SimulationBuilder builder() {
-        return new SimulationBuilder();
-    }
-
-    /**
-     * Constructor with configurable amount of actors.
-     * Generate simulation given number of actors involved
-     *
-     * @param clients_n      Number of TxnClients@ {@link TxnClient}
-     * @param coordinators_n Number of Coordinators {@link Coordinator}
-     * @param servers_n      Number of TxnClients {@link Server}
-     * @return SimulationBuilder
-     */
-    public static SimulationBuilder builder(ActorSystem system, int clients_n, int coordinators_n, int servers_n) {
-
-        List<ActorRef> clients = new ArrayList<>();
-        List<ActorRef> coordinators = new ArrayList<>();
-        List<ActorRef> servers = new ArrayList<>();
-
-        // Generating clients
-        for (int i = 0; i < clients_n; i++) {
-            clients.add(system.actorOf(TxnClient.props(), "client-" + i));
+    public SimulationBuilder ofClients(int nClients) throws IllegalArgumentException {
+        if (nClients < 0) {
+            throw new IllegalArgumentException("nClients must be >= 0");
         }
-
-        // Generating coordinators
-        for (int i = 0; i < coordinators_n; i++) {
-            coordinators.add(system.actorOf(Coordinator.props(), "coordinator-" + i));
-        }
-
-        // Generating servers
-        for (int i = 0; i < servers_n; i++) {
-            var server = system.actorOf(Server.props(i * 10, i * 10 + 9), "server-" + i);
-            servers.add(server);
-
-            // Telling coordinators about new server
-            for (ActorRef coordinator : coordinators) {
-                coordinator.tell(new JoinMessage(i * 10, i * 10 + 9), server);
-            }
-
-            // Servers must know each other
-            for (int k = 0; k < servers.size() - 1; k++) {
-                servers.get(k).tell(new JoinMessage(i * 10, i * 10 + 9), server);
-                server.tell(new JoinMessage(k * 10, k * 10 + 9), servers.get(k));
-            }
-        }
-
-        return builder()
-                .ofClients(clients)
-                .ofCoordinators(coordinators)
-                .ofServers(servers);
-
-    }
-
-    public SimulationBuilder ofClients(Collection<ActorRef> clients) {
-        this.clients.addAll(clients);
+        this.nClients = nClients;
         return this;
     }
 
-    public SimulationBuilder ofCoordinators(Collection<ActorRef> coordinators) {
-        this.coordinators.addAll(coordinators);
+    public SimulationBuilder ofCoordinators(int nCoordinators) throws IllegalArgumentException {
+        if (nCoordinators < 0) {
+            throw new IllegalArgumentException("nCoordinators must be >= 0");
+        }
+        this.nCoordinators = nCoordinators;
         return this;
     }
 
-    public SimulationBuilder ofServers(Collection<ActorRef> servers) {
-        this.servers.addAll(servers);
+    public SimulationBuilder ofServers(int nServers) throws IllegalArgumentException {
+        if (nServers < 0) {
+            throw new IllegalArgumentException("nServers must be >= 0");
+        }
+        this.nServers = nServers;
         return this;
     }
 
-    public List<ActorRef> getClients() {
-        return clients;
-    }
+    public Simulation build() {
+        var system = ActorSystem.create("ds1project");
 
-    public List<ActorRef> getCoordinators() {
-        return coordinators;
-    }
+        var clients = IntStream.rangeClosed(0, nClients)
+                .mapToObj(i -> system.actorOf(TxnClient.props(), "client" + i))
+                .collect(Collectors.toList());
 
-    public List<ActorRef> getServers() {
-        return servers;
+        var coordinators = IntStream.rangeClosed(0, nCoordinators)
+                .mapToObj(i -> system.actorOf(Coordinator.props(), "coord" + i))
+                .collect(Collectors.toList());
+
+        var servers = IntStream.rangeClosed(0, nServers)
+                .mapToObj(i -> system.actorOf(Server.props(i * 10, i * 10 + 9), "server" + i))
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < servers.size(); i++) {
+            var server = servers.get(i);
+
+            var join = new JoinMessage(i * 10, i * 10 + 9);
+
+            servers.stream()
+                    .filter(other -> other != server)
+                    .forEach(other -> other.tell(join, server));
+
+            coordinators.forEach(coordinator -> coordinator.tell(join, server));
+        }
+
+        var list = new ClientStartMsg(coordinators, ((nServers - 1) * 10) + 9);
+        clients.forEach(client -> client.tell(list, ActorRef.noSender()));
+
+        var start = new StartMessage();
+        servers.forEach(server -> server.tell(start, ActorRef.noSender()));
+        coordinators.forEach(coordinator -> coordinator.tell(start, ActorRef.noSender()));
+
+        return new Simulation(system, clients, coordinators, servers);
     }
 }
