@@ -15,7 +15,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnEndMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.WriteMsg;
-import it.unitn.arpino.ds1project.simulation.Parameters;
+import it.unitn.arpino.ds1project.simulation.ClientParameters;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
@@ -29,13 +29,13 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class TxnClient extends AbstractActor {
+    private ClientParameters parameters;
+
     private static final double COMMIT_PROBABILITY = 0.8;
     private static final double WRITE_PROBABILITY = 0.5;
     private static final int BACKOFF_S = 6;
 
     private final Logger logger;
-
-    private final Parameters parameters;
 
     private final Map<UUID, ClientRequestContext> contexts;
 
@@ -49,6 +49,8 @@ public class TxnClient extends AbstractActor {
     private int numCommittedTxn;
 
     public TxnClient() {
+        parameters = new ClientParameters();
+
         try (InputStream config = TxnClient.class.getResourceAsStream("/logging.properties")) {
             if (config != null) {
                 LogManager.getLogManager().readConfiguration(config);
@@ -57,13 +59,16 @@ public class TxnClient extends AbstractActor {
         }
 
         logger = Logger.getLogger(getSelf().path().name());
-        parameters = new Parameters();
         contexts = new HashMap<>();
         coordinators = new ArrayList<>();
     }
 
     public static Props props() {
         return Props.create(TxnClient.class, TxnClient::new).withDispatcher("my-pinned-dispatcher");
+    }
+
+    public ClientParameters getParameters() {
+        return parameters;
     }
 
     @Override

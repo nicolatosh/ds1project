@@ -9,7 +9,6 @@ import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.context.RequestContextRepository;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.nodes.server.Server;
-import it.unitn.arpino.ds1project.simulation.Parameters;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,8 +29,6 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractAc
     private final Receive aliveReceive;
     private final Receive crashedReceive;
 
-    private final Parameters parameters;
-
     private Status status;
 
     private final RequestContextRepository<T> repository;
@@ -46,7 +43,6 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractAc
 
         logger = Logger.getLogger(getSelf().path().name());
 
-        parameters = new Parameters();
         status = DataStoreNode.Status.ALIVE;
         repository = new RequestContextRepository<>();
 
@@ -67,10 +63,6 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractAc
 
     public final Status getStatus() {
         return status;
-    }
-
-    public Parameters getParameters() {
-        return parameters;
     }
 
     public RequestContextRepository<T> getRepository() {

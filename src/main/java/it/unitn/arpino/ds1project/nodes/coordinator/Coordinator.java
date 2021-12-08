@@ -13,6 +13,7 @@ import it.unitn.arpino.ds1project.messages.coordinator.*;
 import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.simulation.Communication;
+import it.unitn.arpino.ds1project.simulation.CoordinatorParameters;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
@@ -21,14 +22,21 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
+    private final CoordinatorParameters parameters;
+
     private final Dispatcher dispatcher;
 
     public Coordinator() {
+        parameters = new CoordinatorParameters();
         dispatcher = new Dispatcher();
     }
 
     public static Props props() {
         return Props.create(Coordinator.class, Coordinator::new).withDispatcher("my-pinned-dispatcher");
+    }
+
+    public CoordinatorParameters getParameters() {
+        return parameters;
     }
 
     @Override
@@ -95,7 +103,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         .ofSender(getSelf())
                         .ofReceivers(ctx.getParticipants())
                         .ofMessage(decision)
-                        .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                        .ofCrashProbability(parameters.coordinatorOnFinalDecisionCrashProbability);
                 if (!multicast.run()) {
                     logger.info("Did not send the message to " + multicast.getMissing().stream()
                             .map(participant -> participant.path().name())
@@ -162,7 +170,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
                                 .ofMessage(request)
-                                .ofCrashProbability(getParameters().coordinatorOnVoteRequestCrashProbability);
+                                .ofCrashProbability(parameters.coordinatorOnVoteRequestCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
                                     .map(participant -> participant.path().name())
@@ -194,7 +202,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
                                 .ofMessage(decision)
-                                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                                .ofCrashProbability(parameters.coordinatorOnFinalDecisionCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
                                     .map(participant -> participant.path().name())
@@ -264,7 +272,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                                     .ofSender(getSelf())
                                     .ofReceivers(ctx.getParticipants())
                                     .ofMessage(decision)
-                                    .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                                    .ofCrashProbability(parameters.coordinatorOnFinalDecisionCrashProbability);
                             if (!multicast.run()) {
                                 logger.info("Did not send the message to " + multicast.getMissing().stream()
                                         .map(participant -> participant.path().name())
@@ -298,7 +306,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
                                 .ofMessage(decision)
-                                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                                .ofCrashProbability(parameters.coordinatorOnFinalDecisionCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
                                     .map(participant -> participant.path().name())
@@ -488,7 +496,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             .ofSender(getSelf())
                             .ofReceivers(ctx.getParticipants())
                             .ofMessage(decision)
-                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                            .ofCrashProbability(parameters.coordinatorOnFinalDecisionCrashProbability);
                     if (!multicast.run()) {
                         logger.info("Did not send the message to " + multicast.getMissing().stream()
                                 .map(participant -> participant.path().name())
@@ -537,9 +545,9 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                     ctx.cancelTimer();
                 });
 
-        if (getParameters().coordinatorCanRecover) {
+        if (parameters.coordinatorCanRecover) {
             getContext().system().scheduler().scheduleOnce(
-                    Duration.ofMillis(getParameters().coordinatorRecoveryTimeMs), // delay
+                    Duration.ofMillis(parameters.coordinatorRecoveryTimeMs), // delay
                     getSelf(), // receiver
                     new ResumeMessage(), // message
                     getContext().dispatcher(), // executor
@@ -581,7 +589,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                             .ofSender(getSelf())
                             .ofReceivers(ctx.getParticipants())
                             .ofMessage(decision)
-                            .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                            .ofCrashProbability(parameters.coordinatorOnFinalDecisionCrashProbability);
                     if (!multicast.run()) {
                         logger.info("Did not send the message to " + multicast.getMissing().stream()
                                 .map(participant -> participant.path().name())
@@ -604,7 +612,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
                                 .ofMessage(decision)
-                                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                                .ofCrashProbability(parameters.coordinatorOnFinalDecisionCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
                                     .map(participant -> participant.path().name())
@@ -635,7 +643,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())
                                 .ofMessage(decision)
-                                .ofCrashProbability(getParameters().coordinatorOnFinalDecisionCrashProbability);
+                                .ofCrashProbability(parameters.coordinatorOnFinalDecisionCrashProbability);
                         if (!multicast.run()) {
                             logger.info("Did not send the message to " + multicast.getMissing().stream()
                                     .map(participant -> participant.path().name())

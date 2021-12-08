@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Communication {
-    public static Parameters parameters = new Parameters();
+    public static NetworkParameters parameters = new NetworkParameters();
 
     private ActorRef sender;
     private final List<ActorRef> receivers;

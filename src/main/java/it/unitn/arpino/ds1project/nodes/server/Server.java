@@ -18,6 +18,7 @@ import it.unitn.arpino.ds1project.messages.server.*;
 import it.unitn.arpino.ds1project.nodes.DataStoreNode;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 import it.unitn.arpino.ds1project.simulation.Communication;
+import it.unitn.arpino.ds1project.simulation.ServerParameters;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
@@ -27,6 +28,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Server extends DataStoreNode<ServerRequestContext> {
+    private final ServerParameters parameters;
+
     private final IDatabase database;
     private final IDatabaseController controller;
 
@@ -36,6 +39,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     private final List<ActorRef> servers;
 
     public Server(int lowerKey, int upperKey) {
+        parameters = new ServerParameters();
+
         DatabaseBuilder builder = DatabaseBuilder.newBuilder()
                 .keyRange(lowerKey, upperKey)
                 .create();
@@ -46,6 +51,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     public static Props props(int lowerKey, int upperKey) {
         return Props.create(Server.class, () -> new Server(lowerKey, upperKey)).withDispatcher("my-pinned-dispatcher");
+    }
+
+    public ServerParameters getParameters() {
+        return parameters;
     }
 
     public IDatabase getDatabase() {
@@ -169,7 +178,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     .ofSender(getSelf())
                     .ofReceiver(getSender())
                     .ofMessage(yesVote)
-                    .ofCrashProbability(getParameters().serverOnVoteResponseCrashProbability);
+                    .ofCrashProbability(parameters.serverOnVoteResponseCrashProbability);
             if (!unicast.run()) {
                 logger.info("Did not send the message to " + getSender().path().name());
                 crash();
@@ -188,7 +197,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     .ofSender(getSelf())
                     .ofReceiver(getSender())
                     .ofMessage(noVote)
-                    .ofCrashProbability(getParameters().serverOnVoteResponseCrashProbability);
+                    .ofCrashProbability(parameters.serverOnVoteResponseCrashProbability);
             if (!unicast.run()) {
                 logger.info("Did not send the message to " + getSender().path().name());
                 crash();
@@ -276,7 +285,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .ofSender(getSelf())
                 .ofReceiver(getSender())
                 .ofMessage(response)
-                .ofCrashProbability(getParameters().serverOnDecisionResponseCrashProbability);
+                .ofCrashProbability(parameters.serverOnDecisionResponseCrashProbability);
         if (!unicast.run()) {
             logger.info("Did not send the message to " + getSender().path().name());
             crash();
@@ -411,7 +420,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .ofSender(getSelf())
                 .ofReceivers(servers)
                 .ofMessage(request)
-                .ofCrashProbability(getParameters().serverOnDecisionRequestCrashProbability);
+                .ofCrashProbability(parameters.serverOnDecisionRequestCrashProbability);
         if (!multicast.run()) {
             logger.info("Did not send the message to " + multicast.getMissing().stream()
                     .map(participant -> participant.path().name())
@@ -449,9 +458,9 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         getRepository().getAllRequestContexts().forEach(ServerRequestContext::cancelTimer);
 
-        if (getParameters().serverCanRecover) {
+        if (parameters.serverCanRecover) {
             getContext().system().scheduler().scheduleOnce(
-                    Duration.ofMillis(getParameters().serverRecoveryTimeMs), // delay
+                    Duration.ofMillis(parameters.serverRecoveryTimeMs), // delay
                     getSelf(), // receiver
                     new ResumeMessage(), // message
                     getContext().dispatcher(), // executor

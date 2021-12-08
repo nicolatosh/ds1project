@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 public class ParametersTest {
     @Test
     void instancesShouldBeDifferent() {
-        var first = new Parameters();
-        var second = new Parameters();
+        var first = new CoordinatorParameters();
+        var second = new CoordinatorParameters();
 
         second.coordinatorRecoveryTimeMs = 1000;
 
