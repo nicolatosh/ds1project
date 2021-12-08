@@ -4,11 +4,14 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
+import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.StartMessage;
+import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadMsg;
 import it.unitn.arpino.ds1project.messages.coordinator.TxnBeginMsg;
+import it.unitn.arpino.ds1project.nodes.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,15 +26,19 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 public class CoordinatorTest {
     ActorSystem system;
     TestActorRef<Coordinator> coordinator;
+    ActorRef server;
 
     @BeforeEach
     void setUp() {
         system = ActorSystem.create();
-
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
-        coordinator.tell(new JoinMessage(0, 9), ActorRef.noSender());
+        server = system.actorOf(Server.props(0, 9), "server");
+
+        var join = new JoinMessage(0, 9);
+        coordinator.tell(join, server);
 
         coordinator.tell(new StartMessage(), ActorRef.noSender());
+        server.tell(new StartMessage(), ActorRef.noSender());
     }
 
     @AfterEach
@@ -50,12 +57,14 @@ public class CoordinatorTest {
                 var uuid1 = UUID.randomUUID();
                 var begin1 = new TxnBeginMsg(uuid1);
                 coordinator.tell(begin1, testActor());
-                expectMsg(new TxnAcceptMsg(uuid1));
+                var accept1 = new TxnAcceptMsg(uuid1);
+                expectMsg(accept1);
 
                 var uuid2 = UUID.randomUUID();
                 var begin2 = new TxnBeginMsg(uuid2);
                 coordinator.tell(begin2, testActor());
-                expectMsg(new TxnAcceptMsg(uuid2));
+                var accept2 = new TxnAcceptMsg(uuid2);
+                expectMsg(accept2);
 
                 assertNotEquals(uuid1, uuid2);
 
@@ -74,11 +83,18 @@ public class CoordinatorTest {
                 var begin = new TxnBeginMsg(uuid);
                 coordinator.tell(begin, testActor());
 
-                var read0 = new ReadMsg(uuid, 0);
-                coordinator.tell(read0, testActor());
+                var accept = new TxnAcceptMsg(uuid);
+                expectMsg(accept);
 
-                var read1 = new ReadMsg(uuid, 1);
+                var read1 = new ReadMsg(uuid, 0);
                 coordinator.tell(read1, testActor());
+                var result1 = new ReadResultMsg(uuid, 0, DatabaseBuilder.DEFAULT_DATA_VALUE);
+                expectMsg(result1);
+
+                var read2 = new ReadMsg(uuid, 1);
+                coordinator.tell(read2, testActor());
+                var result2 = new ReadResultMsg(uuid, 1, DatabaseBuilder.DEFAULT_DATA_VALUE);
+                expectMsg(result2);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
                 assertEquals(1, ctx.getParticipants().size());
