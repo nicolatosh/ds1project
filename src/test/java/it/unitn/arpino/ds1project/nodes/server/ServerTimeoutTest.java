@@ -46,7 +46,7 @@ public class ServerTimeoutTest {
         var readRequest = new ReadRequest(uuid, 0);
         server0.tell(readRequest, ActorRef.noSender());
 
-        TimeUnit.SECONDS.sleep(ServerRequestContext.VOTE_REQUEST_TIMEOUT_S + 1);
+        TimeUnit.SECONDS.sleep(ServerRequestContext.CONVERSATIONAL_TIMEOUT + 1);
 
         var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
 

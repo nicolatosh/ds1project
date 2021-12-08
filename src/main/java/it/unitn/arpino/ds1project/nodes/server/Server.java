@@ -122,7 +122,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        ctx.startTimer(this, ServerRequestContext.VOTE_REQUEST_TIMEOUT_S);
+        ctx.startTimer(this, ServerRequestContext.CONVERSATIONAL_TIMEOUT);
 
         int value = ctx.read(req.key);
 
@@ -147,7 +147,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
             return;
         }
 
-        ctx.startTimer(this, ServerRequestContext.VOTE_REQUEST_TIMEOUT_S);
+        ctx.startTimer(this, ServerRequestContext.CONVERSATIONAL_TIMEOUT);
 
         ctx.write(req.key, req.value);
     }

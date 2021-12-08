@@ -33,10 +33,10 @@ public class ServerRequestContext extends RequestContext {
     }
 
     /**
-     * Duration (in seconds) within which the {@link Server} expects to receive the {@link Coordinator}'s {@link VoteRequest},
-     * after having received the first {@link ReadRequest} or {@link WriteRequest}.
+     * Duration (in seconds) within which the {@link Server} should receive a {@link Coordinator}'s {@link ReadRequest}
+     * or {@link WriteRequest} after the last one it previously received.
      */
-    public static final int VOTE_REQUEST_TIMEOUT_S = 6;
+    public static final int CONVERSATIONAL_TIMEOUT = 6;
 
     /**
      * Duration (in seconds) within which the {@link Server} expects to receive the {@link Coordinator}'s {@link FinalDecision},
