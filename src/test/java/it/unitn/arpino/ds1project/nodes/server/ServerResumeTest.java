@@ -69,8 +69,19 @@ public class ServerResumeTest {
                 var readRequest = new ReadRequest(uuid, 0);
                 server0.tell(readRequest, ActorRef.noSender());
 
+                awaitCond(() -> server0.underlyingActor().getRepository().existsContextWithId(uuid),
+                        Duration.create(2, TimeUnit.SECONDS),
+                        Duration.create(1, TimeUnit.SECONDS),
+                        null);
+
                 var voteRequest = new VoteRequest(uuid);
                 server0.tell(voteRequest, ActorRef.noSender());
+
+                var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
+                awaitCond(() -> ServerRequestContext.LogState.VOTE_COMMIT == ctx.loggedState(),
+                        Duration.create(ServerRequestContext.CONVERSATIONAL_TIMEOUT + 1, TimeUnit.SECONDS),
+                        Duration.create(1, TimeUnit.SECONDS),
+                        null);
 
                 server0.underlyingActor().crash();
                 server0.underlyingActor().resume();

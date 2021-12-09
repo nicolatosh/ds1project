@@ -22,8 +22,6 @@ import scala.concurrent.duration.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 public class CoordinatorOnVoteResponseTest {
     ActorSystem system;
     TestActorRef<Coordinator> coordinator;
@@ -80,8 +78,10 @@ public class CoordinatorOnVoteResponseTest {
                 coordinator.tell(noVote, server0.testActor());
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
-
-                assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
+                awaitCond(() -> CoordinatorRequestContext.LogState.GLOBAL_ABORT == ctx.loggedState(),
+                        Duration.create(CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S + 1, TimeUnit.SECONDS),
+                        Duration.create(1, TimeUnit.SECONDS),
+                        null);
 
                 // the coordinator should also send the result to the client
 
@@ -138,13 +138,19 @@ public class CoordinatorOnVoteResponseTest {
 
                 coordinator.tell(yesVote, server0.testActor());
 
-                assertSame(CoordinatorRequestContext.LogState.START_2PC, ctx.loggedState());
+                awaitCond(() -> CoordinatorRequestContext.LogState.START_2PC == ctx.loggedState(),
+                        Duration.create(CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S + 1, TimeUnit.SECONDS),
+                        Duration.create(1, TimeUnit.SECONDS),
+                        null);
 
                 // server1 casts a YES vote, which makes the coordinator take the final decision
 
                 coordinator.tell(yesVote, server1.testActor());
 
-                assertSame(CoordinatorRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
+                awaitCond(() -> CoordinatorRequestContext.LogState.GLOBAL_COMMIT == ctx.loggedState(),
+                        Duration.create(CoordinatorRequestContext.VOTE_RESPONSE_TIMEOUT_S + 1, TimeUnit.SECONDS),
+                        Duration.create(1, TimeUnit.SECONDS),
+                        null);
 
                 // the coordinator should also send the result to the client
 

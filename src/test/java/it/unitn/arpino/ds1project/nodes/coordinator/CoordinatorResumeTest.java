@@ -2,6 +2,7 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
+import akka.actor.Props;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
@@ -25,12 +26,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class CoordinatorResumeTest {
     ActorSystem system;
-    TestActorRef<Coordinator> coordinator;
+    TestActorRef<SelfHealingCoordinator> coordinator;
 
     @BeforeEach
     void setUp() {
         system = ActorSystem.create();
-        coordinator = TestActorRef.create(system, Coordinator.props());
+        coordinator = TestActorRef.create(system, SelfHealingCoordinator.props());
     }
 
     @AfterEach
@@ -61,6 +62,16 @@ public class CoordinatorResumeTest {
     void testResumeInStart2PC() {
         new TestKit(system) {
             {
+                // Description of the test:
+                // The client reads a data item, requests to commit.
+                // The server receives the request to commit, crashes while sending the vote request.
+                // Upon resuming, it should send the final decision (abort) to the server.
+
+
+                // this forces the coordinator to log START_2PC and crash while sending the vote request.
+                coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 1;
+
+
                 var join = new JoinMessage(0, 9);
                 coordinator.tell(join, testActor());
 
@@ -78,19 +89,13 @@ public class CoordinatorResumeTest {
                 expectMsg(readRequest);
 
                 var end = new TxnEndMsg(uuid, true);
-                // this forces the coordinator to log START_2PC and crash
-                coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 1;
                 coordinator.tell(end, ActorRef.noSender());
-
-                // restore the normality
-                coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0;
 
                 var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_ABORT);
                 expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1000, TimeUnit.SECONDS),
                         decision);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
-
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
             }
         };
@@ -100,6 +105,17 @@ public class CoordinatorResumeTest {
     void testResumeInGlobalCommit() {
         new TestKit(system) {
             {
+                // Description of the test:
+                // The client reads a data item, requests to commit.
+                // The server requests the votes, collects the vote (YES), writes the final decision in the local log (commit),
+                // and crashes before sending the final decision.
+                // Upon resuming, it should send the final decision (commit) to the server.
+
+
+                // this forces the coordinator to log GLOBAL_COMMIT after collecting the vote responses and crash.
+                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1;
+
+
                 var join = new JoinMessage(0, 9);
                 coordinator.tell(join, testActor());
 
@@ -123,28 +139,33 @@ public class CoordinatorResumeTest {
                 expectMsg(voteRequest);
 
                 var voteResponse = new VoteResponse(uuid, VoteResponse.Vote.YES);
-                // this forces the coordinator to log GLOBAL_COMMIT and crash
-                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1;
                 coordinator.tell(voteResponse, testActor());
-
-                // restore the normality
-                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0;
 
                 var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_COMMIT);
                 expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1000, TimeUnit.SECONDS),
                         decision);
 
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
-
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
             }
         };
     }
 
     @Test
-    void testResumeInGlobalAbort() throws InterruptedException {
+    void testResumeInGlobalAbort() {
         new TestKit(system) {
             {
+                // Description of the test:
+                // The client reads a data item, requests to commit.
+                // The server requests the votes, collects the vote (NO), writes the final decision in the local log (abort),
+                // and crashes before sending the final decision.
+                // Upon resuming, it should send the final decision (abort) to the server.
+
+
+                // this forces the coordinator to log GLOBAL_ABORT and crash
+                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1;
+
+
                 var join = new JoinMessage(0, 9);
                 coordinator.tell(join, testActor());
 
@@ -168,12 +189,7 @@ public class CoordinatorResumeTest {
                 expectMsg(voteRequest);
 
                 var voteResponse = new VoteResponse(uuid, VoteResponse.Vote.NO);
-                // this forces the coordinator to log GLOBAL_ABORT and crash
-                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1;
                 coordinator.tell(voteResponse, testActor());
-
-                // restore the normality
-                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0;
 
                 // the "NO" vote from the participant counted as a Done message; thus, while resuming, the coordinator
                 // does not need to send the final decision.
@@ -181,14 +197,22 @@ public class CoordinatorResumeTest {
                 // expectMsg(Duration.create(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1000, TimeUnit.SECONDS),
                 //        decision);
 
-                // wait for the coordinator to execute the resume
-                Thread.sleep(coordinator.underlyingActor().getParameters().coordinatorRecoveryTimeMs + 1000);
-
-
                 var ctx = coordinator.underlyingActor().getRepository().getRequestContextById(uuid);
-
                 assertSame(CoordinatorRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
             }
         };
+    }
+}
+
+class SelfHealingCoordinator extends Coordinator {
+    public static Props props() {
+        return Props.create(SelfHealingCoordinator.class, SelfHealingCoordinator::new);
+    }
+
+    @Override
+    protected void crash() {
+        getParameters().coordinatorOnVoteRequestCrashProbability = 0.;
+        getParameters().coordinatorOnFinalDecisionCrashProbability = 0.;
+        super.crash();
     }
 }

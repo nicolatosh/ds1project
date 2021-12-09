@@ -18,8 +18,6 @@ import scala.concurrent.duration.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 public class ServerOnDecisionResponseTest {
     ActorSystem system;
     TestActorRef<Server> server0;
@@ -64,11 +62,10 @@ public class ServerOnDecisionResponseTest {
                 server0.tell(decisionResponse, testActor());
 
                 var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
-
-                // give the server some time to process the decision response
-                Thread.sleep(500);
-
-                assertSame(ServerRequestContext.LogState.GLOBAL_COMMIT, ctx.loggedState());
+                awaitCond(() -> ServerRequestContext.LogState.GLOBAL_COMMIT == ctx.loggedState(),
+                        Duration.create(3, TimeUnit.SECONDS),
+                        Duration.create(1, TimeUnit.SECONDS),
+                        null);
             }
         };
     }
@@ -100,11 +97,10 @@ public class ServerOnDecisionResponseTest {
                 server0.tell(decisionResponse, testActor());
 
                 var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
-
-                // give the server some time to process the decision response
-                Thread.sleep(500);
-
-                assertSame(ServerRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
+                awaitCond(() -> ServerRequestContext.LogState.GLOBAL_ABORT == ctx.loggedState(),
+                        Duration.create(3, TimeUnit.SECONDS),
+                        Duration.create(1, TimeUnit.SECONDS),
+                        null);
             }
         };
     }

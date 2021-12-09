@@ -4,8 +4,10 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
+import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.StartMessage;
+import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.server.DecisionRequest;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
@@ -16,8 +18,6 @@ import scala.concurrent.duration.Duration;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ServerTimeoutTest {
     ActorSystem system;
@@ -38,19 +38,26 @@ public class ServerTimeoutTest {
 
     @Test
     void testVoteRequestTimeout() throws InterruptedException {
-        var start = new StartMessage();
-        server0.tell(start, ActorRef.noSender());
+        new TestKit(system) {
+            {
+                var start = new StartMessage();
+                server0.tell(start, ActorRef.noSender());
 
-        var uuid = UUID.randomUUID();
+                var uuid = UUID.randomUUID();
 
-        var readRequest = new ReadRequest(uuid, 0);
-        server0.tell(readRequest, ActorRef.noSender());
+                var readRequest = new ReadRequest(uuid, 0);
+                server0.tell(readRequest, testActor());
 
-        TimeUnit.SECONDS.sleep(ServerRequestContext.CONVERSATIONAL_TIMEOUT + 1);
+                var readResult = new ReadResult(uuid, 0, DatabaseBuilder.DEFAULT_DATA_VALUE);
+                expectMsg(readResult);
 
-        var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
-
-        assertSame(ServerRequestContext.LogState.GLOBAL_ABORT, ctx.loggedState());
+                var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);
+                awaitCond(() -> ServerRequestContext.LogState.GLOBAL_ABORT == ctx.loggedState(),
+                        Duration.create(ServerRequestContext.CONVERSATIONAL_TIMEOUT + 1, TimeUnit.SECONDS),
+                        Duration.create(1, TimeUnit.SECONDS),
+                        null);
+            }
+        };
     }
 
     @Test
