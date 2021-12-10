@@ -95,7 +95,7 @@ public class ServerRequestContext extends RequestContext {
      * Aborts the transaction.
      */
     public void abort() {
-        if (loggedState() == LogState.CONVERSATIONAL || loggedState() == LogState.VOTE_COMMIT) {
+        if (loggedState() == LogState.GLOBAL_ABORT) {
             connection.abort();
             connection = null;
         }
