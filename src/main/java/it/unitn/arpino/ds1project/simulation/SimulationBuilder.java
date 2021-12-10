@@ -48,15 +48,15 @@ public class SimulationBuilder {
     public Simulation build() {
         var system = ActorSystem.create("ds1project");
 
-        var clients = IntStream.rangeClosed(0, nClients)
+        var clients = IntStream.rangeClosed(0, nClients - 1)
                 .mapToObj(i -> system.actorOf(TxnClient.props(), "client" + i))
                 .collect(Collectors.toList());
 
-        var coordinators = IntStream.rangeClosed(0, nCoordinators)
+        var coordinators = IntStream.rangeClosed(0, nCoordinators - 1)
                 .mapToObj(i -> system.actorOf(Coordinator.props(), "coord" + i))
                 .collect(Collectors.toList());
 
-        var servers = IntStream.rangeClosed(0, nServers)
+        var servers = IntStream.rangeClosed(0, nServers - 1)
                 .mapToObj(i -> system.actorOf(Server.props(i * 10, i * 10 + 9), "server" + i))
                 .collect(Collectors.toList());
 
