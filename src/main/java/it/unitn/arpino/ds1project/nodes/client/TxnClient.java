@@ -29,11 +29,12 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class TxnClient extends AbstractActor {
-    private ClientParameters parameters;
+    private final ClientParameters parameters;
 
     private static final double COMMIT_PROBABILITY = 0.8;
     private static final double WRITE_PROBABILITY = 0.5;
-    private static final int BACKOFF_S = 6;
+    private static final long MIN_BACKOFF_S = 2;
+    private static final long MAX_BACKOFF_S = 8;
 
     private final Logger logger;
 
@@ -69,6 +70,11 @@ public class TxnClient extends AbstractActor {
 
     public ClientParameters getParameters() {
         return parameters;
+    }
+
+    private Duration randomBackoff() {
+        long seconds = ThreadLocalRandom.current().nextLong(MIN_BACKOFF_S, MAX_BACKOFF_S);
+        return Duration.ofSeconds(seconds);
     }
 
     @Override
@@ -253,7 +259,7 @@ public class TxnClient extends AbstractActor {
                 // start a new transaction
                 var start = new StartMessage();
                 getContext().getSystem().getScheduler().scheduleOnce(
-                        Duration.ofSeconds(BACKOFF_S), // delay
+                        randomBackoff(), // delay
                         getSelf(), // receiver
                         start, // message
                         getContext().dispatcher(), // executor
@@ -296,7 +302,7 @@ public class TxnClient extends AbstractActor {
                     // start a new transaction
                     var start = new StartMessage();
                     getContext().getSystem().getScheduler().scheduleOnce(
-                            Duration.ofSeconds(BACKOFF_S), // delay
+                            randomBackoff(), // delay
                             getSelf(), // receiver
                             start, // message
                             getContext().dispatcher(), // executor
@@ -341,7 +347,7 @@ public class TxnClient extends AbstractActor {
                     // start a new transaction
                     var start = new StartMessage();
                     getContext().getSystem().getScheduler().scheduleOnce(
-                            Duration.ofSeconds(BACKOFF_S), // delay
+                            randomBackoff(), // delay
                             getSelf(), // receiver
                             start, // message
                             getContext().dispatcher(), // executor
@@ -363,7 +369,7 @@ public class TxnClient extends AbstractActor {
                     // start a new transaction
                     var start = new StartMessage();
                     getContext().getSystem().getScheduler().scheduleOnce(
-                            Duration.ofSeconds(BACKOFF_S), // delay
+                            randomBackoff(), // delay
                             getSelf(), // receiver
                             start, // message
                             getContext().dispatcher(), // executor
