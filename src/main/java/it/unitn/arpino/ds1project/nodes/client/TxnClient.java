@@ -173,8 +173,10 @@ public class TxnClient extends AbstractActor {
         var op = ctx.getOp();
         if (msg.key == op.firstKey) {
             op.firstValue = msg.value;
-        } else { // msg.key == op.secondKey
+        } else if (msg.key == op.secondKey) {
             op.secondValue = msg.value;
+        } else {
+            throw new IllegalStateException("Unexpected key (expected: " + op.firstKey + " or " + op.secondKey + ", found " + msg.key);
         }
 
         if (!op.isDone()) {
@@ -219,6 +221,12 @@ public class TxnClient extends AbstractActor {
 
     void writeTwo(ClientRequestContext ctx) {
         var op = ctx.getOp();
+        if (op.firstValue == null || op.secondValue == null) {
+            throw new IllegalStateException("writeTwo was called, but op variables are null");
+        }
+        if (op.firstValue < 0 || op.secondValue < 0) {
+            throw new IllegalStateException("writeTwo was called, but op variables are < 0");
+        }
 
         var amountTaken = 0;
         if (op.firstValue >= 1) {
