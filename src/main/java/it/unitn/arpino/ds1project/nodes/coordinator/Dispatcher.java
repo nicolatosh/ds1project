@@ -5,6 +5,7 @@ import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -37,5 +38,9 @@ public class Dispatcher {
             return Optional.of(map.get(key));
         }
         return Optional.empty();
+    }
+
+    public Collection<ActorRef> getAll() {
+        return map.values();
     }
 }
