@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -37,7 +38,7 @@ public class ServerTimeoutTest {
     }
 
     @Test
-    void testVoteRequestTimeout() throws InterruptedException {
+    void testVoteRequestTimeout() {
         new TestKit(system) {
             {
                 var start = new StartMessage();
@@ -76,7 +77,7 @@ public class ServerTimeoutTest {
                 var readRequest = new ReadRequest(uuid, 0);
                 server0.tell(readRequest, ActorRef.noSender());
 
-                var voteRequest = new VoteRequest(uuid);
+                var voteRequest = new VoteRequest(uuid, Set.of(server0, testActor()));
                 server0.tell(voteRequest, ActorRef.noSender());
 
                 // the probe, which, from the perspective of server0, is another server, should receive a decision request

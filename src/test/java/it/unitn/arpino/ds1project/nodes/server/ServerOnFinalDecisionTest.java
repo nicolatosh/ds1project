@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -63,7 +64,7 @@ public class ServerOnFinalDecisionTest {
         var readRequest = new ReadRequest(uuid, 0);
         server0.tell(readRequest, ActorRef.noSender());
 
-        var voteRequest = new VoteRequest(uuid);
+        var voteRequest = new VoteRequest(uuid, Set.of(server0));
         server0.tell(voteRequest, ActorRef.noSender());
 
         var decision = new FinalDecision(uuid, FinalDecision.Decision.GLOBAL_ABORT);

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -67,7 +68,7 @@ public class ServerTransactionTest {
                 // The first transaction commits. The value in the transaction's private workspace
                 // is copied into the database.
 
-                server.tell(new VoteRequest(uuid1), testActor());
+                server.tell(new VoteRequest(uuid1, Set.of(server)), testActor());
                 expectMsg(new VoteResponse(uuid1, VoteResponse.Vote.YES));
 
                 FinalDecision decision1 = new FinalDecision(uuid1, FinalDecision.Decision.GLOBAL_COMMIT);
@@ -90,7 +91,7 @@ public class ServerTransactionTest {
 
                 // The second transaction attempts commits. The response must be negative.
 
-                server.tell(new VoteRequest(uuid2), testActor());
+                server.tell(new VoteRequest(uuid2, Set.of(server)), testActor());
                 expectMsg(new VoteResponse(uuid2, VoteResponse.Vote.NO));
 
                 server.tell(new FinalDecision(uuid2, FinalDecision.Decision.GLOBAL_ABORT), testActor());

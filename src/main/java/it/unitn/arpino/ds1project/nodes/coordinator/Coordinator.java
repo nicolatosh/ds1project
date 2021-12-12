@@ -165,7 +165,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                         ctx.log(CoordinatorRequestContext.LogState.START_2PC);
 
                         logger.info("Asking the vote requests to the participants");
-                        var request = new VoteRequest(msg.uuid);
+                        var request = new VoteRequest(msg.uuid, ctx.getParticipants());
                         var multicast = Communication.builder()
                                 .ofSender(getSelf())
                                 .ofReceivers(ctx.getParticipants())

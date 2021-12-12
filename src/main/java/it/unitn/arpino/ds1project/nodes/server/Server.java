@@ -168,6 +168,10 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
         ctx.cancelTimer();
 
+        req.participants.stream()
+                .filter(participant -> !participant.equals(getSelf()))
+                .forEach(ctx::addParticipant);
+
         if (ctx.prepare()) {
             logger.info("Transaction prepared: voting commit");
 
@@ -242,14 +246,8 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     /**
      * A server which is executing the termination protocol is requesting to this server the final decision of a transaction.
-     * If this server is not participating in that transaction, it ignores the request.
      */
     private void onDecisionRequest(DecisionRequest req) {
-        if (!getRepository().existsContextWithId(req.uuid)) {
-            logger.info("This server is not participating in the transaction: ignoring");
-            return;
-        }
-
         var ctx = getRepository().getRequestContextById(req.uuid);
 
         DecisionResponse response = null;
@@ -418,7 +416,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
         var request = new DecisionRequest(ctx.uuid);
         var multicast = Communication.builder()
                 .ofSender(getSelf())
-                .ofReceivers(servers)
+                .ofReceivers(ctx.getParticipants())
                 .ofMessage(request)
                 .ofCrashProbability(parameters.serverOnDecisionRequestCrashProbability);
         if (!multicast.run()) {

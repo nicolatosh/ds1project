@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -69,7 +70,7 @@ public class CoordinatorOnVoteResponseTest {
                 var end = new TxnEndMsg(uuid, true);
                 coordinator.tell(end, testActor());
 
-                var voteRequest = new VoteRequest(uuid);
+                var voteRequest = new VoteRequest(uuid, Set.of(server0.testActor()));
                 server0.expectMsg(voteRequest);
 
                 // server0 casts a NO vote, which makes the coordinator take the final decision
@@ -126,7 +127,7 @@ public class CoordinatorOnVoteResponseTest {
                 var end = new TxnEndMsg(uuid, true);
                 coordinator.tell(end, testActor());
 
-                var voteRequest = new VoteRequest(uuid);
+                var voteRequest = new VoteRequest(uuid, Set.of(server0.testActor(), server1.testActor()));
                 server0.expectMsg(voteRequest);
                 server1.expectMsg(voteRequest);
 

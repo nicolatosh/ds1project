@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -135,7 +136,7 @@ public class CoordinatorResumeTest {
                 var end = new TxnEndMsg(uuid, true);
                 coordinator.tell(end, ActorRef.noSender());
 
-                var voteRequest = new VoteRequest(uuid);
+                var voteRequest = new VoteRequest(uuid, Set.of(testActor()));
                 expectMsg(voteRequest);
 
                 var voteResponse = new VoteResponse(uuid, VoteResponse.Vote.YES);
@@ -185,7 +186,7 @@ public class CoordinatorResumeTest {
                 var end = new TxnEndMsg(uuid, true);
                 coordinator.tell(end, ActorRef.noSender());
 
-                var voteRequest = new VoteRequest(uuid);
+                var voteRequest = new VoteRequest(uuid, Set.of(testActor()));
                 expectMsg(voteRequest);
 
                 var voteResponse = new VoteResponse(uuid, VoteResponse.Vote.NO);

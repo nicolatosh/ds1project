@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -36,7 +37,7 @@ public class ServerOnDecisionResponseTest {
     }
 
     @Test
-    void testDecisionResponseWithCommit() throws InterruptedException {
+    void testDecisionResponseWithCommit() {
         new TestKit(system) {
             {
                 // pass the probe as a server to server0
@@ -51,7 +52,7 @@ public class ServerOnDecisionResponseTest {
                 var readRequest = new ReadRequest(uuid, 0);
                 server0.tell(readRequest, ActorRef.noSender());
 
-                var voteRequest = new VoteRequest(uuid);
+                var voteRequest = new VoteRequest(uuid, Set.of(server0, testActor()));
                 server0.tell(voteRequest, ActorRef.noSender());
 
                 var decisionRequest = new DecisionRequest(uuid);
@@ -71,7 +72,7 @@ public class ServerOnDecisionResponseTest {
     }
 
     @Test
-    void testDecisionResponseWithAbort() throws InterruptedException {
+    void testDecisionResponseWithAbort() {
         new TestKit(system) {
             {
                 // pass the probe as a server to server0
@@ -86,7 +87,7 @@ public class ServerOnDecisionResponseTest {
                 var readRequest = new ReadRequest(uuid, 0);
                 server0.tell(readRequest, ActorRef.noSender());
 
-                var voteRequest = new VoteRequest(uuid);
+                var voteRequest = new VoteRequest(uuid, Set.of(server0, testActor()));
                 server0.tell(voteRequest, ActorRef.noSender());
 
                 var decisionRequest = new DecisionRequest(uuid);

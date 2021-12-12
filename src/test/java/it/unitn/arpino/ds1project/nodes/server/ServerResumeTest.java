@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.concurrent.duration.Duration;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -74,7 +75,7 @@ public class ServerResumeTest {
                         Duration.create(1, TimeUnit.SECONDS),
                         null);
 
-                var voteRequest = new VoteRequest(uuid);
+                var voteRequest = new VoteRequest(uuid, Set.of(server0, testActor()));
                 server0.tell(voteRequest, ActorRef.noSender());
 
                 var ctx = server0.underlyingActor().getRepository().getRequestContextById(uuid);

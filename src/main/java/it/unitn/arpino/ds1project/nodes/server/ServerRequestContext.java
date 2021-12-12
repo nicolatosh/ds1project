@@ -10,9 +10,7 @@ import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class ServerRequestContext extends RequestContext {
     public enum LogState {
@@ -34,12 +32,15 @@ public class ServerRequestContext extends RequestContext {
      */
     public static final int FINAL_DECISION_TIMEOUT_S = 6;
 
+    private final Set<ActorRef> participants;
+
     private final List<LogState> localLog;
 
     private IConnection connection;
 
     public ServerRequestContext(UUID uuid, ActorRef coordinator, IConnection connection) {
         super(uuid, coordinator);
+        participants = new HashSet<>();
         localLog = new ArrayList<>();
         this.connection = connection;
     }
@@ -47,6 +48,17 @@ public class ServerRequestContext extends RequestContext {
     @Override
     public boolean isDecided() {
         return loggedState() == LogState.GLOBAL_COMMIT || loggedState() == LogState.GLOBAL_ABORT;
+    }
+
+    /**
+     * Optimization; called by the server when receiving a vote request.
+     */
+    public void addParticipant(ActorRef participant) {
+        participants.add(participant);
+    }
+
+    public Collection<ActorRef> getParticipants() {
+        return new HashSet<>(participants);
     }
 
     public void log(LogState state) {
