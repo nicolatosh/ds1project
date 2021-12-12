@@ -93,6 +93,9 @@ public class ServerRequestContext extends RequestContext {
      * Attempts to prepare the transaction to be committed.
      */
     public boolean prepare() {
+        if (connection == null) {
+            throw new IllegalStateException("Prepare was called, but connection was null");
+        }
         return connection.prepare() == IDatabaseController.Response.PREPARED;
     }
 
@@ -100,6 +103,9 @@ public class ServerRequestContext extends RequestContext {
      * Commits the transaction.
      */
     public void commit() {
+        if (connection == null) {
+            throw new IllegalStateException("Commit was called, but connection was null");
+        }
         if (loggedState() == LogState.GLOBAL_COMMIT) {
             connection.commit();
             connection = null;
@@ -110,6 +116,9 @@ public class ServerRequestContext extends RequestContext {
      * Aborts the transaction.
      */
     public void abort() {
+        if (connection == null) {
+            throw new IllegalStateException("Abort was called, but connection was null");
+        }
         if (loggedState() == LogState.GLOBAL_ABORT) {
             connection.abort();
             connection = null;
