@@ -49,6 +49,8 @@ public class TxnClient extends AbstractActor {
     private int numAttemptedTxn;
     private int numCommittedTxn;
 
+    private int numTransactionsLeft;
+
     public TxnClient() {
         parameters = new ClientParameters();
 
@@ -62,6 +64,8 @@ public class TxnClient extends AbstractActor {
         logger = Logger.getLogger(getSelf().path().name());
         contexts = new HashMap<>();
         coordinators = new ArrayList<>();
+
+        numTransactionsLeft = parameters.numTransactions;
     }
 
     public static Props props() {
@@ -70,6 +74,10 @@ public class TxnClient extends AbstractActor {
 
     public ClientParameters getParameters() {
         return parameters;
+    }
+
+    public int getNumTransactionsLeft() {
+        return numTransactionsLeft;
     }
 
     private Duration randomBackoff() {
@@ -249,13 +257,14 @@ public class TxnClient extends AbstractActor {
 
         } else {
             ctx.setStatus(ClientRequestContext.Status.ABORT);
+            --numAttemptedTxn;
 
             var end = new TxnEndMsg(ctx.uuid, false);
             ctx.subject.tell(end, getSelf());
 
             // useless to start the timer: even if the coordinator misses this message, it will time out and abort
 
-            if (parameters.clientLoop) {
+            if (parameters.clientLoop || numTransactionsLeft > 0) {
                 // start a new transaction
                 var start = new StartMessage();
                 getContext().getSystem().getScheduler().scheduleOnce(
@@ -298,7 +307,9 @@ public class TxnClient extends AbstractActor {
                     logger.info("COMMIT FAIL (" + (numAttemptedTxn - numCommittedTxn) + "/" + numAttemptedTxn + ")");
                 }
 
-                if (parameters.clientLoop) {
+                --numTransactionsLeft;
+
+                if (parameters.clientLoop || numTransactionsLeft > 0) {
                     // start a new transaction
                     var start = new StartMessage();
                     getContext().getSystem().getScheduler().scheduleOnce(
@@ -343,7 +354,9 @@ public class TxnClient extends AbstractActor {
                 logger.info("State is " + ctx.getStatus() + ": aborting, backing off and retrying");
                 ctx.setStatus(ClientRequestContext.Status.ABORT);
 
-                if (parameters.clientLoop) {
+                --numTransactionsLeft;
+
+                if (parameters.clientLoop || numTransactionsLeft > 0) {
                     // start a new transaction
                     var start = new StartMessage();
                     getContext().getSystem().getScheduler().scheduleOnce(
@@ -362,10 +375,12 @@ public class TxnClient extends AbstractActor {
                 logger.info("State is " + ctx.getStatus() + ": aborting, backing off and retrying");
                 ctx.setStatus(ClientRequestContext.Status.ABORT);
 
+                --numTransactionsLeft;
+
                 var end = new TxnEndMsg(ctx.uuid, false);
                 ctx.subject.tell(end, getSelf());
 
-                if (parameters.clientLoop) {
+                if (parameters.clientLoop || numTransactionsLeft > 0) {
                     // start a new transaction
                     var start = new StartMessage();
                     getContext().getSystem().getScheduler().scheduleOnce(
