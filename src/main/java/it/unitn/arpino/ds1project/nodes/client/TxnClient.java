@@ -231,17 +231,15 @@ public class TxnClient extends AbstractActor {
         var amountTaken = 0;
         if (op.firstValue >= 1) {
             amountTaken = 1 + ThreadLocalRandom.current().nextInt(op.firstValue);
-            op.firstValue -= amountTaken;
-            op.secondValue += amountTaken;
         }
 
-        var write1 = new WriteMsg(ctx.uuid, op.firstKey, op.firstValue);
+        var write1 = new WriteMsg(ctx.uuid, op.firstKey, op.firstValue - amountTaken);
         try {
             Thread.sleep(25);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        var write2 = new WriteMsg(ctx.uuid, op.secondKey, op.secondValue);
+        var write2 = new WriteMsg(ctx.uuid, op.secondKey, op.secondValue + amountTaken);
 
         ctx.subject.tell(write1, getSelf());
         ctx.subject.tell(write2, getSelf());
