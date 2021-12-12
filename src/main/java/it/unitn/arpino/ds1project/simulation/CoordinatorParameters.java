@@ -6,13 +6,13 @@ public class CoordinatorParameters extends Parameters {
      */
     public long coordinatorRecoveryTimeMs;
     public boolean coordinatorCanRecover;
-    public double coordinatorOnVoteRequestCrashProbability;
-    public double coordinatorOnFinalDecisionCrashProbability;
+    public double coordinatorOnVoteRequestSuccessProbability;
+    public double coordinatorOnFinalDecisionSuccessProbability;
 
     public CoordinatorParameters() {
         coordinatorCanRecover = Boolean.parseBoolean(cache.getProperty("coordinatorCanRecover"));
         coordinatorRecoveryTimeMs = Integer.parseInt(cache.getProperty("coordinatorRecoveryTimeMs"));
-        coordinatorOnVoteRequestCrashProbability = Double.parseDouble(cache.getProperty("coordinatorOnVoteRequestCrashProbability"));
-        coordinatorOnFinalDecisionCrashProbability = Double.parseDouble(cache.getProperty("coordinatorOnFinalDecisionCrashProbability"));
+        coordinatorOnVoteRequestSuccessProbability = Double.parseDouble(cache.getProperty("coordinatorOnVoteRequestSuccessProbability"));
+        coordinatorOnFinalDecisionSuccessProbability = Double.parseDouble(cache.getProperty("coordinatorOnFinalDecisionSuccessProbability"));
     }
 }

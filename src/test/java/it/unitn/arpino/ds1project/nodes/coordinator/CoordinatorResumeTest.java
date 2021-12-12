@@ -70,7 +70,7 @@ public class CoordinatorResumeTest {
 
 
                 // this forces the coordinator to log START_2PC and crash while sending the vote request.
-                coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 1;
+                coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestSuccessProbability = 0;
 
 
                 var join = new JoinMessage(0, 9);
@@ -114,7 +114,7 @@ public class CoordinatorResumeTest {
 
 
                 // this forces the coordinator to log GLOBAL_COMMIT after collecting the vote responses and crash.
-                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1;
+                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionSuccessProbability = 0;
 
 
                 var join = new JoinMessage(0, 9);
@@ -164,7 +164,7 @@ public class CoordinatorResumeTest {
 
 
                 // this forces the coordinator to log GLOBAL_ABORT and crash
-                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 1;
+                coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionSuccessProbability = 0;
 
 
                 var join = new JoinMessage(0, 9);
@@ -212,8 +212,8 @@ class SelfHealingCoordinator extends Coordinator {
 
     @Override
     protected void crash() {
-        getParameters().coordinatorOnVoteRequestCrashProbability = 0.;
-        getParameters().coordinatorOnFinalDecisionCrashProbability = 0.;
+        getParameters().coordinatorOnVoteRequestSuccessProbability = 1;
+        getParameters().coordinatorOnFinalDecisionSuccessProbability = 1;
         super.crash();
     }
 }

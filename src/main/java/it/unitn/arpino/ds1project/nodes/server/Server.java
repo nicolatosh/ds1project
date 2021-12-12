@@ -182,7 +182,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     .ofSender(getSelf())
                     .ofReceiver(getSender())
                     .ofMessage(yesVote)
-                    .ofCrashProbability(parameters.serverOnVoteResponseCrashProbability);
+                    .ofSuccessProbability(parameters.serverOnVoteResponseSuccessProbability);
             if (!unicast.run()) {
                 logger.info("Did not send the message to " + getSender().path().name());
                 crash();
@@ -201,7 +201,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                     .ofSender(getSelf())
                     .ofReceiver(getSender())
                     .ofMessage(noVote)
-                    .ofCrashProbability(parameters.serverOnVoteResponseCrashProbability);
+                    .ofSuccessProbability(parameters.serverOnVoteResponseSuccessProbability);
             if (!unicast.run()) {
                 logger.info("Did not send the message to " + getSender().path().name());
                 crash();
@@ -283,7 +283,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .ofSender(getSelf())
                 .ofReceiver(getSender())
                 .ofMessage(response)
-                .ofCrashProbability(parameters.serverOnDecisionResponseCrashProbability);
+                .ofSuccessProbability(parameters.serverOnDecisionResponseSuccessProbability);
         if (!unicast.run()) {
             logger.info("Did not send the message to " + getSender().path().name());
             crash();
@@ -418,7 +418,7 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .ofSender(getSelf())
                 .ofReceivers(ctx.getParticipants())
                 .ofMessage(request)
-                .ofCrashProbability(parameters.serverOnDecisionRequestCrashProbability);
+                .ofSuccessProbability(parameters.serverOnDecisionRequestSuccessProbability);
         if (!multicast.run()) {
             logger.info("Did not send the message to " + multicast.getMissing().stream()
                     .map(participant -> participant.path().name())

@@ -85,8 +85,8 @@ public class EndToEnd {
 
     @Test
     void sequentialTransactionsWithCoordinatorCrashes() throws InterruptedException {
-        coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0.25;
-        coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0.25;
+        coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestSuccessProbability = 0.55;
+        coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionSuccessProbability = 0.55;
 
         int txnLeft = N_TRANSACTIONS;
         while (txnLeft > 0) {
@@ -166,9 +166,9 @@ public class EndToEnd {
     @Test
     void sequentialTransactionsWithServerCrashes() throws InterruptedException {
         List.of(server0, server1).forEach(server -> {
-            server.underlyingActor().getParameters().serverOnVoteResponseCrashProbability = 0.25;
-            server.underlyingActor().getParameters().serverOnDecisionRequestCrashProbability = 0.25;
-            server.underlyingActor().getParameters().serverOnDecisionResponseCrashProbability = 0.25;
+            server.underlyingActor().getParameters().serverOnVoteResponseSuccessProbability = 0.55;
+            server.underlyingActor().getParameters().serverOnDecisionRequestSuccessProbability = 0.55;
+            server.underlyingActor().getParameters().serverOnDecisionResponseSuccessProbability = 0.5;
         });
 
         int txnLeft = N_TRANSACTIONS;
@@ -248,13 +248,13 @@ public class EndToEnd {
 
     @Test
     void sequentialTransactionsWithCoordinatorAndServerCrashes() throws InterruptedException {
-        coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestCrashProbability = 0.25;
-        coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionCrashProbability = 0.25;
+        coordinator.underlyingActor().getParameters().coordinatorOnVoteRequestSuccessProbability = 0.55;
+        coordinator.underlyingActor().getParameters().coordinatorOnFinalDecisionSuccessProbability = 0.55;
 
         List.of(server0, server1).forEach(server -> {
-            server.underlyingActor().getParameters().serverOnVoteResponseCrashProbability = 0.25;
-            server.underlyingActor().getParameters().serverOnDecisionRequestCrashProbability = 0.25;
-            server.underlyingActor().getParameters().serverOnDecisionResponseCrashProbability = 0.25;
+            server.underlyingActor().getParameters().serverOnVoteResponseSuccessProbability = 0.55;
+            server.underlyingActor().getParameters().serverOnDecisionRequestSuccessProbability = 0.55;
+            server.underlyingActor().getParameters().serverOnDecisionResponseSuccessProbability = 0.55;
         });
 
         int txnLeft = N_TRANSACTIONS;

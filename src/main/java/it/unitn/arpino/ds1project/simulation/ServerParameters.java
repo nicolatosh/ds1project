@@ -6,15 +6,15 @@ public class ServerParameters extends Parameters {
      */
     public long serverRecoveryTimeMs;
     public boolean serverCanRecover;
-    public double serverOnVoteResponseCrashProbability;
-    public double serverOnDecisionResponseCrashProbability;
-    public double serverOnDecisionRequestCrashProbability;
+    public double serverOnVoteResponseSuccessProbability;
+    public double serverOnDecisionResponseSuccessProbability;
+    public double serverOnDecisionRequestSuccessProbability;
 
     public ServerParameters() {
         serverCanRecover = Boolean.parseBoolean(cache.getProperty("serverCanRecover"));
         serverRecoveryTimeMs = Integer.parseInt(cache.getProperty("serverRecoveryTimeMs"));
-        serverOnVoteResponseCrashProbability = Double.parseDouble(cache.getProperty("serverOnVoteResponseCrashProbability"));
-        serverOnDecisionResponseCrashProbability = Double.parseDouble(cache.getProperty("serverOnDecisionResponseCrashProbability"));
-        serverOnDecisionRequestCrashProbability = Double.parseDouble(cache.getProperty("serverOnDecisionRequestCrashProbability"));
+        serverOnVoteResponseSuccessProbability = Double.parseDouble(cache.getProperty("serverOnVoteResponseSuccessProbability"));
+        serverOnDecisionResponseSuccessProbability = Double.parseDouble(cache.getProperty("serverOnDecisionResponseSuccessProbability"));
+        serverOnDecisionRequestSuccessProbability = Double.parseDouble(cache.getProperty("serverOnDecisionRequestSuccessProbability"));
     }
 }

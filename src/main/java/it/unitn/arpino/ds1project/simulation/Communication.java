@@ -15,7 +15,7 @@ public class Communication {
     private ActorRef sender;
     private final List<ActorRef> receivers;
     private TxnMessage message;
-    private double crashP;
+    private double successP;
 
     private Communication() {
         receivers = new ArrayList<>();
@@ -55,18 +55,32 @@ public class Communication {
     }
 
     /**
-     * @param crashP Probability that a crash happens when sending the message to a receiver.
-     *               If a crash happens, all the remaining receivers are not contacted.
+     * @param successP Probability that the multicast completes successfully; i.e., no crash occurs and all the messages
+     *                 are sent to the intended receivers.
      */
-    public Communication ofCrashProbability(double crashP) {
-        this.crashP = crashP;
+    public Communication ofSuccessProbability(double successP) {
+        this.successP = successP;
         return this;
+    }
+
+    /**
+     * @return the probability that a crash should occur in a single tell of a multicast,
+     * so that the probability that the multicast completes correctly is successP.
+     */
+    private double crashP() {
+        // (1 - crashP)^nParticipants = successP
+        // (1 - crashP) = sqrt_nParticipants(successP)
+        // crashP = 1 - sqrt_nParticipants(successP)
+        // crashP = 1 - successP^(1/nParticipants)
+        return 1 - Math.pow(successP, 1. / receivers.size());
     }
 
     /* @return Whether the multicast (or unicast) completed successfully (the message has been sent to all the intended receivers),
      * or it has not due to a crash that has been simulated.
      */
     public boolean run() {
+        double crashP = crashP();
+
         Iterator<ActorRef> iterator = receivers.iterator();
         while (iterator.hasNext()) {
             if (Math.random() < crashP) {
