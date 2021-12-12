@@ -100,7 +100,10 @@ public class ServerRequestContext extends RequestContext {
      * Commits the transaction.
      */
     public void commit() {
-        connection.commit();
+        if (loggedState() == LogState.GLOBAL_COMMIT) {
+            connection.commit();
+            connection = null;
+        }
     }
 
     /**
