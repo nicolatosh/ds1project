@@ -32,7 +32,7 @@ public class ClientRequestContext extends RequestContext {
     }
 
     public final static int TXN_ACCEPT_TIMEOUT_S = 3;
-    public final static int READ_TIMEOUT_S = 4;
+    public final static int READ_TIMEOUT_S = 8;
     public final static int TXN_RESULT_TIMEOUT_S = 8;
 
     private Status status;
