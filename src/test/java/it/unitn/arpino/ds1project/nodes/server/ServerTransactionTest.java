@@ -1,11 +1,9 @@
 package it.unitn.arpino.ds1project.nodes.server;
 
-import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
-import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.coordinator.Done;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.coordinator.VoteResponse;
@@ -30,8 +28,6 @@ public class ServerTransactionTest {
     void setUp() {
         system = ActorSystem.create();
         server = TestActorRef.create(system, Server.props(0, 9), "server");
-
-        server.tell(new StartMessage(), ActorRef.noSender());
     }
 
     @AfterEach

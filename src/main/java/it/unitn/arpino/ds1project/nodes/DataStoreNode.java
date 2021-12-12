@@ -1,10 +1,7 @@
 package it.unitn.arpino.ds1project.nodes;
 
 import akka.actor.AbstractActorWithStash;
-import akka.japi.pf.ReceiveBuilder;
-import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
-import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.nodes.context.RequestContext;
 import it.unitn.arpino.ds1project.nodes.context.RequestContextRepository;
 import it.unitn.arpino.ds1project.nodes.coordinator.Coordinator;
@@ -26,9 +23,6 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractAc
 
     protected final Logger logger;
 
-    private final Receive aliveReceive;
-    private final Receive crashedReceive;
-
     private Status status;
 
     private final RequestContextRepository<T> repository;
@@ -45,9 +39,6 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractAc
 
         status = DataStoreNode.Status.ALIVE;
         repository = new RequestContextRepository<>();
-
-        aliveReceive = createAliveReceive();
-        crashedReceive = createCrashedReceive();
     }
 
     protected abstract Receive createAliveReceive();
@@ -69,26 +60,6 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractAc
         return repository;
     }
 
-    @Override
-    public Receive createReceive() {
-        return new ReceiveBuilder()
-                .match(JoinMessage.class, this::onJoinMessage)
-                .match(StartMessage.class, this::onStartMsg)
-                .matchAny(msg -> {
-                    logger.info("Stashed " + msg + " from " + getSender().path().name());
-                    stash();
-                })
-                .build();
-    }
-
-    protected abstract void onJoinMessage(JoinMessage msg);
-
-    private void onStartMsg(StartMessage msg) {
-        logger.info("Starting");
-        getContext().become(aliveReceive);
-        unstashAll();
-    }
-
     /**
      * Simulates a crash of the node.
      * A crashed node will not handle the remaining messages in the message queue nor newly received ones
@@ -96,7 +67,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractAc
      */
     protected void crash() {
         logger.info("Crashing...");
-        getContext().become(crashedReceive);
+        getContext().become(createCrashedReceive());
         status = DataStoreNode.Status.CRASHED;
     }
 
@@ -107,7 +78,7 @@ public abstract class DataStoreNode<T extends RequestContext> extends AbstractAc
      */
     protected void resume() {
         logger.info("Resuming...");
-        getContext().become(aliveReceive);
+        getContext().become(createAliveReceive());
         status = DataStoreNode.Status.ALIVE;
     }
 }

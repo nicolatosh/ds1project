@@ -39,7 +39,6 @@ public class CoordinatorTimeoutTest {
         coordinator.tell(join, server);
 
         var start = new StartMessage();
-        server.tell(start, ActorRef.noSender());
         coordinator.tell(start, ActorRef.noSender());
     }
 

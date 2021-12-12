@@ -52,14 +52,13 @@ public class EndToEnd {
 
         server0 = TestActorRef.create(system, Server.props(0, 9), "server0");
         server1 = TestActorRef.create(system, Server.props(10, 19), "server1");
-        server0.tell(new JoinMessage(10, 19), server1);
-        server1.tell(new JoinMessage(0, 9), server0);
 
         coordinator = TestActorRef.create(system, Coordinator.props(), "coordinator");
         coordinator.tell(new JoinMessage(10, 19), server1);
         coordinator.tell(new JoinMessage(0, 9), server0);
 
-        List.of(server0, server1, coordinator).forEach(node -> node.tell(new StartMessage(), ActorRef.noSender()));
+        var start = new StartMessage();
+        coordinator.tell(start, ActorRef.noSender());
 
     }
 

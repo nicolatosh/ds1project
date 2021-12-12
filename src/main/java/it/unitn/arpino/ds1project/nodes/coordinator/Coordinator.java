@@ -2,10 +2,8 @@ package it.unitn.arpino.ds1project.nodes.coordinator;
 
 import akka.actor.ActorRef;
 import akka.actor.Props;
-import it.unitn.arpino.ds1project.messages.JoinMessage;
-import it.unitn.arpino.ds1project.messages.ResumeMessage;
-import it.unitn.arpino.ds1project.messages.TimeoutMsg;
-import it.unitn.arpino.ds1project.messages.TxnMessage;
+import akka.japi.pf.ReceiveBuilder;
+import it.unitn.arpino.ds1project.messages.*;
 import it.unitn.arpino.ds1project.messages.client.ReadResultMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnAcceptMsg;
 import it.unitn.arpino.ds1project.messages.client.TxnResultMsg;
@@ -67,6 +65,18 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     @Override
+    public Receive createReceive() {
+        return new ReceiveBuilder()
+                .match(JoinMessage.class, this::onJoinMessage)
+                .match(StartMessage.class, this::onStartMsg)
+                .matchAny(msg -> {
+                    logger.info("Stashed " + msg + " from " + getSender().path().name());
+                    stash();
+                })
+                .build();
+    }
+
+    @Override
     protected Receive createAliveReceive() {
         return receiveBuilder()
                 .match(TxnBeginMsg.class, this::onTxnBeginMsg)
@@ -81,10 +91,16 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .build();
     }
 
-    @Override
     protected void onJoinMessage(JoinMessage msg) {
-        logger.info(getSender().path().name() + " joined");
         IntStream.rangeClosed(msg.lowerKey, msg.upperKey).forEach(key -> dispatcher.map(key, getSender()));
+    }
+
+    private void onStartMsg(StartMessage msg) {
+        logger.info("Starting.\nAvailable servers: " + dispatcher.getAll().stream()
+                .map(server -> server.path().name())
+                .collect(Collectors.joining(", ")));
+        getContext().become(createAliveReceive());
+        unstashAll();
     }
 
     private void onTimeoutMsg(TimeoutMsg timeout) {

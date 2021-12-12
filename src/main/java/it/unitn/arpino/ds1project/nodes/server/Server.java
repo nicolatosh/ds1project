@@ -6,7 +6,6 @@ import akka.japi.pf.ReceiveBuilder;
 import it.unitn.arpino.ds1project.datastore.controller.IDatabaseController;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
 import it.unitn.arpino.ds1project.datastore.database.IDatabase;
-import it.unitn.arpino.ds1project.messages.JoinMessage;
 import it.unitn.arpino.ds1project.messages.ResumeMessage;
 import it.unitn.arpino.ds1project.messages.TimeoutMsg;
 import it.unitn.arpino.ds1project.messages.TxnMessage;
@@ -23,8 +22,6 @@ import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class Server extends DataStoreNode<ServerRequestContext> {
@@ -32,11 +29,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
 
     private final IDatabase database;
     private final IDatabaseController controller;
-
-    /**
-     * The other servers in the Data Store that this server can contact in the Two-phase commit (2PC) termination protocol
-     */
-    private final List<ActorRef> servers;
 
     public Server(int lowerKey, int upperKey) {
         parameters = new ServerParameters();
@@ -46,7 +38,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .create();
         database = builder.getDatabase();
         controller = builder.getController();
-        servers = new ArrayList<>();
     }
 
     public static Props props(int lowerKey, int upperKey) {
@@ -93,6 +84,11 @@ public class Server extends DataStoreNode<ServerRequestContext> {
     }
 
     @Override
+    public Receive createReceive() {
+        return createAliveReceive();
+    }
+
+    @Override
     protected Receive createAliveReceive() {
         return new ReceiveBuilder()
                 .match(ReadRequest.class, this::onReadRequest)
@@ -104,12 +100,6 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 .match(DecisionRequest.class, this::onDecisionRequest)
                 .match(Solicit.class, this::onSolicit)
                 .build();
-    }
-
-    @Override
-    protected void onJoinMessage(JoinMessage msg) {
-        logger.info(getSender().path().name() + " joined");
-        servers.add(getSender());
     }
 
 

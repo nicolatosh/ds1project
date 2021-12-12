@@ -5,8 +5,6 @@ import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
 import it.unitn.arpino.ds1project.datastore.database.DatabaseBuilder;
-import it.unitn.arpino.ds1project.messages.JoinMessage;
-import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.coordinator.ReadResult;
 import it.unitn.arpino.ds1project.messages.server.DecisionRequest;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
@@ -41,9 +39,6 @@ public class ServerTimeoutTest {
     void testVoteRequestTimeout() {
         new TestKit(system) {
             {
-                var start = new StartMessage();
-                server0.tell(start, ActorRef.noSender());
-
                 var uuid = UUID.randomUUID();
 
                 var readRequest = new ReadRequest(uuid, 0);
@@ -65,13 +60,6 @@ public class ServerTimeoutTest {
     void testFinalDecisionTimeout() {
         new TestKit(system) {
             {
-                // pass the probe as a server to server0
-                var join = new JoinMessage(10, 19);
-                server0.tell(join, testActor());
-
-                var start = new StartMessage();
-                server0.tell(start, ActorRef.noSender());
-
                 var uuid = UUID.randomUUID();
 
                 var readRequest = new ReadRequest(uuid, 0);

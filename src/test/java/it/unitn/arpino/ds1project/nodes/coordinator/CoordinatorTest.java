@@ -37,8 +37,8 @@ public class CoordinatorTest {
         var join = new JoinMessage(0, 9);
         coordinator.tell(join, server);
 
-        coordinator.tell(new StartMessage(), ActorRef.noSender());
-        server.tell(new StartMessage(), ActorRef.noSender());
+        var start = new StartMessage();
+        coordinator.tell(start, ActorRef.noSender());
     }
 
     @AfterEach

@@ -4,7 +4,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
-import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.server.FinalDecision;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
@@ -38,9 +37,6 @@ public class ServerOnFinalDecisionTest {
 
     @Test
     void testFinalDecisionOnInit() {
-        var start = new StartMessage();
-        server0.tell(start, ActorRef.noSender());
-
         var uuid = UUID.randomUUID();
 
         var readRequest = new ReadRequest(uuid, 0);
@@ -56,9 +52,6 @@ public class ServerOnFinalDecisionTest {
 
     @Test
     void testFinalDecisionOnVoteCommit() {
-        var start = new StartMessage();
-        server0.tell(start, ActorRef.noSender());
-
         var uuid = UUID.randomUUID();
 
         var readRequest = new ReadRequest(uuid, 0);

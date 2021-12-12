@@ -60,23 +60,15 @@ public class SimulationBuilder {
                 .mapToObj(i -> system.actorOf(Server.props(i * 10, i * 10 + 9), "server" + i))
                 .collect(Collectors.toList());
 
-        for (int i = 0; i < servers.size(); i++) {
-            var server = servers.get(i);
-
+        IntStream.rangeClosed(0, servers.size()).forEach(i -> {
             var join = new JoinMessage(i * 10, i * 10 + 9);
-
-            servers.stream()
-                    .filter(other -> other != server)
-                    .forEach(other -> other.tell(join, server));
-
-            coordinators.forEach(coordinator -> coordinator.tell(join, server));
-        }
+            coordinators.forEach(coordinator -> coordinator.tell(join, servers.get(i)));
+        });
 
         var list = new CoordinatorList(coordinators, ((nServers - 1) * 10) + 9);
         clients.forEach(client -> client.tell(list, ActorRef.noSender()));
 
         var start = new StartMessage();
-        servers.forEach(server -> server.tell(start, ActorRef.noSender()));
         coordinators.forEach(coordinator -> coordinator.tell(start, ActorRef.noSender()));
 
         return new Simulation(system, clients, coordinators, servers);

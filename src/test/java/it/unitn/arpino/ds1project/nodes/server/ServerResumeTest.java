@@ -4,8 +4,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.TestActorRef;
 import akka.testkit.TestKit;
-import it.unitn.arpino.ds1project.messages.JoinMessage;
-import it.unitn.arpino.ds1project.messages.StartMessage;
 import it.unitn.arpino.ds1project.messages.server.DecisionRequest;
 import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.VoteRequest;
@@ -39,9 +37,6 @@ public class ServerResumeTest {
 
     @Test
     void shouldAbortActiveContext() {
-        var start = new StartMessage();
-        server0.tell(start, ActorRef.noSender());
-
         var uuid = UUID.randomUUID();
 
         var readRequest = new ReadRequest(uuid, 0);
@@ -59,12 +54,6 @@ public class ServerResumeTest {
     void shouldRunTerminationProtocol() {
         new TestKit(system) {
             {
-                var join = new JoinMessage(10, 19);
-                server0.tell(join, testActor());
-
-                var start = new StartMessage();
-                server0.tell(start, ActorRef.noSender());
-
                 var uuid = UUID.randomUUID();
 
                 var readRequest = new ReadRequest(uuid, 0);
