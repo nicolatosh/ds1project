@@ -234,11 +234,15 @@ public class Server extends DataStoreNode<ServerRequestContext> {
                 break;
             }
             case GLOBAL_COMMIT: {
-                logger.severe("Invalid logged state (GLOBAL_COMMIT)");
+                // example: the timer expired, the server sends itself a TimeoutMsg, which goes at the end of the
+                // message queue. The next message the server processes makes the server learn the final decision
+                // and transition to this state.
+                logger.info("The decision is already known (GLOBAL_COMMIT)");
                 break;
             }
             case GLOBAL_ABORT: {
-                logger.severe("Invalid logged state (GLOBAL_ABORT)");
+                // same as above
+                logger.info("The decision is already known (GLOBAL_ABORT)");
                 break;
             }
         }
