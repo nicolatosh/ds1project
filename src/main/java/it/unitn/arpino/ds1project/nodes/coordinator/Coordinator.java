@@ -96,9 +96,13 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
     }
 
     private void onStartMsg(StartMessage msg) {
-        logger.info("Starting.\nAvailable servers: " + dispatcher.getAll().stream()
-                .map(server -> server.path().name())
-                .collect(Collectors.joining(", ")));
+        if (dispatcher.getAll().isEmpty()) {
+            logger.info("Starting. There is no available server.");
+        } else {
+            logger.info("Starting.\nAvailable servers: " + dispatcher.getAll().stream()
+                    .map(server -> server.path().name())
+                    .collect(Collectors.joining(", ")));
+        }
         getContext().become(createAliveReceive());
         unstashAll();
     }

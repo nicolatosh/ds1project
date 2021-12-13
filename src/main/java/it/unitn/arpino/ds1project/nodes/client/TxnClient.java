@@ -43,7 +43,7 @@ public class TxnClient extends AbstractActor {
     private final List<ActorRef> coordinators;
 
     // the maximum key associated to items of the store
-    private int maxKey;
+    private Integer maxKey;
 
     // keep track of the number of TXNs (attempted, successfully committed)
     private int numAttemptedTxn;
@@ -120,15 +120,7 @@ public class TxnClient extends AbstractActor {
 
     private void onCoordinatorList(CoordinatorList msg) {
         coordinators.addAll(msg.coordinators);
-        if (coordinators.isEmpty()) {
-            logger.info("No available coordinators");
-        } else {
-            logger.info("Available coordinators: " + coordinators.stream()
-                    .map(coordinator -> coordinator.path().name())
-                    .collect(Collectors.joining(", ")));
-
-            this.maxKey = msg.maxKey;
-        }
+        this.maxKey = msg.maxKey;
     }
 
     /**
@@ -138,7 +130,14 @@ public class TxnClient extends AbstractActor {
         if (coordinators.isEmpty()) {
             logger.info("No available coordinators. Nothing to do.");
             return;
+        } else if (maxKey == null) {
+            logger.info("No available servers. Nothing to do");
+            return;
         }
+        logger.info("Available coordinators: " + coordinators.stream()
+                .map(coordinator -> coordinator.path().name())
+                .collect(Collectors.joining(", ")));
+
 
         // choose a random coordinator to contact
         var coordinator = coordinators.get(ThreadLocalRandom.current().nextInt(coordinators.size()));

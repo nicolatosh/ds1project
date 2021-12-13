@@ -48,24 +48,30 @@ public class SimulationBuilder {
     public Simulation build() {
         var system = ActorSystem.create("ds1project");
 
-        var clients = IntStream.rangeClosed(0, nClients - 1)
+        var clients = IntStream.range(0, nClients)
                 .mapToObj(i -> system.actorOf(TxnClient.props(), "client" + i))
                 .collect(Collectors.toList());
 
-        var coordinators = IntStream.rangeClosed(0, nCoordinators - 1)
+        var coordinators = IntStream.range(0, nCoordinators)
                 .mapToObj(i -> system.actorOf(Coordinator.props(), "coord" + i))
                 .collect(Collectors.toList());
 
-        var servers = IntStream.rangeClosed(0, nServers - 1)
+        var servers = IntStream.range(0, nServers)
                 .mapToObj(i -> system.actorOf(Server.props(i * 10, i * 10 + 9), "server" + i))
                 .collect(Collectors.toList());
 
-        IntStream.rangeClosed(0, servers.size()).forEach(i -> {
+        for (int i = 0; i < servers.size(); i++) {
             var join = new JoinMessage(i * 10, i * 10 + 9);
-            coordinators.forEach(coordinator -> coordinator.tell(join, servers.get(i)));
-        });
+            var server = servers.get(i);
+            coordinators.forEach(coordinator -> coordinator.tell(join, server));
+        }
 
-        var list = new CoordinatorList(coordinators, ((nServers - 1) * 10) + 9);
+        Integer maxKey = null;
+        if (nServers > 0) {
+            maxKey = ((nServers - 1) * 10) + 9;
+        }
+
+        var list = new CoordinatorList(coordinators, maxKey);
         clients.forEach(client -> client.tell(list, ActorRef.noSender()));
 
         var start = new StartMessage();

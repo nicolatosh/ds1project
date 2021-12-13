@@ -13,9 +13,9 @@ import java.util.List;
  */
 public class CoordinatorList implements Serializable {
     public final List<ActorRef> coordinators;
-    public final int maxKey;
+    public final Integer maxKey;
 
-    public CoordinatorList(List<ActorRef> coordinators, int maxKey) {
+    public CoordinatorList(List<ActorRef> coordinators, Integer maxKey) {
         this.coordinators = List.copyOf(coordinators);
         this.maxKey = maxKey;
     }
