@@ -91,7 +91,7 @@ public class Coordinator extends DataStoreNode<CoordinatorRequestContext> {
                 .build();
     }
 
-    protected void onJoinMessage(JoinMessage msg) {
+    private void onJoinMessage(JoinMessage msg) {
         IntStream.rangeClosed(msg.lowerKey, msg.upperKey).forEach(key -> dispatcher.map(key, getSender()));
     }
 
