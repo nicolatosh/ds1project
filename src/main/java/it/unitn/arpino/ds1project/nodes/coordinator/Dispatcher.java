@@ -5,10 +5,7 @@ import it.unitn.arpino.ds1project.messages.server.ReadRequest;
 import it.unitn.arpino.ds1project.messages.server.WriteRequest;
 import it.unitn.arpino.ds1project.nodes.server.Server;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Holds the mappings between keys and the {@link ActorRef}s of the {@link Server}s in the distributed Data Store which
@@ -41,6 +38,6 @@ public class Dispatcher {
     }
 
     public Collection<ActorRef> getAll() {
-        return map.values();
+        return new HashSet<>(map.values());
     }
 }
